@@ -12,7 +12,7 @@ import (
 	"github.com/cplieger/arrapi"
 )
 
-const testKey = "0123456789abcdef0123456789abcdef"
+const testKey = "test-key" // low-entropy placeholder; not a real credential
 
 // recordingServer is an httptest server that records the last request's path
 // and API-key header and replies with a scripted status + body.
