@@ -127,12 +127,12 @@ func main() {
 
 ### Options
 
-| Option                | Description                                                                        |
-| --------------------- | ---------------------------------------------------------------------------------- |
-| `WithHTTPClient(c)`   | Use a caller-owned `*http.Client` (share a pool, pin a CA, inject a test client)   |
-| `WithMaxAttempts(n)`  | Total attempts including the first, for a transient failure. Clamped to ≥1. Default 3 |
-| `WithBaseDelay(d)`    | Base delay for the exponential backoff between retries. Default 1s                 |
-| `WithTimeout(d)`      | Per-request timeout applied when the caller's context has no deadline. Default 120s |
+| Option               | Description                                                                           |
+| -------------------- | ------------------------------------------------------------------------------------- |
+| `WithHTTPClient(c)`  | Use a caller-owned `*http.Client` (share a pool, pin a CA, inject a test client)      |
+| `WithMaxAttempts(n)` | Total attempts including the first, for a transient failure. Clamped to ≥1. Default 3 |
+| `WithBaseDelay(d)`   | Base delay for the exponential backoff between retries. Default 1s                    |
+| `WithTimeout(d)`     | Per-request timeout applied when the caller's context has no deadline. Default 120s   |
 
 ### Errors
 
@@ -150,11 +150,11 @@ Non-2xx responses surface as `*StatusError` (fields `Code`, `Path`, `Body`). It 
 
 Deliberate non-goals, not TODOs:
 
-| Not included                                    | Rationale                                                                                                                    |
-| ----------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| Not included                                    | Rationale                                                                                                                                                                          |
+| ----------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Adding / editing / deleting media               | This is a read + connectivity + rescan client, not a full library-management client. Use [golift/starr](https://github.com/golift/starr) or the devopsarr `*-go` clients for CRUD. |
-| Quality-profile item / cutoff detail            | `QualityProfile` models identity (name + ID); the nested quality-item and custom-format tree is out of scope.                |
-| Indexer / download-client / notification config | Management-plane surface with no consumer need.                                                                              |
+| Quality-profile item / cutoff detail            | `QualityProfile` models identity (name + ID); the nested quality-item and custom-format tree is out of scope.                                                                      |
+| Indexer / download-client / notification config | Management-plane surface with no consumer need.                                                                                                                                    |
 
 ## Disclaimer
 
