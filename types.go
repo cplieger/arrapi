@@ -6,6 +6,7 @@ type Series struct {
 	OriginalLanguage *Language         `json:"originalLanguage"`
 	Title            string            `json:"title"`
 	SortTitle        string            `json:"sortTitle"`
+	TitleSlug        string            `json:"titleSlug"`
 	ImdbID           string            `json:"imdbId"`
 	FirstAired       string            `json:"firstAired"`
 	Path             string            `json:"path"`
