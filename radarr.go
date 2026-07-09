@@ -1,6 +1,9 @@
 package arrapi
 
-import "context"
+import (
+	"context"
+	"fmt"
+)
 
 // Radarr is a client for a single Radarr v3 instance. The zero value is not
 // usable; construct one with NewRadarr. A Radarr is safe for concurrent use.
@@ -21,7 +24,11 @@ func NewRadarr(baseURL, apiKey string, opts ...Option) (*Radarr, error) {
 
 // GetMovies returns every movie in the Radarr library.
 func (r *Radarr) GetMovies(ctx context.Context) ([]Movie, error) {
-	return doSingleflight(ctx, r.client, "movies", func(fctx context.Context) ([]Movie, error) {
-		return fetchAll[Movie](fctx, r.client, apiPrefix+"/movie")
-	})
+	return fetchAll[Movie](ctx, r.client, apiPrefix+"/movie")
+}
+
+// GetMovieByID returns the single movie with the given Radarr ID. It returns a
+// *StatusError for which IsNotFound reports true when no movie has that ID.
+func (r *Radarr) GetMovieByID(ctx context.Context, movieID int) (Movie, error) {
+	return fetchOne[Movie](ctx, r.client, fmt.Sprintf("%s/movie/%d", apiPrefix, movieID))
 }

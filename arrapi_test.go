@@ -58,9 +58,13 @@ func TestNewClient_validation(t *testing.T) {
 		{"valid http", "http://sonarr:8989", testKey, false},
 		{"valid https", "https://radarr.example.com", testKey, false},
 		{"trailing slash trimmed", "http://sonarr:8989/", testKey, false},
+		{"reverse-proxy subpath allowed", "https://host.example.com/sonarr", testKey, false},
 		{"missing scheme", "sonarr:8989", testKey, true},
 		{"ftp scheme", "ftp://sonarr:8989", testKey, true},
 		{"empty url", "", testKey, true},
+		{"no host", "http:///series", testKey, true},
+		{"query rejected", "http://sonarr:8989/api?x=1", testKey, true},
+		{"fragment rejected", "http://sonarr:8989/#frag", testKey, true},
 		{"empty key", "http://sonarr:8989", "", true},
 		{"whitespace key", "http://sonarr:8989", "   ", true},
 	}
@@ -341,6 +345,28 @@ func TestContextCancellation(t *testing.T) {
 		t.Errorf("err = %v, want context.DeadlineExceeded", err)
 	}
 }
+
+func TestWithHTTPClient_usesProvidedClient(t *testing.T) {
+	rs := newServer(t, http.StatusOK, `[]`)
+	var used atomic.Bool
+	hc := &http.Client{Transport: roundTripFunc(func(req *http.Request) (*http.Response, error) {
+		used.Store(true)
+		return http.DefaultTransport.RoundTrip(req)
+	})}
+	s := fastSonarr(t, rs.srv.URL, arrapi.WithHTTPClient(hc))
+
+	if _, err := s.GetSeries(t.Context()); err != nil {
+		t.Fatalf("GetSeries: %v", err)
+	}
+	if !used.Load() {
+		t.Error("WithHTTPClient client was not used for the request")
+	}
+}
+
+// roundTripFunc adapts a function to http.RoundTripper for WithHTTPClient tests.
+type roundTripFunc func(*http.Request) (*http.Response, error)
+
+func (f roundTripFunc) RoundTrip(r *http.Request) (*http.Response, error) { return f(r) }
 
 func deref(p *string) string {
 	if p == nil {
