@@ -21,6 +21,9 @@ func TestEventType_UnmarshalJSON(t *testing.T) {
 		{"sonarr int imported", "3", arrapi.EventDownloadImported, false},
 		{"sonarr int deleted", "5", arrapi.EventFileDeleted, false},
 		{"sonarr int downloadIgnored", "7", arrapi.EventDownloadIgnored, false},
+		{"sonarr int folderImported", "2", arrapi.EventFolderImported, false},
+		{"sonarr int downloadFailed", "4", arrapi.EventDownloadFailed, false},
+		{"sonarr int fileRenamed", "6", arrapi.EventFileRenamed, false},
 		{"radarr string imported", `"downloadFolderImported"`, arrapi.EventDownloadImported, false},
 		{"radarr movieFileDeleted", `"movieFileDeleted"`, arrapi.EventFileDeleted, false},
 		{"radarr movieFileRenamed", `"movieFileRenamed"`, arrapi.EventFileRenamed, false},
@@ -29,6 +32,7 @@ func TestEventType_UnmarshalJSON(t *testing.T) {
 		{"sonarr episodeFileRenamed", `"episodeFileRenamed"`, arrapi.EventFileRenamed, false},
 		{"string downloadIgnored", `"downloadIgnored"`, arrapi.EventDownloadIgnored, false},
 		{"unknown string is zero", `"someFutureEvent"`, 0, false},
+		{"unknown positive int is zero", "99", 0, false},
 		{"negative is zero", "-1", 0, false},
 		{"null is zero", "null", 0, false},
 		{"bool is error", "true", 0, true},
@@ -172,6 +176,25 @@ func TestHistoryRecord_rawEventTypePreserved(t *testing.T) {
 	}
 }
 
+func TestHistoryRecord_rawEventTypePreservedForUnknownInt(t *testing.T) {
+	rs := newServer(t, http.StatusOK, `[{"id":1,"eventType":99,"seriesId":7}]`)
+	s := fastSonarr(t, rs.srv.URL)
+
+	recs, err := s.GetHistorySince(t.Context(), time.Date(2026, 7, 1, 0, 0, 0, 0, time.UTC))
+	if err != nil {
+		t.Fatalf("GetHistorySince: %v", err)
+	}
+	if len(recs) != 1 {
+		t.Fatalf("got %d records, want 1", len(recs))
+	}
+	if recs[0].EventType != 0 {
+		t.Errorf("unmodeled positive int event should decode to 0, got %d", recs[0].EventType)
+	}
+	if recs[0].RawEventType != "99" {
+		t.Errorf("RawEventType = %q, want 99", recs[0].RawEventType)
+	}
+}
+
 func TestGetHistory_paged(t *testing.T) {
 	body := `{"page":2,"pageSize":10,"totalRecords":25,"records":[
 	   {"id":11,"eventType":3,"seriesId":7},{"id":12,"eventType":1,"seriesId":8}]}`
@@ -215,5 +238,19 @@ func TestEventType_String(t *testing.T) {
 		if got := tc.et.String(); got != tc.want {
 			t.Errorf("EventType(%d).String() = %q, want %q", int(tc.et), got, tc.want)
 		}
+	}
+}
+
+func TestGetHistory_largePageUsesListLimit(t *testing.T) {
+	largeTitle := strings.Repeat("x", (1<<20)+1024)
+	rs := newServer(t, http.StatusOK, `{"page":1,"pageSize":1,"totalRecords":1,"records":[{"id":1,"eventType":3,"sourceTitle":"`+largeTitle+`"}]}`)
+	s := fastSonarr(t, rs.srv.URL)
+
+	page, err := s.GetHistory(t.Context(), arrapi.HistoryOptions{Page: 1, PageSize: 1})
+	if err != nil {
+		t.Fatalf("GetHistory on page larger than maxObjectBytes but below maxListBytes: %v", err)
+	}
+	if len(page.Records) != 1 || page.Records[0].SourceTitle != largeTitle {
+		t.Errorf("records = %+v, want one large source title of length %d", page.Records, len(largeTitle))
 	}
 }

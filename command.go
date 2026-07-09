@@ -93,7 +93,7 @@ func (c *client) postCommand(ctx context.Context, body commandBody) (Command, er
 		return zero, fmt.Errorf("arrapi: post command %s: %w", body.Name, err)
 	}
 	if resp.StatusCode < http.StatusOK || resp.StatusCode >= http.StatusMultipleChoices {
-		return zero, statusError(resp, apiPrefix+"/command")
+		return zero, statusError(resp, apiPrefix+"/command", c.apiKey)
 	}
 	return decodeObject[Command](resp, apiPrefix+"/command")
 }

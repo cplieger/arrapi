@@ -56,6 +56,10 @@ func TestGetSeries_largeStreamedBody(t *testing.T) {
 
 // TestCrossHostRedirect_doesNotForwardAPIKey guards the same-host redirect
 // policy: a redirect to another host must be refused so X-Api-Key never leaks.
+// The origin binds 127.0.0.1; the redirect targets the SAME server under the
+// distinct hostname "localhost", so the host-based policy sees a cross-host hop
+// (127.0.0.1 != localhost) and refuses it — without the refusal the key would
+// reach the handler.
 func TestCrossHostRedirect_doesNotForwardAPIKey(t *testing.T) {
 	var leaked atomic.Pointer[string]
 	other := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -64,8 +68,12 @@ func TestCrossHostRedirect_doesNotForwardAPIKey(t *testing.T) {
 		_, _ = w.Write([]byte(`[]`))
 	}))
 	t.Cleanup(other.Close)
+	crossHost := strings.Replace(other.URL, "127.0.0.1", "localhost", 1)
+	if crossHost == other.URL {
+		t.Skipf("test server URL %q is not 127.0.0.1-based; cannot synthesize a cross-host target", other.URL)
+	}
 	origin := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		http.Redirect(w, r, other.URL+r.URL.Path, http.StatusFound)
+		http.Redirect(w, r, crossHost+r.URL.Path, http.StatusFound)
 	}))
 	t.Cleanup(origin.Close)
 
@@ -187,5 +195,26 @@ func TestUserAgentHeaderSet(t *testing.T) {
 	}
 	if got := ua.Load(); got == nil || !strings.Contains(*got, "arrapi") {
 		t.Errorf("User-Agent header did not contain arrapi: %v", got)
+	}
+}
+
+// TestStatusError_errorBodyIsCapped confirms a non-2xx error body is capped at
+// maxErrorBodyBytes before being stored, so a regression to an unbounded read
+// cannot consume or expose an attacker-controlled error body.
+func TestStatusError_errorBodyIsCapped(t *testing.T) {
+	body := strings.Repeat("x", 64<<10) + "after-limit"
+	rs := newServer(t, http.StatusInternalServerError, body)
+	s := fastSonarr(t, rs.srv.URL, arrapi.WithMaxAttempts(1))
+
+	_, err := s.GetSeries(t.Context())
+	var se *arrapi.StatusError
+	if !errors.As(err, &se) {
+		t.Fatalf("GetSeries error = %v, want *StatusError", err)
+	}
+	if len(se.Body) != 64<<10 {
+		t.Errorf("StatusError.Body length = %d, want 65536", len(se.Body))
+	}
+	if strings.Contains(se.Body, "after-limit") {
+		t.Errorf("StatusError.Body included bytes beyond the 64 KiB cap")
 	}
 }

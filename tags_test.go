@@ -1,6 +1,7 @@
 package arrapi_test
 
 import (
+	"net/http"
 	"testing"
 
 	"github.com/cplieger/arrapi"
@@ -57,6 +58,22 @@ func TestHasAnyTag(t *testing.T) {
 				t.Errorf("HasAnyTag(%v, %v) = %v, want %v", tc.itemTags, tc.ids, got, tc.want)
 			}
 		})
+	}
+}
+
+func TestGetTags(t *testing.T) {
+	rs := newServer(t, http.StatusOK, `[{"id":1,"label":"anime"},{"id":2,"label":"4k"}]`)
+	s := fastSonarr(t, rs.srv.URL)
+
+	tags, err := s.GetTags(t.Context())
+	if err != nil {
+		t.Fatalf("GetTags: %v", err)
+	}
+	if len(tags) != 2 || tags[0].ID != 1 || tags[0].Label != "anime" {
+		t.Errorf("tags = %+v, want [{anime 1} {4k 2}]", tags)
+	}
+	if got := deref(rs.lastPath.Load()); got != "/api/v3/tag?" {
+		t.Errorf("path = %q, want /api/v3/tag?", got)
 	}
 }
 

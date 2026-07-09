@@ -60,17 +60,40 @@ type client struct {
 // and no query or fragment (a path is allowed, for reverse-proxy sub-paths);
 // apiKey must be non-empty.
 func newClient(baseURL, apiKey string, opts ...Option) (*client, error) {
+	if err := validateClientParams(baseURL, apiKey); err != nil {
+		return nil, err
+	}
+	cfg := resolveConfig(opts)
+	return &client{
+		httpClient:  configuredHTTPClient(cfg.httpClient),
+		baseURL:     strings.TrimRight(baseURL, "/"),
+		apiKey:      apiKey,
+		baseDelay:   cfg.baseDelay,
+		timeout:     cfg.timeout,
+		maxAttempts: cfg.maxAttempts,
+	}, nil
+}
+
+// validateClientParams enforces the connection-parameter contract: baseURL must
+// be an absolute http(s) URL with a host and no query or fragment (a path is
+// allowed for reverse-proxy sub-paths), and apiKey must be non-empty.
+func validateClientParams(baseURL, apiKey string) error {
 	u, err := url.Parse(baseURL)
 	if err != nil {
-		return nil, fmt.Errorf("arrapi: invalid baseURL %q: %w", baseURL, err)
+		return fmt.Errorf("arrapi: invalid baseURL %q: %w", baseURL, err)
 	}
 	if (u.Scheme != "http" && u.Scheme != "https") || u.Host == "" || u.RawQuery != "" || u.Fragment != "" {
-		return nil, fmt.Errorf("arrapi: baseURL must be an absolute http(s) URL with a host and no query or fragment, got %q", baseURL)
+		return fmt.Errorf("arrapi: baseURL must be an absolute http(s) URL with a host and no query or fragment, got %q", baseURL)
 	}
 	if strings.TrimSpace(apiKey) == "" {
-		return nil, errors.New("arrapi: apiKey must not be empty")
+		return errors.New("arrapi: apiKey must not be empty")
 	}
+	return nil
+}
 
+// resolveConfig applies the options over the defaults and clamps them to their
+// valid ranges (maxAttempts >= 1; positive baseDelay and timeout).
+func resolveConfig(opts []Option) config {
 	cfg := config{
 		maxAttempts: defaultMaxAttempts,
 		baseDelay:   defaultBaseDelay,
@@ -90,24 +113,25 @@ func newClient(baseURL, apiKey string, opts ...Option) (*client, error) {
 	if cfg.timeout <= 0 {
 		cfg.timeout = defaultTimeout
 	}
+	return cfg
+}
 
-	hc := cfg.httpClient
-	if hc == nil {
-		hc = &http.Client{
-			Timeout:       safetyTimeout,
-			Transport:     newTransport(),
-			CheckRedirect: sameHostRedirect,
-		}
+// configuredHTTPClient returns the caller-provided client unchanged, or a
+// default client whose redirect policy follows only same-host redirects (up to
+// maxRedirects hops) and refuses a cross-host hop or an https->http downgrade,
+// so the X-Api-Key is never forwarded to another origin or onto a cleartext
+// hop. A same-host http->https upgrade is followed (a reverse proxy that
+// force-redirects to TLS is a common, safe setup). httpx.RedirectPolicyFunc
+// with httpx.WithSameHost is the shared implementation of that policy.
+func configuredHTTPClient(hc *http.Client) *http.Client {
+	if hc != nil {
+		return hc
 	}
-
-	return &client{
-		httpClient:  hc,
-		baseURL:     strings.TrimRight(baseURL, "/"),
-		apiKey:      apiKey,
-		baseDelay:   cfg.baseDelay,
-		timeout:     cfg.timeout,
-		maxAttempts: cfg.maxAttempts,
-	}, nil
+	return &http.Client{
+		Timeout:       safetyTimeout,
+		Transport:     newTransport(),
+		CheckRedirect: httpx.RedirectPolicyFunc(httpx.WithSameHost(), httpx.WithMaxHops(maxRedirects)),
+	}
 }
 
 // newTransport returns a pooled transport sized for a single arr instance.
@@ -117,23 +141,6 @@ func newTransport() *http.Transport {
 		MaxIdleConnsPerHost: 5,
 		IdleConnTimeout:     90 * time.Second,
 	}
-}
-
-// sameHostRedirect refuses to follow a redirect to a different host. Go strips
-// only Authorization/Cookie-class headers across a cross-host redirect, not a
-// custom header, so following one would forward the X-Api-Key to another
-// origin. Same-host redirects are allowed up to maxRedirects.
-func sameHostRedirect(req *http.Request, via []*http.Request) error {
-	if len(via) == 0 {
-		return nil
-	}
-	if req.URL.Host != via[0].URL.Host {
-		return fmt.Errorf("arrapi: refusing redirect to a different host %q", req.URL.Host)
-	}
-	if len(via) >= maxRedirects {
-		return fmt.Errorf("arrapi: stopped after %d redirects", maxRedirects)
-	}
-	return nil
 }
 
 // get performs an authenticated GET and returns the response on a 200 status;
@@ -153,7 +160,7 @@ func (c *client) get(ctx context.Context, path string) (*http.Response, error) {
 		return nil, fmt.Errorf("arrapi: request %s: %w", path, err)
 	}
 	if resp.StatusCode != http.StatusOK {
-		return nil, statusError(resp, path)
+		return nil, statusError(resp, path, c.apiKey)
 	}
 	return resp, nil
 }
@@ -194,56 +201,20 @@ func (c *client) requestContext(ctx context.Context) (context.Context, context.C
 	return ctx, func() {}
 }
 
-// doRetry calls fn up to c.maxAttempts times, retrying transient failures (429,
-// any 5xx, transient transport errors) with jittered exponential backoff, or
-// the server's Retry-After hint when a *StatusError carries one. Each attempt
-// runs under a per-attempt context that spans the whole request and decode, so
-// the deadline is never cancelled mid-body. GETs are idempotent, so retry is
-// safe. It composes httpx's retry primitives rather than httpx.RetryWithBackoff
-// so it can honor Retry-After.
+// doRetry calls fn up to c.maxAttempts times via httpx.RetryWithBackoff,
+// retrying transient failures (429, any 5xx, transient transport errors) with
+// jittered exponential backoff, or the server's capped Retry-After hint when a
+// *StatusError carries one — *StatusError implements httpx.RetryAfterHint, which
+// RetryWithBackoff honors. Each attempt runs under a per-attempt context (spanning
+// the whole request and its decode, so the deadline is never cancelled mid-body);
+// GETs are idempotent, so retry is safe.
 func doRetry[T any](ctx context.Context, c *client, fn func(context.Context) (T, error)) (T, error) {
-	maxAttempts := max(c.maxAttempts, 1)
-	backoff := c.baseDelay
-	var zero T
-	var lastErr error
-	for attempt := range maxAttempts {
-		result, err := func() (T, error) {
-			rctx, cancel := c.requestContext(ctx)
+	return httpx.RetryWithBackoff(ctx, max(c.maxAttempts, 1), c.baseDelay, "arrapi",
+		func(rctx context.Context) (T, error) {
+			rctx, cancel := c.requestContext(rctx)
 			defer cancel()
 			return fn(rctx)
-		}()
-		if err == nil {
-			return result, nil
-		}
-		lastErr = err
-		if ctx.Err() != nil {
-			return zero, ctx.Err()
-		}
-		if !httpx.IsTransient(err) {
-			return zero, err
-		}
-		if attempt == maxAttempts-1 {
-			break
-		}
-		wait := httpx.JitteredBackoff(backoff)
-		if ra := retryAfter(err); ra > 0 {
-			wait = ra
-		}
-		if err := httpx.SleepCtx(ctx, wait); err != nil {
-			return zero, err
-		}
-		backoff = httpx.SafeDouble(backoff)
-	}
-	return zero, lastErr
-}
-
-// retryAfter returns the (capped) Retry-After hint from a *StatusError, or 0.
-func retryAfter(err error) time.Duration {
-	var se *StatusError
-	if errors.As(err, &se) {
-		return se.RetryAfter
-	}
-	return 0
+		})
 }
 
 // fetchAll performs an authenticated GET and decodes the JSON array response,
@@ -268,5 +239,18 @@ func fetchOne[T any](ctx context.Context, c *client, path string) (T, error) {
 			return zero, err
 		}
 		return decodeObject[T](resp, path)
+	})
+}
+
+// fetchPage performs an authenticated GET and decodes a paged-collection JSON object
+// bounded by the list cap, with the same retry policy as fetchAll.
+func fetchPage[T any](ctx context.Context, c *client, path string) (T, error) {
+	return doRetry(ctx, c, func(ctx context.Context) (T, error) {
+		var zero T
+		resp, err := c.get(ctx, path) //nolint:bodyclose // closed by decodePage
+		if err != nil {
+			return zero, err
+		}
+		return decodePage[T](resp, path)
 	})
 }

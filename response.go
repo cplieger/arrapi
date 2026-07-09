@@ -10,14 +10,20 @@ import (
 	"github.com/cplieger/httpx/v2"
 )
 
-// avgItemSize is a conservative lower bound on a decoded list item's JSON size,
-// used only as a pre-allocation hint. Intentionally low so it never
-// over-allocates badly; slice growth handles any undershoot.
+// avgItemSize is a rough per-item JSON size used only to seed slice capacity;
+// the decoder grows the slice as needed, so an undershoot is cheap.
 const avgItemSize = 200
 
+// maxPrealloc caps the speculative capacity so an oversized body cannot drive a
+// large up-front allocation.
+const maxPrealloc = 8192
+
 // statusError drains and closes a non-2xx response and returns a *StatusError
-// carrying the (size-capped) response body and any Retry-After hint.
-func statusError(resp *http.Response, path string) error {
+// carrying the (size-capped) response body and any Retry-After hint. The
+// caller's apiKey is redacted from the captured body so a hostile or
+// compromised endpoint cannot reflect the request credential back into a
+// caller's logs.
+func statusError(resp *http.Response, path, apiKey string) error {
 	body, err := io.ReadAll(io.LimitReader(resp.Body, maxErrorBodyBytes))
 	resp.Body.Close()
 	e := &StatusError{
@@ -26,9 +32,19 @@ func statusError(resp *http.Response, path string) error {
 		RetryAfter: httpx.ParseRetryAfter(resp.Header.Get("Retry-After")),
 	}
 	if err == nil {
-		e.Body = strings.TrimSpace(string(body))
+		e.Body = redactSecret(strings.TrimSpace(string(body)), apiKey)
 	}
 	return e
+}
+
+// redactSecret replaces every occurrence of secret in s with a placeholder. It
+// returns s unchanged when secret is empty, so a client configured without a
+// key (never valid in practice) does not redact arbitrary empty matches.
+func redactSecret(s, secret string) string {
+	if secret == "" {
+		return s
+	}
+	return strings.ReplaceAll(s, secret, "[REDACTED]")
 }
 
 // readBounded reads the response body up to limit bytes and closes it. If the
@@ -53,7 +69,7 @@ func decodeSlice[T any](resp *http.Response, path string) ([]T, error) {
 		return nil, err
 	}
 	var items []T
-	if hint := len(data) / avgItemSize; hint > 0 {
+	if hint := min(len(data)/avgItemSize, maxPrealloc); hint > 0 {
 		items = make([]T, 0, hint)
 	}
 	if err := json.Unmarshal(data, &items); err != nil {
@@ -66,6 +82,21 @@ func decodeSlice[T any](resp *http.Response, path string) ([]T, error) {
 func decodeObject[T any](resp *http.Response, path string) (T, error) {
 	var v T
 	data, err := readBounded(resp, maxObjectBytes, path)
+	if err != nil {
+		return v, err
+	}
+	if err := json.Unmarshal(data, &v); err != nil {
+		return v, fmt.Errorf("arrapi: decode %s: %w", path, err)
+	}
+	return v, nil
+}
+
+// decodePage reads a bounded paged-collection JSON object and decodes it. It uses the
+// list cap (maxListBytes) rather than the single-object cap because a history page
+// wraps an arbitrarily long records array.
+func decodePage[T any](resp *http.Response, path string) (T, error) {
+	var v T
+	data, err := readBounded(resp, maxListBytes, path)
 	if err != nil {
 		return v, err
 	}

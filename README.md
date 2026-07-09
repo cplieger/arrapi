@@ -144,13 +144,14 @@ func main() {
 
 ### Errors
 
-Non-2xx responses surface as `*StatusError` (fields `Code`, `Path`, `Body`, and `RetryAfter`, the capped `Retry-After` hint on a `429`). It implements `httpx.Transient`, so a `429` or any `5xx` is classified as retryable and every `4xx` as permanent. `IsNotFound(err)` and `IsRateLimited(err)` report whether an error is (or wraps) a `*StatusError` with a `404` or `429`. A response body that exceeds the size cap surfaces as `*ResponseTooLargeError` rather than being silently truncated.
+Non-2xx responses surface as `*StatusError` (fields `Code`, `Path`, `Body`, and `RetryAfter`, the capped `Retry-After` hint on a `429`). It implements `httpx.Transient`, so a `429` or any `5xx` is classified as retryable and every `4xx` as permanent, and `httpx.RetryAfterHint`, so `httpx.RetryWithBackoff` waits out that capped `Retry-After` before the next retry instead of its jittered backoff. `IsNotFound(err)` and `IsRateLimited(err)` report whether an error is (or wraps) a `*StatusError` with a `404` or `429`. A response body that exceeds the size cap surfaces as `*ResponseTooLargeError` rather than being silently truncated.
 
 ## Resilience
 
-- Retries `429`, any `5xx`, and transient transport errors (timeouts, connection resets, DNS failures) with jittered exponential backoff, honoring the server's `Retry-After` hint (capped) on a `429`. `4xx` (non-429) and non-transient transport errors fail immediately.
+- Retries `429`, any `5xx`, and transient transport errors (timeouts, connection resets, DNS failures) with jittered exponential backoff (via `httpx.RetryWithBackoff`), honoring the server's `Retry-After` hint (capped) on a `429`. `4xx` (non-429) and non-transient transport errors fail immediately.
+- Retry diagnostics are emitted through `httpx`'s default `slog` logger (a `Debug` line per retry, a `Warn` when retries are exhausted, tagged `arrapi`); the library owns no logger of its own and still returns typed errors regardless.
 - Every request carries the `X-Api-Key` header and a `User-Agent`, and is bounded by `WithTimeout` (spanning the body decode) when the caller's context has none.
-- Redirects to a different host are refused, so the `X-Api-Key` is never forwarded to another origin (Go strips only `Authorization`/`Cookie` headers on cross-host redirects, not custom ones); same-host redirects are followed. A caller-supplied client via `WithHTTPClient` owns its own redirect policy.
+- Redirects are followed only within the same host (via `httpx.RedirectPolicyFunc` with `WithSameHost`), so the `X-Api-Key` is never forwarded to another origin (Go strips only `Authorization`/`Cookie` headers on a cross-host redirect, not custom ones). A same-host `http`->`https` upgrade is followed; a same-host `https`->`http` downgrade is refused so the key never rides a cleartext hop, and a cross-host redirect is refused outright. The policy matches on host only, not port, so a same-host redirect to a different port is also followed. A caller-supplied client via `WithHTTPClient` owns its own redirect policy.
 - Response bodies are size-capped before decoding (64 MB for list endpoints, 1 MB for single objects); an over-cap body is rejected as `*ResponseTooLargeError` rather than truncated.
 - Clients own no long-lived goroutines and hold no locks a caller can observe; a single client is safe for concurrent use.
 

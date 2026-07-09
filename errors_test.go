@@ -1,7 +1,10 @@
 package arrapi_test
 
 import (
+	"errors"
 	"fmt"
+	"net/http"
+	"strings"
 	"testing"
 
 	"github.com/cplieger/arrapi"
@@ -74,5 +77,43 @@ func TestIsNotFound(t *testing.T) {
 				t.Errorf("IsNotFound(%v) = %v, want %v", tc.err, got, tc.want)
 			}
 		})
+	}
+}
+
+func TestResponseTooLargeError_Error(t *testing.T) {
+	e := &arrapi.ResponseTooLargeError{Path: "/api/v3/series", Limit: 64 << 20}
+	want := "arrapi: /api/v3/series: response exceeds 67108864-byte limit"
+	if got := e.Error(); got != want {
+		t.Errorf("Error() = %q, want %q", got, want)
+	}
+}
+
+func TestStatusError_redactsAPIKey(t *testing.T) {
+	// A hostile or misconfigured arr endpoint (or a reverse proxy) may reflect
+	// the request's X-Api-Key back in its error body. The captured StatusError
+	// must redact the exact key so it never reaches a caller's logs.
+	body := "unauthorized: key " + testKey + " is not recognized"
+	rs := newServer(t, http.StatusUnauthorized, body)
+	s := fastSonarr(t, rs.srv.URL, arrapi.WithMaxAttempts(1))
+
+	_, err := s.GetSeries(t.Context())
+	if err == nil {
+		t.Fatal("expected error on 401")
+	}
+	var se *arrapi.StatusError
+	if !errors.As(err, &se) {
+		t.Fatalf("want *StatusError, got %v", err)
+	}
+	if strings.Contains(se.Body, testKey) {
+		t.Errorf("StatusError.Body leaks the API key: %q", se.Body)
+	}
+	if !strings.Contains(se.Body, "[REDACTED]") {
+		t.Errorf("StatusError.Body = %q, want it to contain [REDACTED]", se.Body)
+	}
+	if strings.Contains(se.Error(), testKey) {
+		t.Errorf("Error() leaks the API key: %q", se.Error())
+	}
+	if !strings.Contains(se.Error(), "[REDACTED]") {
+		t.Errorf("Error() = %q, want it to contain [REDACTED]", se.Error())
 	}
 }
