@@ -113,6 +113,7 @@ func main() {
 ### Shared (both clients)
 
 - `GetTags(ctx) ([]Tag, error)` — all tags defined on the instance
+- `ResolveTagIDs(ctx, labels ...string) (ids map[int]struct{}, unmatched []string, err error)` — fetch tags and resolve labels to IDs in one call; returns the matched IDs and the labels that matched no tag (no labels = no request)
 - `GetQualityProfiles(ctx) ([]QualityProfile, error)` — configured quality profiles
 - `GetRootFolders(ctx) ([]RootFolder, error)` — configured root folders
 - `GetSystemStatus(ctx) (SystemStatus, error)` — version and app name
@@ -131,6 +132,7 @@ func main() {
 ### Tag helpers (pure)
 
 - `TagIDs(tags []Tag, labels ...string) map[int]struct{}` — resolve label names to their IDs (case-insensitive, whitespace-trimmed)
+- `UnmatchedLabels(tags []Tag, labels ...string) []string` — the labels (verbatim) that match no tag, for flagging a misconfigured name
 - `HasAnyTag(itemTags []int, ids map[int]struct{}) bool` — does an item carry any of those tag IDs
 
 ### Options
