@@ -35,6 +35,10 @@ const (
 	EventDownloadIgnored EventType = 7
 )
 
+// compile-time assertion that EventType satisfies fmt.Stringer for structured
+// logging.
+var _ fmt.Stringer = EventType(0)
+
 // eventTypeByName maps both services' string event names to the semantic
 // EventType. Sonarr (episode*/series*) and Radarr (movie*) spellings are both
 // included so one map serves either service.

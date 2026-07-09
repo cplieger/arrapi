@@ -78,10 +78,11 @@ func decodeSlice[T any](resp *http.Response, path string) ([]T, error) {
 	return items, nil
 }
 
-// decodeObject reads a bounded single-object JSON response and decodes it.
-func decodeObject[T any](resp *http.Response, path string) (T, error) {
+// decodeBounded reads a JSON response of at most limit bytes and decodes it
+// into a T, rejecting an over-cap body via readBounded.
+func decodeBounded[T any](resp *http.Response, limit int64, path string) (T, error) {
 	var v T
-	data, err := readBounded(resp, maxObjectBytes, path)
+	data, err := readBounded(resp, limit, path)
 	if err != nil {
 		return v, err
 	}
@@ -91,17 +92,14 @@ func decodeObject[T any](resp *http.Response, path string) (T, error) {
 	return v, nil
 }
 
-// decodePage reads a bounded paged-collection JSON object and decodes it. It uses the
-// list cap (maxListBytes) rather than the single-object cap because a history page
-// wraps an arbitrarily long records array.
+// decodeObject reads a bounded single-object JSON response and decodes it.
+func decodeObject[T any](resp *http.Response, path string) (T, error) {
+	return decodeBounded[T](resp, maxObjectBytes, path)
+}
+
+// decodePage reads a bounded paged-collection JSON object and decodes it. It
+// uses the list cap (maxListBytes) rather than the single-object cap because a
+// history page wraps an arbitrarily long records array.
 func decodePage[T any](resp *http.Response, path string) (T, error) {
-	var v T
-	data, err := readBounded(resp, maxListBytes, path)
-	if err != nil {
-		return v, err
-	}
-	if err := json.Unmarshal(data, &v); err != nil {
-		return v, fmt.Errorf("arrapi: decode %s: %w", path, err)
-	}
-	return v, nil
+	return decodeBounded[T](resp, maxListBytes, path)
 }
