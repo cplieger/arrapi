@@ -12,8 +12,9 @@ import (
 // StatusError is a non-2xx HTTP response from a Sonarr or Radarr API. It
 // implements the httpx.Transient interface, so the httpx retry helpers treat a
 // 429 or any 5xx as retryable and every 4xx as permanent. RetryAfter carries
-// the server's Retry-After hint (capped) when the response is a 429/503 and the
-// header is present; it is zero otherwise.
+// the server's Retry-After hint (capped) whenever the response includes a
+// Retry-After header (in practice a 429 or a 503); it is zero otherwise. Only a
+// transient status actually consults it during retry.
 type StatusError struct {
 	Body       string
 	Path       string
@@ -21,9 +22,12 @@ type StatusError struct {
 	Code       int
 }
 
-// compile-time assertion that *StatusError participates in httpx transient
-// classification.
-var _ httpx.Transient = (*StatusError)(nil)
+// compile-time assertions that *StatusError participates in httpx transient
+// classification and carries a retry-wait hint.
+var (
+	_ httpx.Transient      = (*StatusError)(nil)
+	_ httpx.RetryAfterHint = (*StatusError)(nil)
+)
 
 // Error implements the error interface.
 func (e *StatusError) Error() string {
@@ -38,6 +42,13 @@ func (e *StatusError) Error() string {
 func (e *StatusError) IsTransient() bool {
 	return e.Code == http.StatusTooManyRequests || e.Code >= 500
 }
+
+// RetryAfterHint implements httpx.RetryAfterHint: it exposes the capped
+// Retry-After hint so httpx.RetryWithBackoff waits it out before the next retry
+// instead of its jittered backoff. It is zero when the response carried no
+// Retry-After (in practice, anything but a 429 or a 503), in which case
+// RetryWithBackoff falls back to the jittered exponential backoff.
+func (e *StatusError) RetryAfterHint() time.Duration { return e.RetryAfter }
 
 // ResponseTooLargeError is returned when a response body exceeds the client's
 // size cap for that endpoint. The body is rejected rather than truncated, so a

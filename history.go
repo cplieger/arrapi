@@ -53,16 +53,18 @@ var eventTypeByName = map[string]EventType{
 
 // UnmarshalJSON decodes the integer form (Sonarr) or the string form (Radarr).
 // The integer path uses Sonarr's numbering, which is safe because Radarr
-// encodes the event as a string. An unknown string or negative integer decodes
-// to 0 (unknown); HistoryRecord preserves the raw token in RawEventType.
+// encodes the event as a string. An unknown string, negative integer, or
+// unmodeled positive integer decodes to 0 (unknown); HistoryRecord preserves
+// the raw token in RawEventType.
 func (e *EventType) UnmarshalJSON(data []byte) error {
 	var n int
 	if err := json.Unmarshal(data, &n); err == nil {
-		if n < 0 {
+		et := EventType(n)
+		if !isKnownEventType(et) {
 			*e = 0
 			return nil
 		}
-		*e = EventType(n)
+		*e = et
 		return nil
 	}
 	var s string
@@ -73,9 +75,19 @@ func (e *EventType) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
+func isKnownEventType(e EventType) bool {
+	switch e {
+	case EventGrabbed, EventFolderImported, EventDownloadImported, EventDownloadFailed, EventFileDeleted, EventFileRenamed, EventDownloadIgnored:
+		return true
+	default:
+		return false
+	}
+}
+
 // String returns a stable, human-readable name for the event type, suitable
-// for structured logs. Known types return their canonical arr name; any other
-// value (including the zero/unknown type) returns the Go-style EventType(<n>).
+// for structured logs. Known types return a service-agnostic label (which for
+// single-name events matches the arr wire token); any other value (including
+// the zero/unknown type) returns the Go-style EventType(<n>).
 func (e EventType) String() string {
 	switch e {
 	case EventGrabbed:
@@ -191,7 +203,7 @@ func (c *client) GetHistory(ctx context.Context, opts HistoryOptions) (HistoryPa
 	}
 	params.Set("sortKey", "date")
 	params.Set("sortDirection", "descending")
-	return fetchOne[HistoryPage](ctx, c, apiPrefix+"/history?"+params.Encode())
+	return fetchPage[HistoryPage](ctx, c, apiPrefix+"/history?"+params.Encode())
 }
 
 // filterByEventType returns the records whose EventType is among want, matching

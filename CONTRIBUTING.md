@@ -21,11 +21,12 @@ Two invariants are load-bearing:
   compile error instead of a runtime 404.
 - **Transient failures are retried; permanent ones are not.** A non-2xx
   response becomes a `*StatusError`, whose `IsTransient()` returns true for
-  `429` and any `5xx`. The `doRetry` helper composes httpx's retry primitives
-  (`IsTransient`, `JitteredBackoff`, `SafeDouble`, `SleepCtx`,
-  `ParseRetryAfter`) rather than `httpx.RetryWithBackoff`, so it can honor a
-  `429`'s `Retry-After`; keep `StatusError` satisfying `httpx.Transient` and
-  keep the 429/5xx classification. Transport errors are classified by
+  `429` and any `5xx`. The `doRetry` helper delegates to
+  `httpx.RetryWithBackoff` (label `"arrapi"`); `*StatusError` implements
+  `httpx.RetryAfterHint` (returning its capped `RetryAfter`), so a `429`'s
+  `Retry-After` is still honored in place of the jittered backoff. Keep
+  `StatusError` satisfying both `httpx.Transient` and `httpx.RetryAfterHint`,
+  and keep the 429/5xx classification. Transport errors are classified by
   `httpx.IsTransient` (timeouts, resets, DNS). Each attempt's context spans the
   body decode, so a large streamed response is never cancelled mid-read; do not
   move the timeout back into `get`.
@@ -42,9 +43,12 @@ When you add an endpoint:
 - Numeric path parameters (a series ID) are safe to interpolate because they
   are already `int`; never interpolate an unvalidated string into a path.
 - Preserve the client hardening: `newClient` validates the base URL with
-  `url.Parse` (scheme + host, no query/fragment), the default client refuses
-  cross-host redirects so `X-Api-Key` never leaks to another origin, and every
-  request sends a `User-Agent`.
+  `url.Parse` (scheme + host, no query/fragment); the default client's redirect
+  policy is `httpx.RedirectPolicyFunc(httpx.WithSameHost(), httpx.WithMaxHops(10))`,
+  which follows a same-host redirect (including an `http`->`https` upgrade) but
+  refuses a cross-host hop or an `https`->`http` downgrade so `X-Api-Key` never
+  leaks to another origin or onto a cleartext hop; and every request sends a
+  `User-Agent`.
 - Add the DTO to `types.go` with fields ordered for `fieldalignment`
   (pointers/slices/strings, then ints, then bools last), and mirror the
   real arr JSON field names.
