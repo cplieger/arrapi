@@ -2,6 +2,7 @@ package arrapi_test
 
 import (
 	"net/http"
+	"slices"
 	"testing"
 
 	"github.com/cplieger/arrapi"
@@ -74,6 +75,76 @@ func TestGetTags(t *testing.T) {
 	}
 	if got := deref(rs.lastPath.Load()); got != "/api/v3/tag?" {
 		t.Errorf("path = %q, want /api/v3/tag?", got)
+	}
+}
+
+func TestUnmatchedLabels(t *testing.T) {
+	tags := []arrapi.Tag{
+		{ID: 1, Label: "anime"},
+		{ID: 2, Label: "4k"},
+		{ID: 4, Label: "Upgrade"}, // arr lowercases, but be defensive
+	}
+	tests := []struct {
+		name   string
+		labels []string
+		want   []string
+	}{
+		{"all match", []string{"anime", "4k"}, nil},
+		{"one missing", []string{"anime", "documentary"}, []string{"documentary"}},
+		{"case-insensitive match not reported", []string{"ANIME", "upgrade"}, nil},
+		{"whitespace-trimmed match not reported", []string{"  anime  "}, nil},
+		{"empty and whitespace-only ignored", []string{"", "  "}, nil},
+		{"verbatim and input order preserved", []string{"zzz", "yyy"}, []string{"zzz", "yyy"}},
+		{"no labels returns nil", nil, nil},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			got := arrapi.UnmatchedLabels(tags, tc.labels...)
+			if !slices.Equal(got, tc.want) {
+				t.Errorf("UnmatchedLabels(%v) = %v, want %v", tc.labels, got, tc.want)
+			}
+		})
+	}
+}
+
+func TestResolveTagIDs(t *testing.T) {
+	rs := newServer(t, http.StatusOK, `[{"id":1,"label":"anime"},{"id":2,"label":"4k"},{"id":3,"label":"kids"}]`)
+	s := fastSonarr(t, rs.srv.URL)
+
+	ids, unmatched, err := s.ResolveTagIDs(t.Context(), "anime", "KIDS", "documentary")
+	if err != nil {
+		t.Fatalf("ResolveTagIDs: %v", err)
+	}
+	if !sameSet(ids, set(1, 3)) {
+		t.Errorf("ids = %v, want {1,3} (anime + case-insensitive kids)", ids)
+	}
+	if !slices.Equal(unmatched, []string{"documentary"}) {
+		t.Errorf("unmatched = %v, want [documentary]", unmatched)
+	}
+	if got := deref(rs.lastPath.Load()); got != "/api/v3/tag?" {
+		t.Errorf("path = %q, want /api/v3/tag?", got)
+	}
+}
+
+func TestResolveTagIDs_noLabelsSkipsRequest(t *testing.T) {
+	rs := newServer(t, http.StatusOK, `[]`)
+	s := fastSonarr(t, rs.srv.URL)
+
+	ids, unmatched, err := s.ResolveTagIDs(t.Context())
+	if err != nil || ids != nil || unmatched != nil {
+		t.Fatalf("ResolveTagIDs() = (%v, %v, %v), want (nil, nil, nil)", ids, unmatched, err)
+	}
+	if rs.lastPath.Load() != nil {
+		t.Errorf("no-labels ResolveTagIDs issued a request to %q, want none", deref(rs.lastPath.Load()))
+	}
+}
+
+func TestResolveTagIDs_fetchError(t *testing.T) {
+	rs := newServer(t, http.StatusInternalServerError, "boom")
+	s := fastSonarr(t, rs.srv.URL, arrapi.WithMaxAttempts(1))
+
+	if _, _, err := s.ResolveTagIDs(t.Context(), "anime"); err == nil {
+		t.Fatal("expected error when the tag fetch fails")
 	}
 }
 
