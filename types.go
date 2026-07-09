@@ -3,9 +3,11 @@ package arrapi
 // Series is a Sonarr series.
 type Series struct {
 	Statistics       *SeriesStatistics `json:"statistics"`
+	OriginalLanguage *Language         `json:"originalLanguage"`
 	Title            string            `json:"title"`
 	SortTitle        string            `json:"sortTitle"`
 	ImdbID           string            `json:"imdbId"`
+	FirstAired       string            `json:"firstAired"`
 	Path             string            `json:"path"`
 	RootFolderPath   string            `json:"rootFolderPath"`
 	Status           string            `json:"status"`
@@ -52,6 +54,8 @@ type Episode struct {
 	SeasonNumber          int          `json:"seasonNumber"`
 	EpisodeNumber         int          `json:"episodeNumber"`
 	AbsoluteEpisodeNumber int          `json:"absoluteEpisodeNumber"`
+	SceneSeasonNumber     int          `json:"sceneSeasonNumber"`
+	SceneEpisodeNumber    int          `json:"sceneEpisodeNumber"`
 	HasFile               bool         `json:"hasFile"`
 	Monitored             bool         `json:"monitored"`
 }
@@ -70,9 +74,12 @@ type EpisodeFile struct {
 // Movie is a Radarr movie.
 type Movie struct {
 	MovieFile        *MovieFile       `json:"movieFile"`
+	OriginalLanguage *Language        `json:"originalLanguage"`
 	Title            string           `json:"title"`
 	SortTitle        string           `json:"sortTitle"`
 	ImdbID           string           `json:"imdbId"`
+	InCinemas        string           `json:"inCinemas"`
+	DigitalRelease   string           `json:"digitalRelease"`
 	Path             string           `json:"path"`
 	RootFolderPath   string           `json:"rootFolderPath"`
 	Status           string           `json:"status"`
@@ -108,6 +115,14 @@ type MediaInfo struct {
 // AlternateTitle is an alternate title for a series or movie.
 type AlternateTitle struct {
 	Title string `json:"title"`
+}
+
+// Language is a Sonarr/Radarr language reference, such as a series' or movie's
+// original language. Only the identity fields (name + id) are modeled; the arr
+// resource carries no further language detail this client needs.
+type Language struct {
+	Name string `json:"name"`
+	ID   int    `json:"id"`
 }
 
 // Tag is a Sonarr or Radarr tag.
