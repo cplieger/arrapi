@@ -84,9 +84,8 @@ func (c *client) postCommand(ctx context.Context, body commandBody) (Command, er
 	if err != nil {
 		return zero, fmt.Errorf("arrapi: build command %s: %w", body.Name, err)
 	}
-	req.Header.Set(headerAPIKey, c.apiKey)
+	c.setStandardHeaders(req)
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("User-Agent", userAgent)
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {

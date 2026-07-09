@@ -25,10 +25,16 @@ const (
 	// defaultTimeout bounds a single request (including the body decode) when
 	// the caller's context has no deadline; generous enough for a full library.
 	defaultTimeout = 120 * time.Second
-	// safetyTimeout is the hard ceiling on the underlying http.Client. It sits
-	// above defaultTimeout so the per-request context deadline fires first in
-	// normal operation, but catches any path that forgets to set one.
+	// safetyTimeout is the floor for the hard ceiling on the underlying
+	// http.Client. It sits above defaultTimeout so the per-request context
+	// deadline fires first in normal operation, and catches any path that
+	// forgets to set one. When a caller raises the per-request timeout above
+	// this floor (WithTimeout), configuredHTTPClient lifts the client ceiling
+	// above it so the context deadline still fires first.
 	safetyTimeout = 150 * time.Second
+	// safetyMargin keeps the http.Client hard ceiling above the per-request context
+	// deadline so the context (not the client Timeout) fires first on a slow request.
+	safetyMargin = 30 * time.Second
 	// pingTimeout bounds a connectivity check so config validation fails fast.
 	pingTimeout = 5 * time.Second
 	// maxRedirects caps redirect hops (matching net/http's default).
@@ -65,7 +71,7 @@ func newClient(baseURL, apiKey string, opts ...Option) (*client, error) {
 	}
 	cfg := resolveConfig(opts)
 	return &client{
-		httpClient:  configuredHTTPClient(cfg.httpClient),
+		httpClient:  configuredHTTPClient(cfg.httpClient, cfg.timeout),
 		baseURL:     strings.TrimRight(baseURL, "/"),
 		apiKey:      apiKey,
 		baseDelay:   cfg.baseDelay,
@@ -123,12 +129,16 @@ func resolveConfig(opts []Option) config {
 // hop. A same-host http->https upgrade is followed (a reverse proxy that
 // force-redirects to TLS is a common, safe setup). httpx.RedirectPolicyFunc
 // with httpx.WithSameHost is the shared implementation of that policy.
-func configuredHTTPClient(hc *http.Client) *http.Client {
+func configuredHTTPClient(hc *http.Client, perRequestTimeout time.Duration) *http.Client {
 	if hc != nil {
 		return hc
 	}
+	clientTimeout := safetyTimeout
+	if t := perRequestTimeout + safetyMargin; t > clientTimeout {
+		clientTimeout = t
+	}
 	return &http.Client{
-		Timeout:       safetyTimeout,
+		Timeout:       clientTimeout,
 		Transport:     newTransport(),
 		CheckRedirect: httpx.RedirectPolicyFunc(httpx.WithSameHost(), httpx.WithMaxHops(maxRedirects)),
 	}
@@ -143,6 +153,13 @@ func newTransport() *http.Transport {
 	}
 }
 
+// setStandardHeaders sets the authentication and identification headers that
+// every arrapi request carries.
+func (c *client) setStandardHeaders(req *http.Request) {
+	req.Header.Set(headerAPIKey, c.apiKey)
+	req.Header.Set("User-Agent", userAgent)
+}
+
 // get performs an authenticated GET and returns the response on a 200 status;
 // the caller must close the response body. A non-200 status is returned as a
 // *StatusError (its body drained and closed here). The context bounds the whole
@@ -152,8 +169,7 @@ func (c *client) get(ctx context.Context, path string) (*http.Response, error) {
 	if err != nil {
 		return nil, fmt.Errorf("arrapi: build request %s: %w", path, err)
 	}
-	req.Header.Set(headerAPIKey, c.apiKey)
-	req.Header.Set("User-Agent", userAgent)
+	c.setStandardHeaders(req)
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
