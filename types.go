@@ -2,27 +2,27 @@ package arrapi
 
 // Series is a Sonarr series.
 type Series struct {
-	Statistics       *SeriesStatistics `json:"statistics,omitempty"`
+	Statistics       *SeriesStatistics `json:"statistics"`
 	Title            string            `json:"title"`
-	SortTitle        string            `json:"sortTitle,omitempty"`
-	ImdbID           string            `json:"imdbId,omitempty"`
-	Path             string            `json:"path,omitempty"`
-	RootFolderPath   string            `json:"rootFolderPath,omitempty"`
-	Status           string            `json:"status,omitempty"`
-	Seasons          []Season          `json:"seasons,omitempty"`
-	AlternateTitles  []AlternateTitle  `json:"alternateTitles,omitempty"`
+	SortTitle        string            `json:"sortTitle"`
+	ImdbID           string            `json:"imdbId"`
+	Path             string            `json:"path"`
+	RootFolderPath   string            `json:"rootFolderPath"`
+	Status           string            `json:"status"`
+	Seasons          []Season          `json:"seasons"`
+	AlternateTitles  []AlternateTitle  `json:"alternateTitles"`
 	Tags             []int             `json:"tags"`
 	ID               int               `json:"id"`
 	TvdbID           int               `json:"tvdbId"`
-	TmdbID           int               `json:"tmdbId,omitempty"`
+	TmdbID           int               `json:"tmdbId"`
 	Year             int               `json:"year"`
-	QualityProfileID int               `json:"qualityProfileId,omitempty"`
+	QualityProfileID int               `json:"qualityProfileId"`
 	Monitored        bool              `json:"monitored"`
 }
 
 // Season is per-season metadata on a Sonarr series.
 type Season struct {
-	Statistics   *SeasonStatistics `json:"statistics,omitempty"`
+	Statistics   *SeasonStatistics `json:"statistics"`
 	SeasonNumber int               `json:"seasonNumber"`
 	Monitored    bool              `json:"monitored"`
 }
@@ -44,65 +44,65 @@ type SeriesStatistics struct {
 
 // Episode is a Sonarr episode.
 type Episode struct {
-	EpisodeFile           *EpisodeFile `json:"episodeFile,omitempty"`
-	Title                 string       `json:"title,omitempty"`
-	AirDate               string       `json:"airDate,omitempty"`
+	EpisodeFile           *EpisodeFile `json:"episodeFile"`
+	Title                 string       `json:"title"`
+	AirDate               string       `json:"airDate"`
 	ID                    int          `json:"id"`
 	SeriesID              int          `json:"seriesId"`
 	SeasonNumber          int          `json:"seasonNumber"`
 	EpisodeNumber         int          `json:"episodeNumber"`
-	AbsoluteEpisodeNumber int          `json:"absoluteEpisodeNumber,omitempty"`
+	AbsoluteEpisodeNumber int          `json:"absoluteEpisodeNumber"`
 	HasFile               bool         `json:"hasFile"`
 	Monitored             bool         `json:"monitored"`
 }
 
 // EpisodeFile holds file details for a Sonarr episode.
 type EpisodeFile struct {
-	MediaInfo    *MediaInfo `json:"mediaInfo,omitempty"`
-	RelativePath string     `json:"relativePath,omitempty"`
-	Path         string     `json:"path,omitempty"`
-	SceneName    string     `json:"sceneName,omitempty"`
-	ReleaseGroup string     `json:"releaseGroup,omitempty"`
+	MediaInfo    *MediaInfo `json:"mediaInfo"`
+	RelativePath string     `json:"relativePath"`
+	Path         string     `json:"path"`
+	SceneName    string     `json:"sceneName"`
+	ReleaseGroup string     `json:"releaseGroup"`
 	ID           int        `json:"id"`
 	Size         int64      `json:"size"`
 }
 
 // Movie is a Radarr movie.
 type Movie struct {
-	MovieFile        *MovieFile       `json:"movieFile,omitempty"`
+	MovieFile        *MovieFile       `json:"movieFile"`
 	Title            string           `json:"title"`
-	SortTitle        string           `json:"sortTitle,omitempty"`
-	ImdbID           string           `json:"imdbId,omitempty"`
-	Path             string           `json:"path,omitempty"`
-	RootFolderPath   string           `json:"rootFolderPath,omitempty"`
-	Status           string           `json:"status,omitempty"`
-	AlternateTitles  []AlternateTitle `json:"alternateTitles,omitempty"`
+	SortTitle        string           `json:"sortTitle"`
+	ImdbID           string           `json:"imdbId"`
+	Path             string           `json:"path"`
+	RootFolderPath   string           `json:"rootFolderPath"`
+	Status           string           `json:"status"`
+	AlternateTitles  []AlternateTitle `json:"alternateTitles"`
 	Tags             []int            `json:"tags"`
 	ID               int              `json:"id"`
 	TmdbID           int              `json:"tmdbId"`
 	Year             int              `json:"year"`
-	QualityProfileID int              `json:"qualityProfileId,omitempty"`
+	QualityProfileID int              `json:"qualityProfileId"`
 	HasFile          bool             `json:"hasFile"`
 	Monitored        bool             `json:"monitored"`
 }
 
 // MovieFile holds file details for a Radarr movie.
 type MovieFile struct {
-	MediaInfo    *MediaInfo `json:"mediaInfo,omitempty"`
-	RelativePath string     `json:"relativePath,omitempty"`
-	Path         string     `json:"path,omitempty"`
-	SceneName    string     `json:"sceneName,omitempty"`
-	ReleaseGroup string     `json:"releaseGroup,omitempty"`
+	MediaInfo    *MediaInfo `json:"mediaInfo"`
+	RelativePath string     `json:"relativePath"`
+	Path         string     `json:"path"`
+	SceneName    string     `json:"sceneName"`
+	ReleaseGroup string     `json:"releaseGroup"`
 	ID           int        `json:"id"`
 	Size         int64      `json:"size"`
 }
 
 // MediaInfo holds media-analysis details for an episode or movie file.
 type MediaInfo struct {
-	AudioLanguages string `json:"audioLanguages,omitempty"`
-	Subtitles      string `json:"subtitles,omitempty"`
-	VideoCodec     string `json:"videoCodec,omitempty"`
-	AudioCodec     string `json:"audioCodec,omitempty"`
+	AudioLanguages string `json:"audioLanguages"`
+	Subtitles      string `json:"subtitles"`
+	VideoCodec     string `json:"videoCodec"`
+	AudioCodec     string `json:"audioCodec"`
 }
 
 // AlternateTitle is an alternate title for a series or movie.
@@ -120,8 +120,8 @@ type Tag struct {
 // connectivity checks and version reporting.
 type SystemStatus struct {
 	Version      string `json:"version"`
-	AppName      string `json:"appName,omitempty"`
-	InstanceName string `json:"instanceName,omitempty"`
+	AppName      string `json:"appName"`
+	InstanceName string `json:"instanceName"`
 }
 
 // QualityProfile is a Sonarr or Radarr quality profile. Only the identity
@@ -135,6 +135,6 @@ type QualityProfile struct {
 type RootFolder struct {
 	Path       string `json:"path"`
 	ID         int    `json:"id"`
-	FreeSpace  int64  `json:"freeSpace,omitempty"`
-	Accessible bool   `json:"accessible,omitempty"`
+	FreeSpace  int64  `json:"freeSpace"`
+	Accessible bool   `json:"accessible"`
 }

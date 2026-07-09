@@ -4,6 +4,7 @@
 [![Go version](https://img.shields.io/github/go-mod/go-version/cplieger/arrapi)](https://github.com/cplieger/arrapi/blob/main/go.mod)
 [![Test coverage](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/cplieger/arrapi/badges/coverage.json)](https://github.com/cplieger/arrapi/actions/workflows/coverage.yml)
 [![Mutation](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/cplieger/arrapi/badges/mutation.json)](https://github.com/cplieger/arrapi/issues?q=label%3Agremlins-tracker)
+[![OpenSSF Best Practices](https://www.bestpractices.dev/projects/13541/badge)](https://www.bestpractices.dev/projects/13541)
 [![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/cplieger/arrapi/badge)](https://scorecard.dev/viewer/?uri=github.com/cplieger/arrapi)
 
 > Typed, resilient Go clients for the Sonarr and Radarr v3 APIs
@@ -91,20 +92,23 @@ func main() {
 - `NewSonarr(baseURL, apiKey string, opts ...Option) (*Sonarr, error)`
 - `NewRadarr(baseURL, apiKey string, opts ...Option) (*Radarr, error)`
 
-`baseURL` must be an absolute `http(s)` URL; `apiKey` must be non-empty. Both are validated at construction.
+`baseURL` must be an absolute `http(s)` URL with a host and no query or fragment (a path is allowed, for reverse-proxy sub-paths); `apiKey` must be non-empty. Both are validated at construction.
 
 ### Sonarr
 
 - `GetSeries(ctx) ([]Series, error)` — every series in the library
+- `GetSeriesByID(ctx, seriesID int) (Series, error)` — a single series by ID (`IsNotFound` reports a missing ID)
 - `GetEpisodes(ctx, seriesID int) ([]Episode, error)` — episodes for a series, including episode-file details
-- `RescanSeries(ctx, seriesID int) error` — rescan the series' folder for new or changed files
-- `RefreshSeries(ctx, seriesID int) error` — refresh series metadata and rescan
+- `GetEpisodeByID(ctx, episodeID int) (Episode, error)` — a single episode by ID (`IsNotFound` reports a missing ID)
+- `RescanSeries(ctx, seriesID int) (Command, error)` — rescan the series' folder for new or changed files; returns the queued command
+- `RefreshSeries(ctx, seriesID int) (Command, error)` — refresh series metadata and rescan; returns the queued command
 
 ### Radarr
 
 - `GetMovies(ctx) ([]Movie, error)` — every movie in the library
-- `RescanMovie(ctx, movieID int) error` — rescan the movie's folder for new or changed files
-- `RefreshMovie(ctx, movieID int) error` — refresh movie metadata and rescan
+- `GetMovieByID(ctx, movieID int) (Movie, error)` — a single movie by ID (`IsNotFound` reports a missing ID)
+- `RescanMovie(ctx, movieID int) (Command, error)` — rescan the movie's folder for new or changed files; returns the queued command
+- `RefreshMovie(ctx, movieID int) (Command, error)` — refresh movie metadata and rescan; returns the queued command
 
 ### Shared (both clients)
 
@@ -112,13 +116,17 @@ func main() {
 - `GetQualityProfiles(ctx) ([]QualityProfile, error)` — configured quality profiles
 - `GetRootFolders(ctx) ([]RootFolder, error)` — configured root folders
 - `GetSystemStatus(ctx) (SystemStatus, error)` — version and app name
-- `GetHistorySince(ctx, since time.Time, eventType EventType) ([]HistoryRecord, error)` — history events on or after `since`, optionally filtered to one `EventType` (`0` = all)
+- `GetHistorySince(ctx, since time.Time, eventTypes ...EventType) ([]HistoryRecord, error)` — history events on or after `since`, newest first; pass one or more `EventType`s to filter (client-side), or none for all
+- `GetHistory(ctx, opts HistoryOptions) (HistoryPage, error)` — one page of history (newest first), bounded by page size for backfills and large scans
+- `GetCommandByID(ctx, id int) (Command, error)` — the state of a queued command, to poll a rescan or refresh to completion
 - `Ping(ctx) error` — connectivity + credential check with a short timeout (no retry)
 - `Close()` — release idle connections; safe to call more than once
 
 ### History types
 
-`GetHistorySince` returns `[]HistoryRecord` (`Date`, `EventType`, `SourceTitle`, `SeriesID`/`EpisodeID` for Sonarr or `MovieID` for Radarr, plus a `Data` map). `HistoryRecord.ImportedPath()` pulls the imported file path from a download-import event. `EventType` decodes both Sonarr's integer and Radarr's string encodings; the exported constants are `EventGrabbed`, `EventDownloadImported`, `EventDownloadFailed`, `EventFileDeleted`, and `EventFileRenamed`.
+`GetHistorySince` returns `[]HistoryRecord` (`Date`, `EventType`, `SourceTitle`, `SeriesID`/`EpisodeID` for Sonarr or `MovieID` for Radarr, plus a `Data` map). `HistoryRecord.ImportedPath()` pulls the imported file path from a download-import event. `EventType` decodes both Sonarr's integer and Radarr's string encodings; the exported constants are `EventGrabbed`, `EventFolderImported`, `EventDownloadImported`, `EventDownloadFailed`, `EventFileDeleted`, `EventFileRenamed`, and `EventDownloadIgnored`. It implements `fmt.Stringer` for logs, and an unrecognized upstream event decodes to `0` with its raw name preserved in `HistoryRecord.RawEventType`. Event filtering is client-side: the arr `eventType` query parameter is numbered per service (Sonarr and Radarr disagree on the integers), so a server-side filter is not portable.
+
+`GetHistory` returns a `HistoryPage` (`Records`, `Page`, `PageSize`, `TotalRecords`) for bounded paging; `HistoryOptions` sets `Page` and `PageSize`.
 
 ### Tag helpers (pure)
 
@@ -136,14 +144,14 @@ func main() {
 
 ### Errors
 
-Non-2xx responses surface as `*StatusError` (fields `Code`, `Path`, `Body`). It implements `httpx.Transient`, so a `429` or any `5xx` is classified as retryable and every `4xx` as permanent. `IsNotFound(err)` reports whether an error is (or wraps) a `*StatusError` with a `404`.
+Non-2xx responses surface as `*StatusError` (fields `Code`, `Path`, `Body`, and `RetryAfter`, the capped `Retry-After` hint on a `429`). It implements `httpx.Transient`, so a `429` or any `5xx` is classified as retryable and every `4xx` as permanent. `IsNotFound(err)` and `IsRateLimited(err)` report whether an error is (or wraps) a `*StatusError` with a `404` or `429`. A response body that exceeds the size cap surfaces as `*ResponseTooLargeError` rather than being silently truncated.
 
 ## Resilience
 
-- Retries `429`, any `5xx`, and transient transport errors (timeouts, connection resets, DNS failures) with jittered exponential backoff. `4xx` (non-429) and non-transient transport errors fail immediately.
-- Every request carries the `X-Api-Key` header and is bounded by `WithTimeout` when the caller's context has none.
-- Response bodies are size-capped before decoding (64 MB for list endpoints, 1 MB for single objects) to guard against oversized or malicious payloads.
-- Concurrent identical reads (two goroutines both calling `GetSeries`, say) are coalesced into one upstream request via singleflight; a coalesced result may be shared, so treat a returned slice as read-only. History and commands are never coalesced.
+- Retries `429`, any `5xx`, and transient transport errors (timeouts, connection resets, DNS failures) with jittered exponential backoff, honoring the server's `Retry-After` hint (capped) on a `429`. `4xx` (non-429) and non-transient transport errors fail immediately.
+- Every request carries the `X-Api-Key` header and a `User-Agent`, and is bounded by `WithTimeout` (spanning the body decode) when the caller's context has none.
+- Redirects to a different host are refused, so the `X-Api-Key` is never forwarded to another origin (Go strips only `Authorization`/`Cookie` headers on cross-host redirects, not custom ones); same-host redirects are followed. A caller-supplied client via `WithHTTPClient` owns its own redirect policy.
+- Response bodies are size-capped before decoding (64 MB for list endpoints, 1 MB for single objects); an over-cap body is rejected as `*ResponseTooLargeError` rather than truncated.
 - Clients own no long-lived goroutines and hold no locks a caller can observe; a single client is safe for concurrent use.
 
 ## Unsupported by Design

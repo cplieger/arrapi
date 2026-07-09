@@ -4,18 +4,15 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"sync"
-	"sync/atomic"
 	"testing"
-	"time"
 )
 
-// TestGetSeries_coalescesConcurrentCalls verifies singleflight collapses
-// concurrent identical reads into a single upstream request.
-func TestGetSeries_coalescesConcurrentCalls(t *testing.T) {
-	var calls atomic.Int64
+// TestGetSeries_concurrentCallsAreSafe fires many simultaneous reads at one
+// client under the race detector; each caller must get its own correct result.
+// arrapi does not coalesce identical reads, so every call reaches upstream, but
+// a single client is documented as safe for concurrent use.
+func TestGetSeries_concurrentCallsAreSafe(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-		calls.Add(1)
-		time.Sleep(40 * time.Millisecond) // hold the flight open so callers pile up
 		_, _ = w.Write([]byte(`[{"id":1,"title":"x"}]`))
 	}))
 	t.Cleanup(srv.Close)
@@ -42,8 +39,5 @@ func TestGetSeries_coalescesConcurrentCalls(t *testing.T) {
 		if lens[i] != 1 {
 			t.Errorf("caller %d got %d series, want 1", i, lens[i])
 		}
-	}
-	if got := calls.Load(); got != 1 {
-		t.Errorf("upstream saw %d requests, want 1 (coalesced)", got)
 	}
 }

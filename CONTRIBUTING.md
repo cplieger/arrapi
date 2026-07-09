@@ -21,32 +21,47 @@ Two invariants are load-bearing:
   compile error instead of a runtime 404.
 - **Transient failures are retried; permanent ones are not.** A non-2xx
   response becomes a `*StatusError`, whose `IsTransient()` returns true for
-  `429` and any `5xx`. That method is how `httpx.RetryWithBackoff` decides to
-  retry (via the `httpx.Transient` interface), so keep `StatusError`
-  satisfying `httpx.Transient` and keep the 429/5xx classification. Transport
-  errors are classified by `httpx.IsTransient` (timeouts, resets, DNS).
+  `429` and any `5xx`. The `doRetry` helper composes httpx's retry primitives
+  (`IsTransient`, `JitteredBackoff`, `SafeDouble`, `SleepCtx`,
+  `ParseRetryAfter`) rather than `httpx.RetryWithBackoff`, so it can honor a
+  `429`'s `Retry-After`; keep `StatusError` satisfying `httpx.Transient` and
+  keep the 429/5xx classification. Transport errors are classified by
+  `httpx.IsTransient` (timeouts, resets, DNS). Each attempt's context spans the
+  body decode, so a large streamed response is never cancelled mid-read; do not
+  move the timeout back into `get`.
 
 When you add an endpoint:
 
 - Route it through `fetchAll[T]` (list) or `fetchOne[T]` (single object) so
   it inherits authentication, the per-request timeout, bounded reads, and
   retry. Don't build a bespoke request path.
-- Bound every response body before decoding (`maxListBytes` /
-  `maxObjectBytes`), and cap captured error bodies at `maxErrorBodyBytes`.
+- Bound every response body before decoding via `readBounded` (`maxListBytes`
+  / `maxObjectBytes`), which rejects an over-cap body as
+  `*ResponseTooLargeError` rather than truncating it; cap captured error bodies
+  at `maxErrorBodyBytes`.
 - Numeric path parameters (a series ID) are safe to interpolate because they
   are already `int`; never interpolate an unvalidated string into a path.
+- Preserve the client hardening: `newClient` validates the base URL with
+  `url.Parse` (scheme + host, no query/fragment), the default client refuses
+  cross-host redirects so `X-Api-Key` never leaks to another origin, and every
+  request sends a `User-Agent`.
 - Add the DTO to `types.go` with fields ordered for `fieldalignment`
   (pointers/slices/strings, then ints, then bools last), and mirror the
   real arr JSON field names.
 
 ## Scope
 
-The library covers the **read + connectivity** surface. The write/command
-surface (history polling, rescan/refresh), quality-profile and root-folder
-getters, and request coalescing are intentionally not implemented yet — see
-the "Unsupported by Design" table in `README.md`. Add them as non-breaking
-methods when an internal consumer actually needs them, so the API is shaped
-by real usage rather than guessed at.
+The library covers **read + connectivity + rescan/refresh**: series and
+episodes (Sonarr), movies (Radarr), the shared tags / quality-profiles /
+root-folders / system-status / history endpoints, and the rescan/refresh
+commands. The deliberate non-goals (adding/editing/deleting media,
+quality-profile item and cutoff detail, and indexer/download-client/
+notification config) are listed in the "Unsupported by Design" table in
+`README.md`; treat them as a contract, not a TODO list.
+
+Reads are not coalesced. A single client holds no locks and owns no
+background goroutines; a caller that wants to deduplicate concurrent fetches
+should cache at its own layer rather than expect the client to.
 
 ## Local development
 
@@ -91,6 +106,12 @@ dependency — the correct thing to fake). Match the file to the unit:
 - `arrapi_test.go` — construction validation, request path/header
   assertions, decode, retry-on-transient, exhaustion, timeout, and context
   cancellation, all driven through the exported clients.
+- `resilience_test.go` — a large streamed body (the context-cancel guard),
+  cross-host redirect refusal, over-limit rejection, `Retry-After` honoring,
+  and the `User-Agent` header.
+- `history_test.go` — event-type decoding, client-side history filtering
+  (including the Radarr renamed-vs-deleted regression), and paging.
+- `command_test.go` — command POST bodies and the returned command resource.
 - `tags_test.go` — table-driven tests for the pure `TagIDs` / `HasAnyTag`
   helpers.
 - `errors_test.go` — `StatusError` formatting, `IsTransient` classification,

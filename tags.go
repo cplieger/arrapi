@@ -7,9 +7,7 @@ import (
 
 // GetTags returns all tags defined in the Sonarr or Radarr instance.
 func (c *client) GetTags(ctx context.Context) ([]Tag, error) {
-	return doSingleflight(ctx, c, "tags", func(fctx context.Context) ([]Tag, error) {
-		return fetchAll[Tag](fctx, c, apiPrefix+"/tag")
-	})
+	return fetchAll[Tag](ctx, c, apiPrefix+"/tag")
 }
 
 // TagIDs returns the set of tag IDs whose labels match any of the given labels.

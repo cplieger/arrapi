@@ -5,11 +5,11 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"net/url"
 	"strings"
 	"time"
 
 	"github.com/cplieger/httpx/v2"
-	"golang.org/x/sync/singleflight"
 )
 
 const (
@@ -17,11 +17,13 @@ const (
 	apiPrefix = "/api/v3"
 	// headerAPIKey is the header both services authenticate with.
 	headerAPIKey = "X-Api-Key" //nolint:gosec // G101 false positive: HTTP header name, not a credential
+	// userAgent identifies this client to the arr instance.
+	userAgent = "arrapi (+https://github.com/cplieger/arrapi)"
 
 	defaultMaxAttempts = 3
 	defaultBaseDelay   = time.Second
-	// defaultTimeout bounds a single request when the caller's context has no
-	// deadline; it is generous enough for a full library JSON response.
+	// defaultTimeout bounds a single request (including the body decode) when
+	// the caller's context has no deadline; generous enough for a full library.
 	defaultTimeout = 120 * time.Second
 	// safetyTimeout is the hard ceiling on the underlying http.Client. It sits
 	// above defaultTimeout so the per-request context deadline fires first in
@@ -29,6 +31,8 @@ const (
 	safetyTimeout = 150 * time.Second
 	// pingTimeout bounds a connectivity check so config validation fails fast.
 	pingTimeout = 5 * time.Second
+	// maxRedirects caps redirect hops (matching net/http's default).
+	maxRedirects = 10
 
 	// maxListBytes caps a bulk list response (series/movies) before decoding.
 	maxListBytes = 64 << 20
@@ -43,7 +47,6 @@ const (
 // endpoints common to both services (GetTags, GetSystemStatus, Ping, Close) are
 // promoted from here.
 type client struct {
-	sfGroup     singleflight.Group
 	httpClient  *http.Client
 	baseURL     string
 	apiKey      string
@@ -53,11 +56,16 @@ type client struct {
 }
 
 // newClient validates the connection parameters, applies the options, and
-// returns a ready client. baseURL must be an absolute http(s) URL and apiKey
-// must be non-empty.
+// returns a ready client. baseURL must be an absolute http(s) URL with a host
+// and no query or fragment (a path is allowed, for reverse-proxy sub-paths);
+// apiKey must be non-empty.
 func newClient(baseURL, apiKey string, opts ...Option) (*client, error) {
-	if !strings.HasPrefix(baseURL, "http://") && !strings.HasPrefix(baseURL, "https://") {
-		return nil, fmt.Errorf("arrapi: baseURL must start with http:// or https://, got %q", baseURL)
+	u, err := url.Parse(baseURL)
+	if err != nil {
+		return nil, fmt.Errorf("arrapi: invalid baseURL %q: %w", baseURL, err)
+	}
+	if (u.Scheme != "http" && u.Scheme != "https") || u.Host == "" || u.RawQuery != "" || u.Fragment != "" {
+		return nil, fmt.Errorf("arrapi: baseURL must be an absolute http(s) URL with a host and no query or fragment, got %q", baseURL)
 	}
 	if strings.TrimSpace(apiKey) == "" {
 		return nil, errors.New("arrapi: apiKey must not be empty")
@@ -85,7 +93,11 @@ func newClient(baseURL, apiKey string, opts ...Option) (*client, error) {
 
 	hc := cfg.httpClient
 	if hc == nil {
-		hc = &http.Client{Timeout: safetyTimeout, Transport: newTransport()}
+		hc = &http.Client{
+			Timeout:       safetyTimeout,
+			Transport:     newTransport(),
+			CheckRedirect: sameHostRedirect,
+		}
 	}
 
 	return &client{
@@ -107,22 +119,34 @@ func newTransport() *http.Transport {
 	}
 }
 
-// get performs an authenticated GET and returns the response on a 2xx status;
-// the caller must close the response body. A non-2xx status is returned as a
-// *StatusError (its body drained and closed here). If the context carries no
-// deadline, the client's per-request timeout is applied.
-func (c *client) get(ctx context.Context, path string) (*http.Response, error) {
-	if _, ok := ctx.Deadline(); !ok && c.timeout > 0 {
-		var cancel context.CancelFunc
-		ctx, cancel = context.WithTimeout(ctx, c.timeout)
-		defer cancel()
+// sameHostRedirect refuses to follow a redirect to a different host. Go strips
+// only Authorization/Cookie-class headers across a cross-host redirect, not a
+// custom header, so following one would forward the X-Api-Key to another
+// origin. Same-host redirects are allowed up to maxRedirects.
+func sameHostRedirect(req *http.Request, via []*http.Request) error {
+	if len(via) == 0 {
+		return nil
 	}
+	if req.URL.Host != via[0].URL.Host {
+		return fmt.Errorf("arrapi: refusing redirect to a different host %q", req.URL.Host)
+	}
+	if len(via) >= maxRedirects {
+		return fmt.Errorf("arrapi: stopped after %d redirects", maxRedirects)
+	}
+	return nil
+}
 
+// get performs an authenticated GET and returns the response on a 200 status;
+// the caller must close the response body. A non-200 status is returned as a
+// *StatusError (its body drained and closed here). The context bounds the whole
+// request; the caller must not cancel it before the body is read.
+func (c *client) get(ctx context.Context, path string) (*http.Response, error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, c.baseURL+path, http.NoBody)
 	if err != nil {
 		return nil, fmt.Errorf("arrapi: build request %s: %w", path, err)
 	}
 	req.Header.Set(headerAPIKey, c.apiKey)
+	req.Header.Set("User-Agent", userAgent)
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
@@ -152,67 +176,97 @@ func (c *client) Ping(ctx context.Context) error {
 
 // GetSystemStatus returns the instance's system status (version, app name).
 func (c *client) GetSystemStatus(ctx context.Context) (SystemStatus, error) {
-	return doSingleflight(ctx, c, "system/status", func(fctx context.Context) (SystemStatus, error) {
-		return fetchOne[SystemStatus](fctx, c, apiPrefix+"/system/status")
-	})
+	return fetchOne[SystemStatus](ctx, c, apiPrefix+"/system/status")
 }
 
 // Close releases idle connections held by the client's HTTP transport. It is
 // safe to call more than once.
 func (c *client) Close() { c.httpClient.CloseIdleConnections() }
 
-// doSingleflight coalesces concurrent calls that share a key so only one HTTP
-// request is in flight per key; late callers receive the shared result. The
-// inner function runs on a cancellation-decoupled context so one caller's
-// cancellation does not abort the flight for the others; each caller still
-// observes its own context via the select. A coalesced read's result may be
-// shared across callers, so treat a returned slice as read-only.
-func doSingleflight[T any](ctx context.Context, c *client, key string, fn func(context.Context) (T, error)) (T, error) {
-	ch := c.sfGroup.DoChan(key, func() (any, error) {
-		return fn(context.WithoutCancel(ctx))
-	})
-	select {
-	case <-ctx.Done():
-		var zero T
-		return zero, ctx.Err()
-	case res := <-ch:
-		if res.Err != nil {
-			var zero T
-			return zero, res.Err
-		}
-		v, ok := res.Val.(T)
-		if !ok {
-			var zero T
-			return zero, fmt.Errorf("arrapi: singleflight result type mismatch for %q", key)
-		}
-		return v, nil
+// requestContext derives a context bounded by the client's per-request timeout
+// when the caller's context carries no deadline. The returned cancel must be
+// called only after the response body has been fully read, so the deadline
+// spans both the request and its decode.
+func (c *client) requestContext(ctx context.Context) (context.Context, context.CancelFunc) {
+	if _, ok := ctx.Deadline(); !ok && c.timeout > 0 {
+		return context.WithTimeout(ctx, c.timeout)
 	}
+	return ctx, func() {}
+}
+
+// doRetry calls fn up to c.maxAttempts times, retrying transient failures (429,
+// any 5xx, transient transport errors) with jittered exponential backoff, or
+// the server's Retry-After hint when a *StatusError carries one. Each attempt
+// runs under a per-attempt context that spans the whole request and decode, so
+// the deadline is never cancelled mid-body. GETs are idempotent, so retry is
+// safe. It composes httpx's retry primitives rather than httpx.RetryWithBackoff
+// so it can honor Retry-After.
+func doRetry[T any](ctx context.Context, c *client, fn func(context.Context) (T, error)) (T, error) {
+	maxAttempts := max(c.maxAttempts, 1)
+	backoff := c.baseDelay
+	var zero T
+	var lastErr error
+	for attempt := range maxAttempts {
+		result, err := func() (T, error) {
+			rctx, cancel := c.requestContext(ctx)
+			defer cancel()
+			return fn(rctx)
+		}()
+		if err == nil {
+			return result, nil
+		}
+		lastErr = err
+		if ctx.Err() != nil {
+			return zero, ctx.Err()
+		}
+		if !httpx.IsTransient(err) {
+			return zero, err
+		}
+		if attempt == maxAttempts-1 {
+			break
+		}
+		wait := httpx.JitteredBackoff(backoff)
+		if ra := retryAfter(err); ra > 0 {
+			wait = ra
+		}
+		if err := httpx.SleepCtx(ctx, wait); err != nil {
+			return zero, err
+		}
+		backoff = httpx.SafeDouble(backoff)
+	}
+	return zero, lastErr
+}
+
+// retryAfter returns the (capped) Retry-After hint from a *StatusError, or 0.
+func retryAfter(err error) time.Duration {
+	var se *StatusError
+	if errors.As(err, &se) {
+		return se.RetryAfter
+	}
+	return 0
 }
 
 // fetchAll performs an authenticated GET and decodes the JSON array response,
-// retrying transient failures (429, 5xx, transient transport errors) with
-// jittered exponential backoff. GETs are idempotent, so retry is safe.
+// with retry (see doRetry).
 func fetchAll[T any](ctx context.Context, c *client, path string) ([]T, error) {
-	return httpx.RetryWithBackoff(ctx, c.maxAttempts, c.baseDelay, "arrapi "+path,
-		func(ctx context.Context) ([]T, error) {
-			resp, err := c.get(ctx, path) //nolint:bodyclose // closed by decodeSlice
-			if err != nil {
-				return nil, err
-			}
-			return decodeSlice[T](resp, path)
-		})
+	return doRetry(ctx, c, func(ctx context.Context) ([]T, error) {
+		resp, err := c.get(ctx, path) //nolint:bodyclose // closed by decodeSlice
+		if err != nil {
+			return nil, err
+		}
+		return decodeSlice[T](resp, path)
+	})
 }
 
-// fetchOne performs an authenticated GET and decodes a single JSON object,
-// with the same retry policy as fetchAll.
+// fetchOne performs an authenticated GET and decodes a single JSON object, with
+// the same retry policy as fetchAll.
 func fetchOne[T any](ctx context.Context, c *client, path string) (T, error) {
-	return httpx.RetryWithBackoff(ctx, c.maxAttempts, c.baseDelay, "arrapi "+path,
-		func(ctx context.Context) (T, error) {
-			var zero T
-			resp, err := c.get(ctx, path) //nolint:bodyclose // closed by decodeObject
-			if err != nil {
-				return zero, err
-			}
-			return decodeObject[T](resp, path)
-		})
+	return doRetry(ctx, c, func(ctx context.Context) (T, error) {
+		var zero T
+		resp, err := c.get(ctx, path) //nolint:bodyclose // closed by decodeObject
+		if err != nil {
+			return zero, err
+		}
+		return decodeObject[T](resp, path)
+	})
 }
