@@ -1,6 +1,7 @@
 package arrapi
 
 import (
+	"net/url"
 	"strconv"
 	"strings"
 )
@@ -33,5 +34,21 @@ func webURL(baseURL, segment, idOrSlug string) string {
 	if baseURL == "" || idOrSlug == "" {
 		return ""
 	}
-	return strings.TrimRight(baseURL, "/") + "/" + segment + "/" + idOrSlug
+	return strings.TrimRight(baseURL, "/") + "/" + segment + "/" + escapeWebPathSegment(idOrSlug)
+}
+
+// escapeWebPathSegment percent-encodes a single path segment for a web-UI
+// deep-link. It wraps url.PathEscape, which encodes slash, query, fragment,
+// space, and markup characters but intentionally leaves the dot-segments "."
+// and ".." unchanged. A hostile arr endpoint can return a title slug of "." or
+// ".." that a browser or proxy would normalize to the current or parent path,
+// so those two exact segments have their dots percent-encoded as "%2E" to keep
+// the slug confined to a literal path segment. Normal slugs and the numeric
+// TMDB id pass through url.PathEscape byte-for-byte.
+func escapeWebPathSegment(s string) string {
+	escaped := url.PathEscape(s)
+	if escaped == "." || escaped == ".." {
+		return strings.ReplaceAll(escaped, ".", "%2E")
+	}
+	return escaped
 }

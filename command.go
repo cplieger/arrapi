@@ -87,7 +87,7 @@ func (c *client) postCommand(ctx context.Context, body commandBody) (Command, er
 	c.setStandardHeaders(req)
 	req.Header.Set("Content-Type", "application/json")
 
-	resp, err := c.httpClient.Do(req)
+	resp, err := c.httpClient.Do(req) //nolint:bodyclose // closed by statusError (non-2xx) or decodeObject (success); bodyclose cannot trace the close through the generic decodeObject
 	if err != nil {
 		return zero, fmt.Errorf("arrapi: post command %s: %w", body.Name, err)
 	}

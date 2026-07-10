@@ -60,6 +60,7 @@ func TestNewClient_validation(t *testing.T) {
 		{"trailing slash trimmed", "http://sonarr:8989/", testKey, false},
 		{"reverse-proxy subpath allowed", "https://host.example.com/sonarr", testKey, false},
 		{"missing scheme", "sonarr:8989", testKey, true},
+		{"malformed percent escape", "http://exa%mple.com", testKey, true},
 		{"ftp scheme", "ftp://sonarr:8989", testKey, true},
 		{"empty url", "", testKey, true},
 		{"no host", "http:///series", testKey, true},
