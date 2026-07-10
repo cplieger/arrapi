@@ -107,13 +107,13 @@ func TestStatusError_redactsAPIKey(t *testing.T) {
 	if strings.Contains(se.Body, testKey) {
 		t.Errorf("StatusError.Body leaks the API key: %q", se.Body)
 	}
-	if !strings.Contains(se.Body, "[REDACTED]") {
-		t.Errorf("StatusError.Body = %q, want it to contain [REDACTED]", se.Body)
+	if !strings.Contains(se.Body, "REDACTED") {
+		t.Errorf("StatusError.Body = %q, want it to contain REDACTED", se.Body)
 	}
 	if strings.Contains(se.Error(), testKey) {
 		t.Errorf("Error() leaks the API key: %q", se.Error())
 	}
-	if !strings.Contains(se.Error(), "[REDACTED]") {
-		t.Errorf("Error() = %q, want it to contain [REDACTED]", se.Error())
+	if !strings.Contains(se.Error(), "REDACTED") {
+		t.Errorf("Error() = %q, want it to contain REDACTED", se.Error())
 	}
 }

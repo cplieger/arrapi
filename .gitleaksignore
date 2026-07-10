@@ -1,0 +1,4 @@
+# Historical test placeholder: dummy API-key literal in commit 6f9fadcf.
+# The current tree uses testKey="test-key"; this fingerprint silences the
+# false positive on that historical commit.
+6f9fadcf6eca0770c51ae0b3059728fb9daee1cd:arrapi_test.go:generic-api-key:15

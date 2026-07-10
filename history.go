@@ -158,6 +158,9 @@ func (h *HistoryRecord) ImportedPath() string { return h.Data["importedPath"] }
 // orders newest first). Pass one or more event types to filter the result;
 // pass none to return every type. Available on both Sonarr and Radarr.
 //
+// A zero-value/unset EventType in the filter is ignored, so a filter made up
+// only of unset values behaves the same as passing none (returns every type).
+//
 // Filtering is client-side: the arr eventType query parameter is numbered per
 // service (Sonarr and Radarr disagree on the integers), so a server-side filter
 // is not portable. Note that /history/since is unbounded, so a wide since
@@ -211,9 +214,11 @@ func (c *client) GetHistory(ctx context.Context, opts HistoryOptions) (HistoryPa
 }
 
 // filterByEventType returns the records whose EventType is among want, matching
-// on the decoded, service-agnostic type. A nil or empty want returns recs
-// unchanged. It filters in place, which is safe because recs is freshly decoded
-// and owned by the caller (arrapi does not share decoded slices across calls).
+// on the decoded, service-agnostic type. A nil or empty want — or a want that
+// contains only zero/non-positive values, which are treated as empty — returns
+// recs unchanged. It filters in place, which is safe because recs is freshly
+// decoded and owned by the caller (arrapi does not share decoded slices across
+// calls).
 func filterByEventType(recs []HistoryRecord, want []EventType) []HistoryRecord {
 	allow := make(map[EventType]struct{}, len(want))
 	for _, et := range want {

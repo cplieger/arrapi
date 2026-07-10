@@ -127,9 +127,13 @@ Conventions that matter here:
   fast; assert the attempt count with an atomic counter in the handler.
 - Assert observable behavior (returned values, request path, error type via
   `errors.As`), not internals.
-- There is no bespoke parser to fuzz — parsing is delegated to
-  `encoding/json`. If you add real byte/string parsing, add a `testing.F`
-  fuzz target for it.
+- The byte/string boundaries carry `testing.F` fuzz targets: the custom
+  `EventType` / `HistoryRecord` int-or-string JSON decoding
+  (`history_fuzz_test.go`) and the untrusted web-UI slug sanitizer
+  `escapeWebPathSegment`, reached through `Series.WebURL`
+  (`weburl_fuzz_test.go`). Bulk record decoding stays delegated to
+  `encoding/json`; add a `testing.F` target for any new real byte/string
+  parsing or sanitization you introduce.
 
 ## Commits and PRs
 

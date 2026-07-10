@@ -2,6 +2,7 @@ package arrapi
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -24,40 +25,90 @@ const maxPrealloc = 8192
 // compromised endpoint cannot reflect the request credential back into a
 // caller's logs.
 func statusError(resp *http.Response, path, apiKey string) error {
-	body, err := io.ReadAll(io.LimitReader(resp.Body, maxErrorBodyBytes))
-	resp.Body.Close()
+	body, err := readErrorBody(resp.Body, apiKey)
 	e := &StatusError{
 		Code:       resp.StatusCode,
 		Path:       path,
 		RetryAfter: httpx.ParseRetryAfter(resp.Header.Get("Retry-After")),
 	}
 	if err == nil {
-		e.Body = redactSecret(strings.TrimSpace(string(body)), apiKey)
+		e.Body = body
 	}
 	return e
 }
 
-// redactSecret replaces every occurrence of secret in s with a placeholder. It
-// returns s unchanged when secret is empty, so a client configured without a
-// key (never valid in practice) does not redact arbitrary empty matches.
-func redactSecret(s, secret string) string {
+// readErrorBody drains and closes body, redacts apiKey (and its
+// whitespace-trimmed variant, which an HTTP peer may reflect back after
+// stripping header OWS), then caps the result at maxErrorBodyBytes. Redaction
+// happens before the cap (over a maxErrorBodyBytes+len(apiKey) read window) so a
+// key straddling the cap boundary is still matched and stripped in full rather
+// than leaving a credential prefix in the captured body. The residual
+// trailing-key-prefix cleanup runs only when the read window actually truncated
+// the body AND redaction shrank it -- the sole case that can pull an unmatched
+// key prefix back under the cap -- so a fully-read short body whose text merely
+// happens to end with the key's first characters is never over-redacted.
+func readErrorBody(body io.ReadCloser, apiKey string) (string, error) {
+	defer body.Close()
+	readLimit := maxErrorBodyBytes
+	if apiKey != "" {
+		readLimit += len(apiKey)
+	}
+	data, err := io.ReadAll(io.LimitReader(body, int64(readLimit)+1))
+	if err != nil {
+		return "", err
+	}
+	truncatedAtReadWindow := len(data) > readLimit
+	if truncatedAtReadWindow {
+		data = data[:readLimit]
+	}
+	trimmed := strings.TrimSpace(string(data))
+	redacted := httpx.RedactSecretString(trimmed, apiKey)
+	trimmedKey := strings.TrimSpace(apiKey)
+	if trimmedKey != apiKey {
+		redacted = httpx.RedactSecretString(redacted, trimmedKey)
+	}
+	redactionShrank := len(redacted) < len(trimmed)
+	if len(redacted) > maxErrorBodyBytes {
+		redacted = redacted[:maxErrorBodyBytes]
+	}
+	if truncatedAtReadWindow && redactionShrank {
+		redacted = trimTrailingSecretPrefix(redacted, apiKey)
+		if trimmedKey != apiKey {
+			redacted = trimTrailingSecretPrefix(redacted, trimmedKey)
+		}
+	}
+	return redacted, nil
+}
+
+// trimTrailingSecretPrefix removes a trailing run of s that is a non-empty proper prefix
+// of secret. httpx.RedactSecretString matches only whole occurrences, so a secret straddling the
+// read-window boundary is truncated to a prefix ReplaceAll cannot match; that prefix is
+// always a suffix of the redacted, capped body. Stripping it closes the residual
+// credential-prefix leak. Returns s unchanged when secret is empty.
+func trimTrailingSecretPrefix(s, secret string) string {
 	if secret == "" {
 		return s
 	}
-	return strings.ReplaceAll(s, secret, "[REDACTED]")
+	maxLen := min(len(secret)-1, len(s))
+	for n := maxLen; n >= 1; n-- {
+		if strings.HasSuffix(s, secret[:n]) {
+			return s[:len(s)-n]
+		}
+	}
+	return s
 }
 
 // readBounded reads the response body up to limit bytes and closes it. If the
 // body exceeds the limit it returns a *ResponseTooLargeError rather than
 // silently truncating, so a caller never decodes a partial payload.
 func readBounded(resp *http.Response, limit int64, path string) ([]byte, error) {
-	defer resp.Body.Close()
-	data, err := io.ReadAll(io.LimitReader(resp.Body, limit+1))
+	data, err := httpx.ReadLimitedBody(resp.Body, limit)
 	if err != nil {
+		var tooLarge *httpx.ResponseTooLargeError
+		if errors.As(err, &tooLarge) {
+			return nil, &ResponseTooLargeError{Path: path, Limit: limit}
+		}
 		return nil, fmt.Errorf("arrapi: read %s: %w", path, err)
-	}
-	if int64(len(data)) > limit {
-		return nil, &ResponseTooLargeError{Path: path, Limit: limit}
 	}
 	return data, nil
 }
