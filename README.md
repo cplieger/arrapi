@@ -135,6 +135,15 @@ func main() {
 - `UnmatchedLabels(tags []Tag, labels ...string) []string` — the labels (verbatim) that match no tag, for flagging a misconfigured name
 - `HasAnyTag(itemTags []int, ids map[int]struct{}) bool` — does an item carry any of those tag IDs
 
+### Web deep-links
+
+DTO methods that build a link to the item's page in the arr web UI:
+
+- `(*Series).WebURL(baseURL string) string` → `{baseURL}/series/{titleSlug}` (Sonarr)
+- `(*Movie).WebURL(baseURL string) string` → `{baseURL}/movie/{tmdbID}` (Radarr keys its web UI by the TMDB id)
+
+Each returns `""` when `baseURL` or the required field (the Sonarr title slug / Radarr TMDB id) is empty, so a caller reads `""` as "no link". The Sonarr title slug is percent-escaped and confined to a single path segment — a `.`/`..` or slash-bearing slug can't break out into the path, query, or fragment — so a community-editable slug is safe to interpolate.
+
 ### Options
 
 | Option               | Description                                                                           |
