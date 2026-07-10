@@ -55,7 +55,7 @@ func TestStatusError_secretStraddlingCapBoundaryIsRedacted(t *testing.T) {
 // the cap, so no key prefix survives (maxPrefix == 0). The pad is a byte absent
 // from the key, chosen so the read-window boundary falls mid-key.
 func TestStatusError_secretPrefixSurvivesRedactionShrinkage(t *testing.T) {
-	const apiKey = "0123456789abcdef0123456789abcdef" // 32 chars, no 'A'
+	const apiKey = "0123456789abcdef0123456789abcdef" // 32 chars, no 'A'; gitleaks:allow (fake key, redaction test fixture)
 	pad := strings.Repeat("A", 5)
 	payload := pad + strings.Repeat(apiKey, (maxErrorBodyBytes/len(apiKey))+2)
 	resp := &http.Response{
@@ -126,7 +126,7 @@ func TestStatusError_whitespacePaddedKeyVariantIsRedacted(t *testing.T) {
 // content, not a truncated credential. Here redactionShrank is true but
 // truncatedAtReadWindow is false, so the guard must not fire.
 func TestStatusError_fullyReadBodyEndingInKeyPrefixNotOverRedacted(t *testing.T) {
-	const apiKey = "0123456789abcdef" // 16 chars, no space
+	const apiKey = "0123456789abcdef" // 16 chars, no space; gitleaks:allow (fake key, redaction test fixture)
 	payload := apiKey + " tail " + apiKey[:8]
 	resp := &http.Response{
 		StatusCode: http.StatusUnauthorized,
