@@ -125,6 +125,20 @@ func TestCommand_errorStatus(t *testing.T) {
 	}
 }
 
+func TestCommand_redirectStatusRejected(t *testing.T) {
+	cc := newCommandServer(t, http.StatusMultipleChoices)
+	s := fastSonarr(t, cc.srv.URL)
+
+	_, err := s.RescanSeries(t.Context(), 7)
+	if err == nil {
+		t.Fatal("expected error on 300 command response")
+	}
+	var se *arrapi.StatusError
+	if !errors.As(err, &se) || se.Code != http.StatusMultipleChoices {
+		t.Errorf("want *StatusError 300, got %v", err)
+	}
+}
+
 func TestGetCommandByID(t *testing.T) {
 	rs := newServer(t, http.StatusOK, `{"id":7,"name":"RescanSeries","status":"completed"}`)
 	s := fastSonarr(t, rs.srv.URL)

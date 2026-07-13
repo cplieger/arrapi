@@ -133,6 +133,20 @@ func TestGetHistorySince_noFilterReturnsAll(t *testing.T) {
 	}
 }
 
+func TestGetHistorySince_zeroValueFilterReturnsAll(t *testing.T) {
+	body := `[{"id":1,"eventType":1,"seriesId":7},{"id":2,"eventType":3,"seriesId":7}]`
+	rs := newServer(t, http.StatusOK, body)
+	s := fastSonarr(t, rs.srv.URL)
+
+	recs, err := s.GetHistorySince(t.Context(), time.Date(2026, 7, 1, 0, 0, 0, 0, time.UTC), arrapi.EventType(0))
+	if err != nil {
+		t.Fatalf("GetHistorySince: %v", err)
+	}
+	if len(recs) != 2 {
+		t.Fatalf("got %d records, want 2 (a zero-value-only filter is ignored, returns all)", len(recs))
+	}
+}
+
 func TestGetHistorySince_multipleEventTypesFilteredClientSide(t *testing.T) {
 	body := `[{"id":1,"eventType":1,"seriesId":7},{"id":2,"eventType":3,"seriesId":7},
 	   {"id":3,"eventType":5,"seriesId":7},{"id":4,"eventType":3,"seriesId":8}]`
@@ -252,5 +266,46 @@ func TestGetHistory_largePageUsesListLimit(t *testing.T) {
 	}
 	if len(page.Records) != 1 || page.Records[0].SourceTitle != largeTitle {
 		t.Errorf("records = %+v, want one large source title of length %d", page.Records, len(largeTitle))
+	}
+}
+
+func TestGetHistory_defaultOptionsOmitPageParams(t *testing.T) {
+	rs := newServer(t, http.StatusOK, `{"page":1,"pageSize":20,"totalRecords":0,"records":[]}`)
+	s := fastSonarr(t, rs.srv.URL)
+
+	page, err := s.GetHistory(t.Context(), arrapi.HistoryOptions{})
+	if err != nil {
+		t.Fatalf("GetHistory with default options: %v", err)
+	}
+	if page.Page != 1 || page.PageSize != 20 || page.TotalRecords != 0 || len(page.Records) != 0 {
+		t.Errorf("page = %+v, want server defaults page 1 size 20 with no records", page)
+	}
+	path := deref(rs.lastPath.Load())
+	if !strings.HasPrefix(path, "/api/v3/history?") {
+		t.Fatalf("path = %q, want /api/v3/history prefix", path)
+	}
+	for _, forbidden := range []string{"page=", "pageSize="} {
+		if strings.Contains(path, forbidden) {
+			t.Errorf("default HistoryOptions path %q should omit %q", path, forbidden)
+		}
+	}
+	for _, want := range []string{"sortKey=date", "sortDirection=descending"} {
+		if !strings.Contains(path, want) {
+			t.Errorf("path %q missing %q", path, want)
+		}
+	}
+}
+
+func TestGetHistorySince_zeroValueMixedWithFilterIsIgnored(t *testing.T) {
+	body := `[{"id":1,"eventType":"someFutureEvent","seriesId":7},{"id":2,"eventType":3,"seriesId":7},{"id":3,"eventType":1,"seriesId":7}]`
+	rs := newServer(t, http.StatusOK, body)
+	s := fastSonarr(t, rs.srv.URL)
+
+	recs, err := s.GetHistorySince(t.Context(), time.Date(2026, 7, 1, 0, 0, 0, 0, time.UTC), arrapi.EventType(0), arrapi.EventDownloadImported)
+	if err != nil {
+		t.Fatalf("GetHistorySince: %v", err)
+	}
+	if len(recs) != 1 || recs[0].ID != 2 || recs[0].EventType != arrapi.EventDownloadImported {
+		t.Fatalf("records = %+v, want only the imported event (id 2); zero-value filter entries are ignored", recs)
 	}
 }
