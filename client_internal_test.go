@@ -6,34 +6,21 @@ import (
 	"time"
 )
 
-// TestConfiguredHTTPClient_timeoutCeiling verifies the default client's hard
-// Timeout ceiling always sits above the resolved per-request timeout, so the
-// per-request context deadline (not the client Timeout) fires first even when a
-// caller raises WithTimeout above safetyTimeout.
-func TestConfiguredHTTPClient_timeoutCeiling(t *testing.T) {
-	tests := []struct {
-		name           string
-		perRequest     time.Duration
-		wantAtLeast    time.Duration
-		wantExactFloor bool
-	}{
-		{"default stays at floor", defaultTimeout, safetyTimeout, true},
-		{"small timeout stays at floor", time.Second, safetyTimeout, true},
-		{"large timeout lifts ceiling above it", 200 * time.Second, 200 * time.Second, false},
+// TestConfiguredHTTPClient_noClientTimeout verifies the default client sets no
+// http.Client.Timeout, so a caller-supplied context deadline is never undercut
+// by a static client-level ceiling; every request is bounded by its context via
+// requestContext. The pooled transport and the same-host redirect guard are
+// still set.
+func TestConfiguredHTTPClient_noClientTimeout(t *testing.T) {
+	hc := configuredHTTPClient(nil)
+	if hc.Timeout != 0 {
+		t.Errorf("default client Timeout = %v, want 0 (context governs, no static ceiling)", hc.Timeout)
 	}
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			hc := configuredHTTPClient(nil, tc.perRequest)
-			if tc.wantExactFloor {
-				if hc.Timeout != safetyTimeout {
-					t.Errorf("Timeout = %v, want floor %v", hc.Timeout, safetyTimeout)
-				}
-				return
-			}
-			if hc.Timeout <= tc.wantAtLeast {
-				t.Errorf("Timeout = %v, want strictly greater than per-request %v", hc.Timeout, tc.wantAtLeast)
-			}
-		})
+	if hc.Transport == nil {
+		t.Error("default client Transport is nil, want the pooled transport")
+	}
+	if hc.CheckRedirect == nil {
+		t.Error("default client CheckRedirect is nil, want the same-host redirect guard")
 	}
 }
 
@@ -41,7 +28,7 @@ func TestConfiguredHTTPClient_timeoutCeiling(t *testing.T) {
 // client is returned as-is, its own Timeout untouched.
 func TestConfiguredHTTPClient_callerClientUnchanged(t *testing.T) {
 	own := &http.Client{Timeout: 5 * time.Second}
-	if got := configuredHTTPClient(own, 200*time.Second); got != own {
+	if got := configuredHTTPClient(own); got != own {
 		t.Errorf("configuredHTTPClient returned a different client than the caller-provided one")
 	}
 	if own.Timeout != 5*time.Second {
