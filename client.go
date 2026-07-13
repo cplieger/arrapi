@@ -25,16 +25,6 @@ const (
 	// defaultTimeout bounds a single request (including the body decode) when
 	// the caller's context has no deadline; generous enough for a full library.
 	defaultTimeout = 120 * time.Second
-	// safetyTimeout is the floor for the hard ceiling on the underlying
-	// http.Client. It sits above defaultTimeout so the per-request context
-	// deadline fires first in normal operation, and catches any path that
-	// forgets to set one. When a caller raises the per-request timeout above
-	// this floor (WithTimeout), configuredHTTPClient lifts the client ceiling
-	// above it so the context deadline still fires first.
-	safetyTimeout = 150 * time.Second
-	// safetyMargin keeps the http.Client hard ceiling above the per-request context
-	// deadline so the context (not the client Timeout) fires first on a slow request.
-	safetyMargin = 30 * time.Second
 	// pingTimeout bounds a connectivity check so config validation fails fast.
 	pingTimeout = 5 * time.Second
 	// maxRedirects caps redirect hops (matching net/http's default).
@@ -71,7 +61,7 @@ func newClient(baseURL, apiKey string, opts ...Option) (*client, error) {
 	}
 	cfg := resolveConfig(opts)
 	return &client{
-		httpClient:  configuredHTTPClient(cfg.httpClient, cfg.timeout),
+		httpClient:  configuredHTTPClient(cfg.httpClient),
 		baseURL:     strings.TrimRight(baseURL, "/"),
 		apiKey:      apiKey,
 		baseDelay:   cfg.baseDelay,
@@ -129,16 +119,17 @@ func resolveConfig(opts []Option) config {
 // hop. A same-host http->https upgrade is followed (a reverse proxy that
 // force-redirects to TLS is a common, safe setup). httpx.RedirectPolicyFunc
 // with httpx.WithSameHost is the shared implementation of that policy.
-func configuredHTTPClient(hc *http.Client, perRequestTimeout time.Duration) *http.Client {
+//
+// The default client sets no http.Client.Timeout: every request is bounded by
+// its context (a caller-supplied deadline, or the per-request timeout applied
+// by requestContext when the caller has none), which is the single bounding
+// choke point. A static client-level ceiling would only undercut a caller
+// deadline larger than it, so it is deliberately omitted.
+func configuredHTTPClient(hc *http.Client) *http.Client {
 	if hc != nil {
 		return hc
 	}
-	clientTimeout := safetyTimeout
-	if t := perRequestTimeout + safetyMargin; t > clientTimeout {
-		clientTimeout = t
-	}
 	return &http.Client{
-		Timeout:       clientTimeout,
 		Transport:     newTransport(),
 		CheckRedirect: httpx.RedirectPolicyFunc(httpx.WithSameHost(), httpx.WithMaxHops(maxRedirects)),
 	}

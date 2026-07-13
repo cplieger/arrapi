@@ -166,6 +166,15 @@ Non-2xx responses surface as `*StatusError` (fields `Code`, `Path`, `Body`, and 
 - Response bodies are size-capped before decoding (64 MB for list endpoints, 1 MB for single objects); an over-cap body is rejected as `*ResponseTooLargeError` rather than truncated.
 - Clients own no long-lived goroutines and hold no locks a caller can observe; a single client is safe for concurrent use.
 
+## Timeouts and retries
+
+arrapi bounds every request by context and retries only transient failures:
+
+- A caller-supplied context deadline is the authoritative total budget across all attempts and backoffs. It is honored as-is; arrapi imposes no separate client-level ceiling on top of it.
+- `WithTimeout` (default 120s) is a per-attempt budget, applied only when the caller's context carries no deadline of its own. The total is then bounded by the attempt count (`WithMaxAttempts`, default 3).
+- Retries cover transient failures: HTTP 429 and 5xx (honoring a capped `Retry-After`), and transient transport errors (timeouts, connection resets, DNS). A 4xx other than 429 is permanent and fails fast.
+- A timeout or deadline expiry is terminal, not a retryable condition: once the budget is exhausted the call stops rather than retrying. Mutations (rescan/refresh commands) are single-attempt and never retried.
+
 ## Unsupported by Design
 
 Deliberate non-goals, not TODOs:

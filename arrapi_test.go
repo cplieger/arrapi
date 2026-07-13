@@ -332,6 +332,26 @@ func TestWithTimeout_cancelsSlowRequest(t *testing.T) {
 	}
 }
 
+func TestWithTimeout_doesNotOverrideCallerDeadline(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		time.Sleep(80 * time.Millisecond)
+		_, _ = w.Write([]byte(`[{"id":1,"title":"ok"}]`))
+	}))
+	t.Cleanup(srv.Close)
+	s := fastSonarr(t, srv.URL, arrapi.WithTimeout(20*time.Millisecond), arrapi.WithMaxAttempts(1))
+
+	ctx, cancel := context.WithTimeout(t.Context(), 500*time.Millisecond)
+	defer cancel()
+
+	series, err := s.GetSeries(ctx)
+	if err != nil {
+		t.Fatalf("GetSeries with caller deadline and shorter WithTimeout: %v", err)
+	}
+	if len(series) != 1 || series[0].Title != "ok" {
+		t.Fatalf("series = %+v, want one titled ok", series)
+	}
+}
+
 func TestContextCancellation(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		time.Sleep(200 * time.Millisecond)

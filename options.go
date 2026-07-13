@@ -54,7 +54,9 @@ func WithBaseDelay(d time.Duration) Option {
 }
 
 // WithTimeout sets the per-request timeout applied when the caller's context
-// carries no deadline of its own. Default: 120s.
+// carries no deadline of its own. When the caller's context has a deadline, it
+// is authoritative and used as-is; arrapi imposes no separate client-level
+// ceiling on top of it. Default: 120s.
 func WithTimeout(d time.Duration) Option {
 	return func(cfg *config) { cfg.timeout = d }
 }
