@@ -9,7 +9,7 @@
 
 > Typed, resilient Go clients for the Sonarr and Radarr v3 APIs
 
-A standalone Go library that wraps the [Sonarr](https://sonarr.tv) and [Radarr](https://radarr.video) v3 HTTP APIs behind two small, type-safe clients. Requests are authenticated, size-bounded, and retried on transient failures with jittered exponential backoff (via [`cplieger/httpx`](https://github.com/cplieger/httpx)). The only runtime dependency is `httpx`.
+A standalone Go library that wraps the [Sonarr](https://sonarr.tv) and [Radarr](https://radarr.video) v3 HTTP APIs behind two small, type-safe clients. Requests are authenticated, size-bounded, and retried on transient failures with jittered exponential backoff (via [`cplieger/httpx`](https://github.com/cplieger/httpx)). The only runtime dependency is `httpx`. The DTOs are curated field subsets of the arr resources, and a test-only schema-drift guard pins every carried field against the [devopsarr](https://github.com/devopsarr) OpenAPI-generated models: when an upstream release renames or removes a field, the dependency bump fails CI instead of the field silently decoding to its zero value.
 
 ## Design
 
