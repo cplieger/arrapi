@@ -1,4 +1,8 @@
 github.com/cplieger/httpx/v2 v2.6.0 h1:KPBxno0EY/KcwXiB1Vi94bE4NFNaXxFyqnp02XBn9FY=
 github.com/cplieger/httpx/v2 v2.6.0/go.mod h1:Q3ulXhfiO40EGxIVofnz2KdJY1X3MSKZTwYhv/pL9W0=
+github.com/devopsarr/radarr-go v1.2.1 h1:96pwxuR75Ks1W01su4dwhUpjBUpAb3Zy9EVswqLwHpA=
+github.com/devopsarr/radarr-go v1.2.1/go.mod h1:uydTUSf+2zHNKCGq3U9ooHAlElHIOhDA+2J7nje1bHE=
+github.com/devopsarr/sonarr-go v1.1.1 h1:5C/D3I5EaWQsx5DU5FRn5rFKhFNtABLxJFuL7CyBJ90=
+github.com/devopsarr/sonarr-go v1.1.1/go.mod h1:VEnGyisuigdBCaxkSNxEVRYrhsKxvw/jc7bFMaFSIZA=
 pgregory.net/rapid v1.3.0 h1:vBvO0VSqti75J1jjYqpgPNBLKMd1+gxa9fYo7vk/Exc=
 pgregory.net/rapid v1.3.0/go.mod h1:dPlE4OBBxgXPqkP79flB6sJL1dx5azpI7HQ9MY9Z7uk=

@@ -120,6 +120,12 @@ dependency — the correct thing to fake). Match the file to the unit:
   helpers.
 - `errors_test.go` — `StatusError` formatting, `IsTransient` classification,
   and `IsNotFound`.
+- `schemadrift_test.go` — pins every curated DTO JSON tag against the
+  devopsarr OpenAPI-generated models (the module's only test-only
+  dependencies), so a Renovate bump after an upstream field rename or
+  removal fails in the bump PR instead of the field silently decoding to a
+  zero value. Shared types must exist on both services' models;
+  `HistoryRecord` is checked as a deliberate union.
 
 Conventions that matter here:
 
