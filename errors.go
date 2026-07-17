@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/cplieger/httpx/v2"
+	"github.com/cplieger/httpx/v3"
 )
 
 // StatusError is a non-2xx HTTP response from a Sonarr or Radarr API. It
@@ -44,10 +44,10 @@ func (e *StatusError) IsTransient() bool {
 }
 
 // RetryAfterHint implements httpx.RetryAfterHint: it exposes the capped
-// Retry-After hint so httpx.RetryWithBackoff waits it out before the next retry
+// Retry-After hint so httpx.Do waits it out before the next retry
 // instead of its jittered backoff. It is zero when the response carried no
 // Retry-After (in practice, anything but a 429 or a 503), in which case
-// RetryWithBackoff falls back to the jittered exponential backoff.
+// Do falls back to the jittered exponential backoff.
 func (e *StatusError) RetryAfterHint() time.Duration { return e.RetryAfter }
 
 // ResponseTooLargeError is returned when a response body exceeds the client's
