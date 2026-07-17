@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/cplieger/httpx/v2"
+	"github.com/cplieger/httpx/v3"
 )
 
 // StatusError is a non-2xx HTTP response from a Sonarr or Radarr API. It
