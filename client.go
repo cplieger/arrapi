@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/cplieger/httpx/v2"
+	"github.com/cplieger/httpx/v3"
 )
 
 const (
@@ -208,20 +208,23 @@ func (c *client) requestContext(ctx context.Context) (context.Context, context.C
 	return ctx, func() {}
 }
 
-// doRetry calls fn up to c.maxAttempts times via httpx.RetryWithBackoff,
-// retrying transient failures (429, any 5xx, transient transport errors) with
-// jittered exponential backoff, or the server's capped Retry-After hint when a
-// *StatusError carries one — *StatusError implements httpx.RetryAfterHint, which
-// RetryWithBackoff honors. Each attempt runs under a per-attempt context (spanning
-// the whole request and its decode, so the deadline is never cancelled mid-body);
-// GETs are idempotent, so retry is safe.
+// doRetry calls fn up to c.maxAttempts times via httpx.Do, retrying transient
+// failures (429, any 5xx, transient transport errors) with jittered
+// exponential backoff, or the server's capped Retry-After hint when a
+// *StatusError carries one — *StatusError implements httpx.RetryAfterHint,
+// which Do honors. Each attempt runs under a per-attempt context (spanning
+// the whole request and its decode, so the deadline is never cancelled
+// mid-body); GETs are idempotent, so retry is safe.
 func doRetry[T any](ctx context.Context, c *client, fn func(context.Context) (T, error)) (T, error) {
-	return httpx.RetryWithBackoff(ctx, max(c.maxAttempts, 1), c.baseDelay, "arrapi",
+	return httpx.Do(ctx,
 		func(rctx context.Context) (T, error) {
 			rctx, cancel := c.requestContext(rctx)
 			defer cancel()
 			return fn(rctx)
-		})
+		},
+		httpx.WithMaxAttempts(max(c.maxAttempts, 1)),
+		httpx.WithBaseDelay(c.baseDelay),
+		httpx.WithLabel("arrapi"))
 }
 
 // fetchAll performs an authenticated GET and decodes the JSON array response,

@@ -19,7 +19,7 @@ type Option func(*config)
 // WithHTTPClient sets the underlying *http.Client. When set, the caller owns
 // the client's transport, timeout, and redirect policy; arrapi's defaults are
 // not applied. A nil client is ignored. Use this to share a connection pool,
-// pin a custom CA (see github.com/cplieger/httpx/v2.CATransport), or inject a
+// pin a custom CA (see github.com/cplieger/httpx/v3.CATransport), or inject a
 // test server client.
 //
 // Security: arrapi's default client restricts redirects to the same host and
@@ -30,7 +30,7 @@ type Option func(*config)
 // net/http's default policy) leaks the X-Api-Key to the redirect target, and a
 // same-host downgrade sends it over cleartext. Set CheckRedirect to a policy
 // such as httpx.RedirectPolicyFunc(httpx.WithSameHost(), httpx.WithMaxHops(10))
-// from github.com/cplieger/httpx/v2; that policy keeps both guards unless
+// from github.com/cplieger/httpx/v3; that policy keeps both guards unless
 // WithAllowSchemeDowngrade is explicitly enabled.
 func WithHTTPClient(c *http.Client) Option {
 	return func(cfg *config) {
