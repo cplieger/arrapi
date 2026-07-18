@@ -198,14 +198,11 @@ func (c *client) GetSystemStatus(ctx context.Context) (SystemStatus, error) {
 func (c *client) Close() { c.httpClient.CloseIdleConnections() }
 
 // requestContext derives a context bounded by the client's per-request timeout
-// when the caller's context carries no deadline. The returned cancel must be
-// called only after the response body has been fully read, so the deadline
-// spans both the request and its decode.
+// when the caller's context carries no deadline (httpx owns the rule). The
+// returned cancel must be called only after the response body has been fully
+// read, so the deadline spans both the request and its decode.
 func (c *client) requestContext(ctx context.Context) (context.Context, context.CancelFunc) {
-	if _, ok := ctx.Deadline(); !ok && c.timeout > 0 {
-		return context.WithTimeout(ctx, c.timeout)
-	}
-	return ctx, func() {}
+	return httpx.ContextWithDefaultTimeout(ctx, c.timeout)
 }
 
 // doRetry calls fn up to c.maxAttempts times via httpx.Do, retrying transient
