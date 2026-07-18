@@ -2,7 +2,10 @@ module github.com/cplieger/arrapi
 
 go 1.26.5
 
-require github.com/cplieger/httpx/v3 v3.0.0
+require (
+	github.com/cplieger/httpx/v3 v3.0.0
+	github.com/cplieger/runesafe v1.0.0
+)
 
 // Test-only (schemadrift_test.go): OpenAPI-generated arr models used as the
 // schema-drift oracle for the curated DTO subsets. Never a runtime dependency.

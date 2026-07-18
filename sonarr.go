@@ -34,6 +34,19 @@ func (s *Sonarr) GetEpisodes(ctx context.Context, seriesID int) ([]Episode, erro
 	return fetchAll[Episode](ctx, s.client, path)
 }
 
+// GetEpisodeFiles returns the episode files for the given series, from the
+// dedicated episodefile endpoint. It yields exactly the episodes that have a
+// file on disk — the same file details GetEpisodes embeds, without the
+// fileless episode rows — so a consumer that reads only episodes with files
+// (such as a library walker aggregating release groups per season) gets a
+// smaller payload on a long airing series at the same request count. Each
+// file carries its SeriesID and SeasonNumber, so no episode list is needed to
+// attribute it.
+func (s *Sonarr) GetEpisodeFiles(ctx context.Context, seriesID int) ([]EpisodeFile, error) {
+	path := fmt.Sprintf("%s/episodefile?seriesId=%d", apiPrefix, seriesID)
+	return fetchAll[EpisodeFile](ctx, s.client, path)
+}
+
 // GetSeriesByID returns the single series with the given Sonarr ID. It returns
 // a *StatusError for which IsNotFound reports true when no series has that ID.
 func (s *Sonarr) GetSeriesByID(ctx context.Context, seriesID int) (Series, error) {

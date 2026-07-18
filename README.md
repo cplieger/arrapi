@@ -9,13 +9,13 @@
 
 > Typed, resilient Go clients for the Sonarr and Radarr v3 APIs
 
-A standalone Go library that wraps the [Sonarr](https://sonarr.tv) and [Radarr](https://radarr.video) v3 HTTP APIs behind two small, type-safe clients. Requests are authenticated, size-bounded, and retried on transient failures with jittered exponential backoff (via [`cplieger/httpx`](https://github.com/cplieger/httpx)). The only runtime dependency is `httpx`. The DTOs are curated field subsets of the arr resources, and a test-only schema-drift guard pins every carried field against the [devopsarr](https://github.com/devopsarr) OpenAPI-generated models: when an upstream release renames or removes a field, the dependency bump fails CI instead of the field silently decoding to its zero value.
+A standalone Go library that wraps the [Sonarr](https://sonarr.tv) and [Radarr](https://radarr.video) v3 HTTP APIs behind two small, type-safe clients. Requests are authenticated, size-bounded, and retried on transient failures with jittered exponential backoff (via [`cplieger/httpx`](https://github.com/cplieger/httpx)). The only runtime dependencies are `httpx` and [`cplieger/runesafe`](https://github.com/cplieger/runesafe) (log-safe error bodies). The DTOs are curated field subsets of the arr resources, and a test-only schema-drift guard pins every carried field, its wire type, and every request path against the [devopsarr](https://github.com/devopsarr) OpenAPI-generated clients: when an upstream release renames, removes, or re-types a field, or moves an endpoint, the dependency bump fails CI instead of the change silently corrupting decodes.
 
 ## Design
 
 Two constructors return two concrete types, so an operation can only be called against the service that supports it:
 
-- `NewSonarr(...)` returns a `*Sonarr` with `GetSeries` and `GetEpisodes`.
+- `NewSonarr(...)` returns a `*Sonarr` with `GetSeries`, `GetEpisodes`, and `GetEpisodeFiles`.
 - `NewRadarr(...)` returns a `*Radarr` with `GetMovies`.
 
 Both embed a shared core exposing the endpoints common to either service (`GetTags`, `GetSystemStatus`, `Ping`, `Close`). This replaces the single-client-does-both shape where a wrong call (`GetMovies` on a Sonarr instance) is only caught at runtime.
@@ -99,6 +99,7 @@ func main() {
 - `GetSeries(ctx) ([]Series, error)` — every series in the library
 - `GetSeriesByID(ctx, seriesID int) (Series, error)` — a single series by ID (`IsNotFound` reports a missing ID)
 - `GetEpisodes(ctx, seriesID int) ([]Episode, error)` — episodes for a series, including episode-file details
+- `GetEpisodeFiles(ctx, seriesID int) ([]EpisodeFile, error)` — the series' episode files from the dedicated episodefile endpoint: exactly the episodes with a file on disk, without the fileless rows `GetEpisodes` includes (a smaller payload on a long airing series); each file carries its `SeriesID` and `SeasonNumber`
 - `GetEpisodeByID(ctx, episodeID int) (Episode, error)` — a single episode by ID (`IsNotFound` reports a missing ID)
 - `RescanSeries(ctx, seriesID int) (Command, error)` — rescan the series' folder for new or changed files; returns the queued command
 - `RefreshSeries(ctx, seriesID int) (Command, error)` — refresh series metadata and rescan; returns the queued command
@@ -156,6 +157,8 @@ Each returns `""` when `baseURL` or the required field (the Sonarr title slug / 
 ### Errors
 
 Non-2xx responses surface as `*StatusError` (fields `Code`, `Path`, `Body`, and `RetryAfter`, the capped `Retry-After` hint on a `429`). It implements `httpx.Transient`, so a `429` or any `5xx` is classified as retryable and every `4xx` as permanent, and `httpx.RetryAfterHint`, so `httpx.RetryWithBackoff` waits out that capped `Retry-After` before the next retry instead of its jittered backoff. `IsNotFound(err)` and `IsRateLimited(err)` report whether an error is (or wraps) a `*StatusError` with a `404` or `429`. A response body that exceeds the size cap surfaces as `*ResponseTooLargeError` rather than being silently truncated.
+
+The captured `Body` is made log-safe at capture (via [`cplieger/runesafe`](https://github.com/cplieger/runesafe)): the request API key is redacted, the body is capped at 64 KiB, and terminal-escape (C0/C1), bidi-control, and line-separator runes are replaced with spaces, with invalid UTF-8 mapped to `U+FFFD`. An arr error body is untrusted text that typically lands verbatim in consumer logs (`"error", err`), so the field itself is safe to log — no consumer-side escaping needed.
 
 ## Resilience
 

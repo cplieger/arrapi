@@ -61,7 +61,12 @@ type Episode struct {
 	Monitored             bool         `json:"monitored"`
 }
 
-// EpisodeFile holds file details for a Sonarr episode.
+// EpisodeFile holds file details for a Sonarr episode. It decodes from two
+// places carrying the same wire shape: the episodeFile object GetEpisodes
+// embeds per episode, and the items GetEpisodeFiles lists directly. SeriesID
+// and SeasonNumber identify the file's place in the library on its own, so a
+// GetEpisodeFiles caller needs no episode rows to attribute a file to a
+// season.
 type EpisodeFile struct {
 	MediaInfo    *MediaInfo `json:"mediaInfo"`
 	RelativePath string     `json:"relativePath"`
@@ -69,6 +74,8 @@ type EpisodeFile struct {
 	SceneName    string     `json:"sceneName"`
 	ReleaseGroup string     `json:"releaseGroup"`
 	ID           int        `json:"id"`
+	SeriesID     int        `json:"seriesId"`
+	SeasonNumber int        `json:"seasonNumber"`
 	Size         int64      `json:"size"`
 }
 
