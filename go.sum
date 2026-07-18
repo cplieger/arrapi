@@ -1,5 +1,5 @@
-github.com/cplieger/httpx/v3 v3.0.0 h1:9bXuJaKzJWO0fjCAPsJG7YsbgATdycozDkYZ2wXUhbc=
-github.com/cplieger/httpx/v3 v3.0.0/go.mod h1:aITrLHd0nPnJ5+Gu76xhRyOChC0KZEBCwslCELPHk+s=
+github.com/cplieger/httpx/v3 v3.1.0 h1:KXbVxn9+c/7UbnXKQgH+Qh75syqqYiV9UH0GzwO0YR8=
+github.com/cplieger/httpx/v3 v3.1.0/go.mod h1:aITrLHd0nPnJ5+Gu76xhRyOChC0KZEBCwslCELPHk+s=
 github.com/cplieger/runesafe v1.0.0 h1:ZI3zLucRSMIcrpwwkMhCvsY4hyLNGJP4embfxWTZwV0=
 github.com/cplieger/runesafe v1.0.0/go.mod h1:37oz7JJVn1PIWv5UHrJhDhCabmqhMY+eRavwZ6Lp6NI=
 github.com/devopsarr/radarr-go v1.2.1 h1:96pwxuR75Ks1W01su4dwhUpjBUpAb3Zy9EVswqLwHpA=
