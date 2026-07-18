@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"net/url"
 	"strconv"
-	"strings"
 	"time"
 )
 
@@ -131,7 +130,9 @@ type HistoryRecord struct {
 
 // UnmarshalJSON decodes a history record and, when the event is not one arrapi
 // models, preserves the raw eventType token in RawEventType so a new upstream
-// event stays identifiable in logs rather than collapsing silently to 0.
+// event stays identifiable in logs rather than collapsing silently to 0. A
+// string token is JSON-decoded (so escapes resolve rather than mangling the
+// value); any other token (an unmodeled integer) is kept verbatim.
 func (h *HistoryRecord) UnmarshalJSON(data []byte) error {
 	type alias HistoryRecord
 	var a alias
@@ -144,7 +145,12 @@ func (h *HistoryRecord) UnmarshalJSON(data []byte) error {
 			EventType json.RawMessage `json:"eventType"`
 		}
 		if json.Unmarshal(data, &raw) == nil {
-			h.RawEventType = strings.Trim(string(raw.EventType), `"`)
+			var s string
+			if json.Unmarshal(raw.EventType, &s) == nil {
+				h.RawEventType = s
+			} else {
+				h.RawEventType = string(raw.EventType)
+			}
 		}
 	}
 	return nil

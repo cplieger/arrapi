@@ -190,6 +190,29 @@ func TestHistoryRecord_rawEventTypePreserved(t *testing.T) {
 	}
 }
 
+func TestHistoryRecord_rawEventTypeDecodesEscapes(t *testing.T) {
+	// A garbled or hostile token with JSON escapes must be preserved as the
+	// DECODED string: the escaped interior quote resolves, and the trailing
+	// escaped quote must not be stripped as if it were the closing delimiter
+	// (the old strings.Trim extraction mangled this to `odd\` + a lost tail).
+	rs := newServer(t, http.StatusOK, `[{"id":1,"eventType":"odd\"name\"","seriesId":7}]`)
+	s := fastSonarr(t, rs.srv.URL)
+
+	recs, err := s.GetHistorySince(t.Context(), time.Date(2026, 7, 1, 0, 0, 0, 0, time.UTC))
+	if err != nil {
+		t.Fatalf("GetHistorySince: %v", err)
+	}
+	if len(recs) != 1 {
+		t.Fatalf("got %d records, want 1", len(recs))
+	}
+	if recs[0].EventType != 0 {
+		t.Errorf("unknown event should decode to 0, got %d", recs[0].EventType)
+	}
+	if recs[0].RawEventType != `odd"name"` {
+		t.Errorf("RawEventType = %q, want odd\"name\" decoded", recs[0].RawEventType)
+	}
+}
+
 func TestHistoryRecord_rawEventTypePreservedForUnknownInt(t *testing.T) {
 	rs := newServer(t, http.StatusOK, `[{"id":1,"eventType":99,"seriesId":7}]`)
 	s := fastSonarr(t, rs.srv.URL)
