@@ -130,6 +130,76 @@ func TestGetEpisodes_pathIncludesSeriesAndFileFlag(t *testing.T) {
 	}
 }
 
+func TestGetEpisodeFiles_success(t *testing.T) {
+	rs := newServer(t, http.StatusOK, `[{"id":99,"seriesId":7,"seasonNumber":1,"relativePath":"Season 01/S01E01.mkv",
+	   "sceneName":"Show.S01E01.1080p","releaseGroup":"CRUCiBLE","size":734003200,
+	   "mediaInfo":{"videoCodec":"x265","audioLanguages":"jpn/eng"}},
+	  {"id":100,"seriesId":7,"seasonNumber":2,"relativePath":"Season 02/S02E01.mkv","releaseGroup":"LostYears","size":1073741824}]`)
+	s := fastSonarr(t, rs.srv.URL)
+
+	files, err := s.GetEpisodeFiles(t.Context(), 7)
+	if err != nil {
+		t.Fatalf("GetEpisodeFiles: %v", err)
+	}
+	if len(files) != 2 {
+		t.Fatalf("got %d files, want 2", len(files))
+	}
+	if files[0].ID != 99 || files[0].SeriesID != 7 || files[0].SeasonNumber != 1 {
+		t.Errorf("files[0] identity = %+v, want id 99 series 7 season 1", files[0])
+	}
+	if files[0].ReleaseGroup != "CRUCiBLE" || files[0].RelativePath != "Season 01/S01E01.mkv" || files[0].Size != 734003200 {
+		t.Errorf("files[0] = %+v, want CRUCiBLE/Season 01/S01E01.mkv/734003200", files[0])
+	}
+	if files[0].MediaInfo == nil || files[0].MediaInfo.VideoCodec != "x265" || files[0].MediaInfo.AudioLanguages != "jpn/eng" {
+		t.Errorf("files[0].MediaInfo = %+v, want x265/jpn\\/eng", files[0].MediaInfo)
+	}
+	if files[1].SeasonNumber != 2 || files[1].MediaInfo != nil {
+		t.Errorf("files[1] = %+v, want season 2 with nil MediaInfo", files[1])
+	}
+	if got := deref(rs.lastPath.Load()); got != "/api/v3/episodefile?seriesId=7" {
+		t.Errorf("request path = %q, want /api/v3/episodefile?seriesId=7", got)
+	}
+}
+
+func TestGetEpisodeFiles_empty(t *testing.T) {
+	rs := newServer(t, http.StatusOK, `[]`)
+	s := fastSonarr(t, rs.srv.URL)
+
+	files, err := s.GetEpisodeFiles(t.Context(), 7)
+	if err != nil {
+		t.Fatalf("GetEpisodeFiles on empty list: %v", err)
+	}
+	if len(files) != 0 {
+		t.Errorf("got %d files, want 0", len(files))
+	}
+}
+
+func TestGetEpisodeFiles_malformedJSON(t *testing.T) {
+	rs := newServer(t, http.StatusOK, `{not valid json`)
+	s := fastSonarr(t, rs.srv.URL)
+
+	if _, err := s.GetEpisodeFiles(t.Context(), 7); err == nil {
+		t.Fatal("expected decode error on malformed JSON")
+	}
+}
+
+func TestGetEpisodeFiles_httpError(t *testing.T) {
+	rs := newServer(t, http.StatusNotFound, `{"message":"NotFound"}`)
+	s := fastSonarr(t, rs.srv.URL)
+
+	_, err := s.GetEpisodeFiles(t.Context(), 999)
+	if err == nil {
+		t.Fatal("expected error on 404")
+	}
+	if !arrapi.IsNotFound(err) {
+		t.Errorf("IsNotFound(%v) = false, want true", err)
+	}
+	var se *arrapi.StatusError
+	if !errors.As(err, &se) || se.Code != http.StatusNotFound {
+		t.Errorf("want *StatusError code 404, got %v", err)
+	}
+}
+
 func TestGetMovies_success(t *testing.T) {
 	rs := newServer(t, http.StatusOK, `[{"id":1,"title":"A Silent Voice","tmdbId":378064,"imdbId":"tt5323662","year":2016,"hasFile":true}]`)
 	r, err := arrapi.NewRadarr(rs.srv.URL, testKey, arrapi.WithBaseDelay(time.Millisecond))

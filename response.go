@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/cplieger/httpx/v3"
+	"github.com/cplieger/runesafe"
 )
 
 // avgItemSize is a rough per-item JSON size used only to seed slice capacity;
@@ -23,7 +24,9 @@ const maxPrealloc = 8192
 // carrying the (size-capped) response body and any Retry-After hint. The
 // caller's apiKey is redacted from the captured body so a hostile or
 // compromised endpoint cannot reflect the request credential back into a
-// caller's logs.
+// caller's logs, and the body is sanitized with runesafe.Sanitize so
+// terminal-escape, C1, and bidi control runes from a hostile or garbled
+// response never reach a caller's log stream.
 func statusError(resp *http.Response, path, apiKey string) error {
 	body, err := readErrorBody(resp.Body, apiKey)
 	e := &StatusError{
@@ -47,6 +50,14 @@ func statusError(resp *http.Response, path, apiKey string) error {
 // the body AND redaction shrank it -- the sole case that can pull an unmatched
 // key prefix back under the cap -- so a fully-read short body whose text merely
 // happens to end with the key's first characters is never over-redacted.
+//
+// The final step sanitizes the captured body with runesafe.Sanitize: C0/C1
+// controls, bidi controls, and the U+2028/U+2029 separators become spaces,
+// and invalid UTF-8 bytes become U+FFFD. Sanitization runs last so redaction
+// string-matches the raw wire bytes, and because U+FFFD replacement can grow
+// the byte length, the result is re-capped at maxErrorBodyBytes with
+// runesafe.CapBytes, whose rune-boundary cut cannot reintroduce an unsafe
+// partial-rune tail.
 func readErrorBody(body io.ReadCloser, apiKey string) (string, error) {
 	defer body.Close()
 	readLimit := maxErrorBodyBytes
@@ -77,7 +88,7 @@ func readErrorBody(body io.ReadCloser, apiKey string) (string, error) {
 			redacted = trimTrailingSecretPrefix(redacted, trimmedKey)
 		}
 	}
-	return redacted, nil
+	return runesafe.CapBytes(runesafe.Sanitize(redacted), maxErrorBodyBytes), nil
 }
 
 // trimTrailingSecretPrefix removes a trailing run of s that is a non-empty proper prefix

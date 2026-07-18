@@ -222,7 +222,7 @@ func doRetry[T any](ctx context.Context, c *client, fn func(context.Context) (T,
 			defer cancel()
 			return fn(rctx)
 		},
-		httpx.WithMaxAttempts(max(c.maxAttempts, 1)),
+		httpx.WithMaxAttempts(c.maxAttempts),
 		httpx.WithBaseDelay(c.baseDelay),
 		httpx.WithLabel("arrapi"))
 }

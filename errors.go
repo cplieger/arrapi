@@ -15,6 +15,15 @@ import (
 // the server's Retry-After hint (capped) whenever the response includes a
 // Retry-After header (in practice a 429 or a 503); it is zero otherwise. Only a
 // transient status actually consults it during retry.
+//
+// Body carries the response body already made log-safe at capture: the
+// caller's API key is redacted, the body is capped at 64 KiB, and unsafe
+// runes (C0/C1 controls, Unicode bidi controls, U+2028/U+2029) are replaced
+// with spaces via runesafe.Sanitize, with invalid UTF-8 mapped to
+// U+FFFD. An arr response body is untrusted text that consumers pass to slog
+// ("error", err) without any escaping hop, so a hostile or garbled upstream
+// could otherwise inject terminal escapes or reorder rendered log lines;
+// sanitizing the field itself makes every access path safe, not just Error().
 type StatusError struct {
 	Body       string
 	Path       string
