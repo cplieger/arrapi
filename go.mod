@@ -4,7 +4,7 @@ go 1.26.5
 
 require (
 	github.com/cplieger/httpx/v3 v3.2.0
-	github.com/cplieger/runesafe v1.2.0
+	github.com/cplieger/runesafe v1.2.1
 )
 
 // Test-only (schemadrift_test.go): OpenAPI-generated arr models used as the
