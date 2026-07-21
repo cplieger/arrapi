@@ -3,7 +3,7 @@ module github.com/cplieger/arrapi
 go 1.26.5
 
 require (
-	github.com/cplieger/httpx/v3 v3.1.1
+	github.com/cplieger/httpx/v3 v3.2.0
 	github.com/cplieger/runesafe v1.1.1
 )
 
