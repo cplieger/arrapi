@@ -40,6 +40,15 @@ func statusError(resp *http.Response, path, apiKey string) error {
 	return e
 }
 
+// truncationMarker is appended to a captured error body that lost bytes to
+// any of the capture cuts, mirroring runesafe.SanitizeSingleLineBounded's
+// marker convention: the marker sits OUTSIDE the cap, so a cut capture is at
+// most maxErrorBodyBytes+3 bytes and always ends in the marker, while a
+// fully-captured body is returned byte-identical (no marker). The converse
+// does not hold -- a short wire body may itself end in "..." -- so the marker
+// marks a cut without proving one.
+const truncationMarker = "..."
+
 // readErrorBody drains and closes body, redacts apiKey (and its
 // whitespace-trimmed variant, which an HTTP peer may reflect back after
 // stripping header OWS), then caps the result at maxErrorBodyBytes. Redaction
@@ -51,13 +60,19 @@ func statusError(resp *http.Response, path, apiKey string) error {
 // key prefix back under the cap -- so a fully-read short body whose text merely
 // happens to end with the key's first characters is never over-redacted.
 //
-// The final step sanitizes the captured body with runesafe.Sanitize: C0/C1
-// controls, bidi controls, and the U+2028/U+2029 separators become spaces,
-// and invalid UTF-8 bytes become U+FFFD. Sanitization runs last so redaction
-// string-matches the raw wire bytes, and because U+FFFD replacement can grow
-// the byte length, the result is re-capped at maxErrorBodyBytes with
-// runesafe.CapBytes, whose rune-boundary cut cannot reintroduce an unsafe
-// partial-rune tail.
+// The next-to-last step sanitizes the captured body with runesafe.Sanitize:
+// C0/C1 controls, bidi controls, and the U+2028/U+2029 separators become
+// spaces, and invalid UTF-8 bytes become U+FFFD. Sanitization runs after
+// redaction so redaction string-matches the raw wire bytes, and because
+// U+FFFD replacement can grow the byte length, the result is re-capped at
+// maxErrorBodyBytes with runesafe.CapBytes, whose rune-boundary cut cannot
+// reintroduce an unsafe partial-rune tail.
+//
+// Finally, a capture that lost body bytes anywhere -- the read window, the
+// post-redaction cap, or the post-sanitization re-cap -- gets the
+// truncationMarker appended, so an operator reading the logged body can tell
+// a truncated capture from a genuinely short response. Redaction and
+// whitespace trimming are substitutions, not cuts, and do not mark.
 func readErrorBody(body io.ReadCloser, apiKey string) (string, error) {
 	defer body.Close()
 	readLimit := maxErrorBodyBytes
@@ -79,8 +94,10 @@ func readErrorBody(body io.ReadCloser, apiKey string) (string, error) {
 		redacted = httpx.RedactSecretString(redacted, trimmedKey)
 	}
 	redactionShrank := len(redacted) < len(trimmed)
+	cut := truncatedAtReadWindow
 	if len(redacted) > maxErrorBodyBytes {
 		redacted = redacted[:maxErrorBodyBytes]
+		cut = true
 	}
 	if truncatedAtReadWindow && redactionShrank {
 		redacted = trimTrailingSecretPrefix(redacted, apiKey)
@@ -88,7 +105,15 @@ func readErrorBody(body io.ReadCloser, apiKey string) (string, error) {
 			redacted = trimTrailingSecretPrefix(redacted, trimmedKey)
 		}
 	}
-	return runesafe.CapBytes(runesafe.Sanitize(redacted), maxErrorBodyBytes), nil
+	sanitized := runesafe.Sanitize(redacted)
+	if len(sanitized) > maxErrorBodyBytes {
+		sanitized = runesafe.CapBytes(sanitized, maxErrorBodyBytes)
+		cut = true
+	}
+	if cut {
+		sanitized += truncationMarker
+	}
+	return sanitized, nil
 }
 
 // trimTrailingSecretPrefix removes a trailing run of s that is a non-empty proper prefix

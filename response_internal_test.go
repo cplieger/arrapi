@@ -39,8 +39,8 @@ func TestStatusError_secretStraddlingCapBoundaryIsRedacted(t *testing.T) {
 			t.Errorf("StatusError.Body leaks a %d-char key prefix %q", n, apiKey[:n])
 		}
 	}
-	if len(se.Body) > maxErrorBodyBytes {
-		t.Errorf("StatusError.Body length %d exceeds cap %d", len(se.Body), maxErrorBodyBytes)
+	if len(se.Body) > maxErrorBodyBytes+len(truncationMarker) {
+		t.Errorf("StatusError.Body length %d exceeds cap %d + marker", len(se.Body), maxErrorBodyBytes)
 	}
 }
 
@@ -80,8 +80,8 @@ func TestStatusError_secretPrefixSurvivesRedactionShrinkage(t *testing.T) {
 	if strings.Contains(se.Body, apiKey) {
 		t.Error("StatusError.Body contains the full API key")
 	}
-	if len(se.Body) > maxErrorBodyBytes {
-		t.Errorf("StatusError.Body length %d exceeds cap %d", len(se.Body), maxErrorBodyBytes)
+	if len(se.Body) > maxErrorBodyBytes+len(truncationMarker) {
+		t.Errorf("StatusError.Body length %d exceeds cap %d + marker", len(se.Body), maxErrorBodyBytes)
 	}
 }
 
