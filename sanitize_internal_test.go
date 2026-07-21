@@ -95,36 +95,45 @@ func TestStatusError_cleanBodyByteIdentical(t *testing.T) {
 	}
 }
 
-// TestStatusError_truncationSemanticsUnchanged pins that the 64 KiB cap
-// behaves exactly as before for a clean oversized body: capped at
-// maxErrorBodyBytes bytes, content preserved verbatim up to the cut.
-func TestStatusError_truncationSemanticsUnchanged(t *testing.T) {
+// TestStatusError_truncationMarked pins the marker contract for a clean
+// oversized body: content preserved verbatim up to the maxErrorBodyBytes cut,
+// then the truncationMarker appended OUTSIDE the cap (runesafe's bounded
+// preset convention), so an operator can tell a truncated capture from a
+// genuinely short response.
+func TestStatusError_truncationMarked(t *testing.T) {
 	body := strings.Repeat("A", maxErrorBodyBytes+512)
 	se := captureStatusError(t, body, "irrelevant-key")
-	if len(se.Body) != maxErrorBodyBytes {
-		t.Errorf("Body length = %d, want exactly %d", len(se.Body), maxErrorBodyBytes)
+	if len(se.Body) != maxErrorBodyBytes+len(truncationMarker) {
+		t.Errorf("Body length = %d, want exactly %d (cap + marker)", len(se.Body), maxErrorBodyBytes+len(truncationMarker))
 	}
-	if se.Body != body[:maxErrorBodyBytes] {
+	if se.Body[:maxErrorBodyBytes] != body[:maxErrorBodyBytes] {
 		t.Error("capped Body diverges from the leading maxErrorBodyBytes bytes of the wire body")
+	}
+	if !strings.HasSuffix(se.Body, truncationMarker) {
+		t.Errorf("truncated Body does not end in the %q marker", truncationMarker)
 	}
 }
 
 // TestStatusError_invalidUTF8ExpansionStaysUnderCap pins the post-sanitization
 // re-cap: runesafe.Sanitize maps each invalid UTF-8 byte to U+FFFD (3 bytes), so
 // a garbage body at the cap would otherwise triple past it. The re-cap must
-// hold the 64 KiB bound and cut on a rune boundary so the truncated tail
-// cannot itself reintroduce raw 0x80-0x9F (C1) bytes.
+// hold the 64 KiB bound (plus the marker, which sits outside the cap) and cut
+// on a rune boundary so the truncated tail cannot itself reintroduce raw
+// 0x80-0x9F (C1) bytes.
 func TestStatusError_invalidUTF8ExpansionStaysUnderCap(t *testing.T) {
 	body := strings.Repeat("\x92", maxErrorBodyBytes+512) // C1-range invalid bytes
 	se := captureStatusError(t, body, "irrelevant-key")
-	if len(se.Body) > maxErrorBodyBytes {
-		t.Errorf("Body length = %d, exceeds cap %d after U+FFFD expansion", len(se.Body), maxErrorBodyBytes)
+	if len(se.Body) > maxErrorBodyBytes+len(truncationMarker) {
+		t.Errorf("Body length = %d, exceeds cap %d + marker after U+FFFD expansion", len(se.Body), maxErrorBodyBytes)
 	}
 	if !utf8.ValidString(se.Body) {
 		t.Error("re-capped Body is not valid UTF-8")
 	}
 	if strings.ContainsRune(se.Body, '\u0092') {
 		t.Error("Body still contains a C1 control rune")
+	}
+	if !strings.HasSuffix(se.Body, truncationMarker) {
+		t.Errorf("truncated Body does not end in the %q marker", truncationMarker)
 	}
 }
 

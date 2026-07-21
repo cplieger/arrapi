@@ -200,7 +200,9 @@ func TestUserAgentHeaderSet(t *testing.T) {
 
 // TestStatusError_errorBodyIsCapped confirms a non-2xx error body is capped at
 // maxErrorBodyBytes before being stored, so a regression to an unbounded read
-// cannot consume or expose an attacker-controlled error body.
+// cannot consume or expose an attacker-controlled error body. A capture cut by
+// the cap ends in the "..." truncation marker (outside the cap), so the total
+// is cap+3 bytes.
 func TestStatusError_errorBodyIsCapped(t *testing.T) {
 	body := strings.Repeat("x", 64<<10) + "after-limit"
 	rs := newServer(t, http.StatusInternalServerError, body)
@@ -211,8 +213,11 @@ func TestStatusError_errorBodyIsCapped(t *testing.T) {
 	if !errors.As(err, &se) {
 		t.Fatalf("GetSeries error = %v, want *StatusError", err)
 	}
-	if len(se.Body) != 64<<10 {
-		t.Errorf("StatusError.Body length = %d, want 65536", len(se.Body))
+	if len(se.Body) != 64<<10+len("...") {
+		t.Errorf("StatusError.Body length = %d, want %d (cap + truncation marker)", len(se.Body), 64<<10+len("..."))
+	}
+	if !strings.HasSuffix(se.Body, "...") {
+		t.Error("truncated StatusError.Body does not end in the \"...\" marker")
 	}
 	if strings.Contains(se.Body, "after-limit") {
 		t.Errorf("StatusError.Body included bytes beyond the 64 KiB cap")

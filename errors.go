@@ -20,10 +20,13 @@ import (
 // caller's API key is redacted, the body is capped at 64 KiB, and unsafe
 // runes (C0/C1 controls, Unicode bidi controls, U+2028/U+2029) are replaced
 // with spaces via runesafe.Sanitize, with invalid UTF-8 mapped to
-// U+FFFD. An arr response body is untrusted text that consumers pass to slog
-// ("error", err) without any escaping hop, so a hostile or garbled upstream
-// could otherwise inject terminal escapes or reorder rendered log lines;
-// sanitizing the field itself makes every access path safe, not just Error().
+// U+FFFD. A capture that lost body bytes to the cap ends in a "..." marker
+// (runesafe's bounded-preset convention, at most 64 KiB + 3 bytes total), so
+// a truncated capture is distinguishable from a short response. An arr
+// response body is untrusted text that consumers pass to slog ("error", err)
+// without any escaping hop, so a hostile or garbled upstream could otherwise
+// inject terminal escapes or reorder rendered log lines; sanitizing the field
+// itself makes every access path safe, not just Error().
 type StatusError struct {
 	Body       string
 	Path       string
