@@ -120,12 +120,15 @@ dependency — the correct thing to fake). Match the file to the unit:
   helpers.
 - `errors_test.go` — `StatusError` formatting, `IsTransient` classification,
   and `IsNotFound`.
-- `schemadrift_test.go` — pins every curated DTO JSON tag against the
-  devopsarr OpenAPI-generated models (the module's only test-only
-  dependencies), so a Renovate bump after an upstream field rename or
-  removal fails in the bump PR instead of the field silently decoding to a
-  zero value. Shared types must exist on both services' models;
-  `HistoryRecord` is checked as a deliberate union.
+- `schemadrift_test.go` — downloads the official Sonarr/Radarr OpenAPI
+  documents (generated and committed by the upstream projects themselves)
+  from their default branches at test time and pins every curated DTO JSON
+  tag, wire kind, and hand-built endpoint against them, so an upstream
+  field rename, type change, or endpoint move fails the next test run
+  instead of the field silently decoding to a zero value. Shared types
+  must exist in both services' documents; `HistoryRecord` is checked as a
+  deliberate union. These are the suite's only network-dependent tests;
+  `go test -short ./...` skips them for offline runs.
 
 Conventions that matter here:
 
