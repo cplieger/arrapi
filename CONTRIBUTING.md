@@ -7,9 +7,11 @@ library, so most of this guide is about preserving them.
 ## What the library is
 
 `arrapi` wraps the Sonarr and Radarr v3 HTTP APIs behind two concrete
-clients built on a shared, unexported core. Its only runtime dependency is
+clients built on a shared, unexported core. Its runtime dependencies are
 [`cplieger/httpx`](https://github.com/cplieger/httpx), which supplies the
-retry loop and transient-error classification.
+retry loop and transient-error classification, and
+[`cplieger/runesafe`](https://github.com/cplieger/runesafe), which makes
+captured error bodies log-safe.
 
 Two invariants are load-bearing:
 
@@ -17,7 +19,7 @@ Two invariants are load-bearing:
   `*Sonarr`, Radarr-only operations on `*Radarr`, and the endpoints common
   to both (tags, system status, ping) live on the embedded `*client` so they
   are promoted to both. Do not collapse the two types back into one client
-  that exposes every endpoint — the split is what makes a wrong call a
+  that exposes every endpoint; the split is what makes a wrong call a
   compile error instead of a runtime 404.
 - **Transient failures are retried; permanent ones are not.** A non-2xx
   response becomes a `*StatusError`, whose `IsTransient()` returns true for
@@ -105,30 +107,35 @@ gremlins unleash .
 
 Tests are black-box (`package arrapi_test`) and exercise the public API
 through an `httptest.Server` standing in for the arr instance (an unmanaged
-dependency — the correct thing to fake). Match the file to the unit:
+dependency, the correct thing to fake). Match the file to the unit:
 
-- `arrapi_test.go` — construction validation, request path/header
+- `arrapi_test.go`: construction validation, request path/header
   assertions, decode, retry-on-transient, exhaustion, timeout, and context
   cancellation, all driven through the exported clients.
-- `resilience_test.go` — a large streamed body (the context-cancel guard),
+- `resilience_test.go`: a large streamed body (the context-cancel guard),
   cross-host redirect refusal, over-limit rejection, `Retry-After` honoring,
   and the `User-Agent` header.
-- `history_test.go` — event-type decoding, client-side history filtering
+- `history_test.go`: event-type decoding, client-side history filtering
   (including the Radarr renamed-vs-deleted regression), and paging.
-- `command_test.go` — command POST bodies and the returned command resource.
-- `tags_test.go` — table-driven tests for the pure `TagIDs` / `HasAnyTag`
+- `command_test.go`: command POST bodies and the returned command resource.
+- `tags_test.go`: table-driven tests for the pure `TagIDs` / `HasAnyTag`
   helpers.
-- `errors_test.go` — `StatusError` formatting, `IsTransient` classification,
+- `errors_test.go`: `StatusError` formatting, `IsTransient` classification,
   and `IsNotFound`.
-- `schemadrift_test.go` — downloads the official Sonarr/Radarr OpenAPI
+- `schemadrift_test.go`: downloads the official Sonarr/Radarr OpenAPI
   documents (generated and committed by the upstream projects themselves)
   from their default branches at test time and pins every curated DTO JSON
   tag, wire kind, and hand-built endpoint against them, so an upstream
   field rename, type change, or endpoint move fails the next test run
   instead of the field silently decoding to a zero value. Shared types
   must exist in both services' documents; `HistoryRecord` is checked as a
-  deliberate union. These are the suite's only network-dependent tests;
-  `go test -short ./...` skips them for offline runs.
+  deliberate union. When the upstream fetch fails, the tests fall back —
+  with a logged warning — to the last-known-good copies on this repo's
+  machine-managed `schema-mirror` branch (refreshed daily by
+  `.github/workflows/schema-mirror.yaml`), so an upstream outage or file
+  move never fails the suite over a contract that has not changed. These
+  are the suite's only network-dependent tests; `go test -short ./...`
+  skips them for offline runs.
 
 Conventions that matter here:
 
@@ -157,5 +164,5 @@ release). Write the subject as the changelog line a consumer would read.
 By participating you agree to the org-wide
 [Code of Conduct](https://github.com/cplieger/.github/blob/main/CODE_OF_CONDUCT.md).
 Report security issues through the
-[security policy](https://github.com/cplieger/.github/blob/main/SECURITY.md) —
+[security policy](https://github.com/cplieger/.github/blob/main/SECURITY.md),
 never in a public issue.

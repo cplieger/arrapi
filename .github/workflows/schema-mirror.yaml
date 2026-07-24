@@ -1,0 +1,131 @@
+# Repo-local workflow (not synced from cplieger/ci — arrapi is the only repo
+# with a schema-drift guard). Maintains the machine-managed `schema-mirror`
+# branch: last-known-good copies of the official Sonarr/Radarr v3 OpenAPI
+# documents that schemadrift_test.go falls back to when its live upstream HEAD
+# fetch fails (a raw.githubusercontent outage, an upstream file move, a
+# deleted repo). Unlike the squashed `badges` branch, this branch keeps real
+# history — one commit per upstream contract change — so its log doubles as a
+# changelog of upstream API evolution, useful when a drift test fails for real.
+#
+# The drift guard still fetches upstream HEAD first on every run, so the
+# mirror adds no detection latency; it only removes the hard network gate.
+# Nothing lands on main: no bump PRs, no releases, nothing Renovate-tracked.
+name: Schema mirror
+
+on:
+  schedule:
+    - cron: '23 3 * * *' # daily, off-peak; a missed run self-heals next day
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# A dispatched run racing the schedule would double-commit; queue instead.
+concurrency:
+  group: schema-mirror
+
+jobs:
+  mirror:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: write # push refreshed documents to the schema-mirror branch
+    steps:
+      # No checkout: the job needs nothing from the working tree. HEAD is
+      # resolved to a commit first (git ls-remote) and the documents are
+      # fetched BY COMMIT — tool-catalog's content-addressing convention — so
+      # the fetch can't race a moving HEAD and each mirror commit records the
+      # exact upstream commits it mirrors. The fetch mirrors
+      # schemadrift_test.go's bounds (16 MB cap, bounded attempts) and its
+      # emptiness validation, plus a JSON-shape check so an HTML error page
+      # or a stub document can never poison the mirror.
+      - name: Fetch and validate upstream documents
+        run: |
+          set -euo pipefail
+          mkdir -p docs
+          resolve() { # $1 = owner/repo -> prints the default-branch HEAD commit
+            sha=$(git ls-remote "https://github.com/$1.git" HEAD | cut -f1)
+            if ! printf '%s' "$sha" | grep -Eq '^[0-9a-f]{40}$'; then
+              echo "::error::could not resolve $1 HEAD to a commit (got: ${sha})" >&2
+              exit 1
+            fi
+            printf '%s' "$sha"
+          }
+          fetch() { # $1 = service, $2 = owner/repo, $3 = commit, $4 = path in repo
+            curl --fail --silent --show-error --location \
+              --retry 3 --retry-delay 2 --max-time 60 --max-filesize 16777216 \
+              --user-agent 'arrapi-schema-mirror (+https://github.com/cplieger/arrapi)' \
+              --output "docs/$1-openapi.json" "https://raw.githubusercontent.com/$2/$3/$4"
+            jq -e '(.paths | length > 0) and (.components.schemas | length > 0)' \
+              "docs/$1-openapi.json" >/dev/null \
+              || { echo "::error::$1 document has no paths/schemas — upstream moved or emptied it"; exit 1; }
+          }
+          SONARR_SHA=$(resolve Sonarr/Sonarr)
+          RADARR_SHA=$(resolve Radarr/Radarr)
+          fetch sonarr Sonarr/Sonarr "$SONARR_SHA" 'src/Sonarr.Api.V3/openapi.json'
+          fetch radarr Radarr/Radarr "$RADARR_SHA" 'src/Radarr.Api.V3/openapi.json'
+          { echo "SONARR_SHA=${SONARR_SHA}"; echo "RADARR_SHA=${RADARR_SHA}"; } >>"$GITHUB_ENV"
+
+      - name: Push to schema-mirror on change
+        env:
+          # Values travel via env, never inline ${{ }} in the script body
+          # (template injection; same rule as publish-badge.sh).
+          TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          URL="https://x-access-token:${TOKEN}@github.com/${REPO}.git"
+          work=$(mktemp -d)
+          git -C "$work" init -q
+          git -C "$work" config user.name 'github-actions[bot]'
+          git -C "$work" config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          # Continue existing history when the branch exists; bootstrap an
+          # orphan on first run. A shallow parent is fine to push on top of —
+          # the remote already has the history.
+          if git -C "$work" fetch -q --depth 1 "$URL" schema-mirror 2>/dev/null; then
+            git -C "$work" checkout -q -B schema-mirror FETCH_HEAD
+          else
+            git -C "$work" checkout -q --orphan schema-mirror
+          fi
+
+          changed=''
+          for svc in sonarr radarr; do
+            if ! cmp -s "docs/${svc}-openapi.json" "${work}/${svc}-openapi.json" 2>/dev/null; then
+              cp "docs/${svc}-openapi.json" "${work}/"
+              changed="${changed}${changed:+, }${svc}"
+            fi
+          done
+          if [ ! -f "${work}/README.md" ]; then
+            printf '%s\n' \
+              '# schema-mirror' \
+              '' \
+              'Machine-managed last-known-good copies of the official Sonarr and Radarr v3' \
+              'OpenAPI documents, refreshed daily by the Schema mirror workflow' \
+              '(.github/workflows/schema-mirror.yaml on main). The schema-drift tests fall' \
+              'back to these when their live upstream HEAD fetch fails. One commit per' \
+              'upstream contract change: the log of this branch is a changelog of upstream' \
+              'API evolution, and each commit message records the exact upstream commits' \
+              'it mirrors. Do not edit by hand.' \
+              >"${work}/README.md"
+            changed="${changed}${changed:+, }readme"
+          fi
+          if [ -z "$changed" ]; then
+            echo 'mirror already current'
+            exit 0
+          fi
+
+          git -C "$work" add -A
+          git -C "$work" commit -qm "chore: refresh openapi mirror (${changed}; sonarr@${SONARR_SHA:0:12} radarr@${RADARR_SHA:0:12})"
+          # Plain push (never force — history is the point). Retry the
+          # transient server-side push failures publish-badge.sh documents.
+          attempt=1
+          until git -C "$work" push -q "$URL" HEAD:schema-mirror; do
+            if [ "$attempt" -ge 4 ]; then
+              echo "push to schema-mirror failed after ${attempt} attempts" >&2
+              exit 1
+            fi
+            echo "push to schema-mirror failed (attempt ${attempt}/4); retrying" >&2
+            sleep $((attempt * 3))
+            attempt=$((attempt + 1))
+          done
+          echo "pushed: ${changed}"
