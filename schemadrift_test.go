@@ -29,9 +29,14 @@ package arrapi_test
 // the guard always checks the LATEST upstream contract: no committed
 // snapshot, no third-party generated client, and nothing for Renovate to
 // track. HEAD follows upstream development, so a rename is seen before it
-// ships in a release. The cost is a network dependency: `go test -short`
-// skips these tests for offline runs, and a download failure after retries
-// fails loudly rather than passing vacuously.
+// ships in a release. When the upstream fetch fails after retries (an outage,
+// an upstream file move), the guard falls back — loudly — to the
+// last-known-good copies on this repository's schema-mirror branch (refreshed
+// daily by .github/workflows/schema-mirror.yaml), so upstream unavailability
+// never reddens CI over a contract that has not actually changed. The cost is
+// a network dependency: `go test -short` skips these tests for offline runs,
+// and only when BOTH sources fail does the suite fail loudly rather than pass
+// vacuously.
 //
 // The reverse direction is deliberately unchecked: the official schemas carry
 // the full upstream resource, and arrapi's subsets are curation, not drift.
@@ -59,6 +64,16 @@ import (
 var specURLs = map[string]string{
 	"sonarr": "https://raw.githubusercontent.com/Sonarr/Sonarr/HEAD/src/Sonarr.Api.V3/openapi.json",
 	"radarr": "https://raw.githubusercontent.com/Radarr/Radarr/HEAD/src/Radarr.Api.V3/openapi.json",
+}
+
+// mirrorURLs locates the last-known-good copy of each document on this
+// repository's machine-managed schema-mirror branch (see
+// .github/workflows/schema-mirror.yaml). Consulted only after the upstream
+// fetch fails, so the guard checks the latest contract whenever upstream is
+// reachable and degrades to the newest mirrored contract when it is not.
+var mirrorURLs = map[string]string{
+	"sonarr": "https://raw.githubusercontent.com/cplieger/arrapi/schema-mirror/sonarr-openapi.json",
+	"radarr": "https://raw.githubusercontent.com/cplieger/arrapi/schema-mirror/radarr-openapi.json",
 }
 
 // maxSpecBytes bounds the spec download (the documents are ~300 KB today).
@@ -147,8 +162,9 @@ var specCache = struct {
 }
 
 // openapiSpec returns the parsed official OpenAPI document for svc,
-// downloading it on first use. Skips under -short (offline runs); fails the
-// test when the download or parse fails after retries.
+// downloading it on first use: upstream HEAD first, then the schema-mirror
+// fallback with a logged warning. Skips under -short (offline runs); fails
+// the test only when both sources fail after retries.
 func openapiSpec(t *testing.T, svc string) *specDoc {
 	t.Helper()
 	if testing.Short() {
@@ -166,8 +182,14 @@ func openapiSpec(t *testing.T, svc string) *specDoc {
 
 	doc, err := downloadSpec(t.Context(), specURLs[svc])
 	if err != nil {
-		specCache.errs[svc] = err
-		t.Fatalf("download official %s OpenAPI document %s: %v", svc, specURLs[svc], err)
+		t.Logf("WARNING: upstream %s OpenAPI document %s unavailable (%v); falling back to the schema-mirror last-known-good copy, which may lag upstream HEAD", svc, specURLs[svc], err)
+		var mirrorErr error
+		doc, mirrorErr = downloadSpec(t.Context(), mirrorURLs[svc])
+		if mirrorErr != nil {
+			combined := fmt.Errorf("upstream %s: %w; mirror %s: %v", specURLs[svc], err, mirrorURLs[svc], mirrorErr)
+			specCache.errs[svc] = combined
+			t.Fatalf("official %s OpenAPI document unavailable: %v", svc, combined)
+		}
 	}
 	specCache.docs[svc] = doc
 	return doc
