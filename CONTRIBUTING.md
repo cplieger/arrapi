@@ -129,8 +129,8 @@ dependency, the correct thing to fake). Match the file to the unit:
   field rename, type change, or endpoint move fails the next test run
   instead of the field silently decoding to a zero value. Shared types
   must exist in both services' documents; `HistoryRecord` is checked as a
-  deliberate union. When the upstream fetch fails, the tests fall back —
-  with a logged warning — to the last-known-good copies on this repo's
+  deliberate union. When the upstream fetch fails, the tests fall back,
+  with a logged warning, to the last-known-good copies on this repo's
   machine-managed `schema-mirror` branch (refreshed daily by
   `.github/workflows/schema-mirror.yaml`), so an upstream outage or file
   move never fails the suite over a contract that has not changed. These
