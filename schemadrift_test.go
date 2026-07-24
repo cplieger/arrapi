@@ -6,43 +6,251 @@ package arrapi_test
 // against the Sonarr/Radarr v3 wire format, and Go's JSON decoding ignores
 // unknown or missing fields — so an upstream field rename or removal would
 // silently decode to a zero value instead of failing. These tests pin the
-// curated surface against the devopsarr OpenAPI-generated clients (test-only
-// dependencies, regenerated upstream from the arr teams' published API specs)
-// in three layers:
+// curated surface against the OFFICIAL OpenAPI documents both projects
+// generate from their own controllers and commit in their repositories
+// (src/{Sonarr,Radarr}.Api.V3/openapi.json), in three layers:
 //
 //  1. Tag presence (TestUpstreamSchemaDrift): every curated JSON tag must
-//     still exist in the generated models — a dropped or renamed field fails
-//     the Renovate bump PR instead of decoding silently to a zero value.
-//  2. Wire-kind compatibility (TestUpstreamSchemaDrift): the curated field and
-//     the generated field must decode the same JSON wire kind (string, number,
-//     boolean, array, object) — an upstream type change fails the same bump PR
-//     instead of first surfacing at runtime as an *json.UnmarshalTypeError*.
-//     Deliberate divergences are recorded in wireKindExceptions with a reason.
+//     still exist in the official schema — a dropped or renamed field fails
+//     the next CI run instead of decoding silently to a zero value.
+//  2. Wire-kind compatibility (TestUpstreamSchemaDrift): the curated field
+//     and the official schema property must decode the same JSON wire kind
+//     (string, number, boolean, array, object) — an upstream type change
+//     fails the same run instead of first surfacing at runtime as an
+//     *json.UnmarshalTypeError*. Deliberate divergences are recorded in
+//     wireKindExceptions with a reason.
 //  3. Endpoint pins (TestUpstreamEndpointDrift): the request paths and query
-//     parameter names arrapi hand-builds are pinned against the generated
-//     clients' own request construction, captured via httptest — an upstream
-//     endpoint move or parameter rename fails the bump PR too. A generated
-//     method rename surfaces even earlier, as a compile error in this file.
+//     parameter names arrapi hand-builds are pinned against the official
+//     documents' paths section — an upstream endpoint move or parameter
+//     rename fails too.
 //
-// The reverse direction is deliberately unchecked: the generated models carry
+// The documents are downloaded at test time from each project's default
+// branch (raw.githubusercontent.com HEAD, which survives a branch rename), so
+// the guard always checks the LATEST upstream contract: no committed
+// snapshot, no third-party generated client, and nothing for Renovate to
+// track. HEAD follows upstream development, so a rename is seen before it
+// ships in a release. The cost is a network dependency: `go test -short`
+// skips these tests for offline runs, and a download failure after retries
+// fails loudly rather than passing vacuously.
+//
+// The reverse direction is deliberately unchecked: the official schemas carry
 // the full upstream resource, and arrapi's subsets are curation, not drift.
-// Detection latency is bounded by devopsarr's release cadence (their tags can
-// trail upstream by months); this guard trades that latency for zero runtime
-// dependencies and no facade.
 
 import (
+	"context"
+	"encoding/json"
+	"fmt"
+	"io"
 	"net/http"
-	"net/http/httptest"
-	"net/url"
 	"reflect"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
 	"github.com/cplieger/arrapi"
-	"github.com/devopsarr/radarr-go/radarr"
-	"github.com/devopsarr/sonarr-go/sonarr"
 )
+
+// specURLs locates the OpenAPI document each project generates and commits in
+// its own repository. HEAD resolves to the default branch on
+// raw.githubusercontent.com, so the URLs keep working across upstream branch
+// renames (Sonarr's default moved from develop to v5-develop; the v3 API
+// document applies to v3/v4/v5 per its own description).
+var specURLs = map[string]string{
+	"sonarr": "https://raw.githubusercontent.com/Sonarr/Sonarr/HEAD/src/Sonarr.Api.V3/openapi.json",
+	"radarr": "https://raw.githubusercontent.com/Radarr/Radarr/HEAD/src/Radarr.Api.V3/openapi.json",
+}
+
+// maxSpecBytes bounds the spec download (the documents are ~300 KB today).
+const maxSpecBytes = 16 << 20
+
+// specDoc is the minimal OpenAPI 3.0 slice these tests consume.
+type specDoc struct {
+	Paths      map[string]*specPathItem `json:"paths"`
+	Components struct {
+		Schemas map[string]*specSchema `json:"schemas"`
+	} `json:"components"`
+}
+
+// specPathItem models one paths entry: the operations arrapi pins plus the
+// path-level parameters shared by all of them.
+type specPathItem struct {
+	Get        *specOperation  `json:"get"`
+	Put        *specOperation  `json:"put"`
+	Post       *specOperation  `json:"post"`
+	Delete     *specOperation  `json:"delete"`
+	Parameters []specParameter `json:"parameters"`
+}
+
+func (p *specPathItem) operation(method string) *specOperation {
+	switch method {
+	case http.MethodGet:
+		return p.Get
+	case http.MethodPut:
+		return p.Put
+	case http.MethodPost:
+		return p.Post
+	case http.MethodDelete:
+		return p.Delete
+	default:
+		return nil
+	}
+}
+
+// queryParams returns the names of the query parameters declared for method,
+// merging path-level and operation-level declarations.
+func (p *specPathItem) queryParams(method string) map[string]bool {
+	names := make(map[string]bool)
+	for _, param := range p.Parameters {
+		if param.In == "query" {
+			names[param.Name] = true
+		}
+	}
+	if op := p.operation(method); op != nil {
+		for _, param := range op.Parameters {
+			if param.In == "query" {
+				names[param.Name] = true
+			}
+		}
+	}
+	return names
+}
+
+type specOperation struct {
+	Parameters []specParameter `json:"parameters"`
+}
+
+type specParameter struct {
+	Name string `json:"name"`
+	In   string `json:"in"`
+}
+
+// specSchema is the minimal JSON-schema slice the wire-kind mapping needs.
+// The arr documents use only plain types, $ref, and array items on the
+// properties arrapi curates (no allOf/oneOf composition).
+type specSchema struct {
+	Ref        string                 `json:"$ref"`
+	Type       string                 `json:"type"`
+	Items      *specSchema            `json:"items"`
+	Properties map[string]*specSchema `json:"properties"`
+}
+
+// specCache shares one download per service across both tests. err is
+// remembered so a failed download is reported once per test, not re-fetched.
+var specCache = struct {
+	sync.Mutex
+	docs map[string]*specDoc
+	errs map[string]error
+}{
+	docs: make(map[string]*specDoc),
+	errs: make(map[string]error),
+}
+
+// openapiSpec returns the parsed official OpenAPI document for svc,
+// downloading it on first use. Skips under -short (offline runs); fails the
+// test when the download or parse fails after retries.
+func openapiSpec(t *testing.T, svc string) *specDoc {
+	t.Helper()
+	if testing.Short() {
+		t.Skip("drift guard downloads the official OpenAPI documents; skipped with -short")
+	}
+
+	specCache.Lock()
+	defer specCache.Unlock()
+	if doc, ok := specCache.docs[svc]; ok {
+		return doc
+	}
+	if err, ok := specCache.errs[svc]; ok {
+		t.Fatalf("official %s OpenAPI document unavailable: %v", svc, err)
+	}
+
+	doc, err := downloadSpec(t.Context(), specURLs[svc])
+	if err != nil {
+		specCache.errs[svc] = err
+		t.Fatalf("download official %s OpenAPI document %s: %v", svc, specURLs[svc], err)
+	}
+	specCache.docs[svc] = doc
+	return doc
+}
+
+// downloadSpec fetches and parses one OpenAPI document with bounded reads and
+// three attempts, so a transient GitHub hiccup does not fail the suite.
+func downloadSpec(ctx context.Context, url string) (*specDoc, error) {
+	client := &http.Client{}
+	var lastErr error
+	for attempt := 1; attempt <= 3; attempt++ {
+		if attempt > 1 {
+			select {
+			case <-time.After(time.Duration(attempt) * 2 * time.Second):
+			case <-ctx.Done():
+				return nil, ctx.Err()
+			}
+		}
+		doc, err := fetchSpecOnce(ctx, client, url)
+		if err == nil {
+			return doc, nil
+		}
+		lastErr = err
+	}
+	return nil, lastErr
+}
+
+func fetchSpecOnce(ctx context.Context, client *http.Client, url string) (*specDoc, error) {
+	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
+	defer cancel()
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("User-Agent", "arrapi-schemadrift-test (+https://github.com/cplieger/arrapi)")
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("status %d", resp.StatusCode)
+	}
+
+	body, err := io.ReadAll(io.LimitReader(resp.Body, maxSpecBytes+1))
+	if err != nil {
+		return nil, err
+	}
+	if len(body) > maxSpecBytes {
+		return nil, fmt.Errorf("document exceeds %d bytes", maxSpecBytes)
+	}
+
+	var doc specDoc
+	if err := json.Unmarshal(body, &doc); err != nil {
+		return nil, fmt.Errorf("parse: %w", err)
+	}
+	if len(doc.Components.Schemas) == 0 || len(doc.Paths) == 0 {
+		return nil, fmt.Errorf("document carries no schemas/paths; upstream moved or emptied it")
+	}
+	return &doc, nil
+}
+
+// specRef names one schema inside one service's document.
+type specRef struct {
+	svc  string
+	name string
+}
+
+func (r specRef) String() string { return r.svc + "." + r.name }
+
+// schema resolves the referenced schema, failing the test when the upstream
+// document no longer declares it (a renamed or removed resource).
+func (r specRef) schema(t *testing.T) (*specSchema, *specDoc) {
+	t.Helper()
+	doc := openapiSpec(t, r.svc)
+	s, ok := doc.Components.Schemas[r.name]
+	if !ok {
+		t.Fatalf("official %s document declares no schema %q: the upstream resource was renamed or removed", r.svc, r.name)
+	}
+	return s, doc
+}
 
 // jsonTagFields returns the JSON field name → Go field type mapping declared
 // by a struct type's tags, excluding untagged fields and `json:"-"`.
@@ -61,28 +269,22 @@ func jsonTagFields(typ reflect.Type) map[string]reflect.Type {
 }
 
 // wireKindExceptions lists curated fields whose JSON wire kind DELIBERATELY
-// diverges from the generated model's declaration, keyed "LocalType.jsonTag".
+// diverges from the official schema's declaration, keyed "LocalType.jsonTag".
 // Each entry is a place where arrapi models the observed wire rather than the
-// generated schema; removing one requires re-verifying the wire behavior.
+// documented schema; removing one requires re-verifying the wire behavior.
 var wireKindExceptions = map[string]string{
-	// Sonarr sends its HistoryEventType enum as an INTEGER on the wire, which
-	// the generated string-only EpisodeHistoryEventType cannot decode; Radarr
-	// sends a string. arrapi's EventType accepts both — see
-	// EventType.UnmarshalJSON.
-	"HistoryRecord.eventType": "int-or-string decode; the generated enum is string-only",
+	// The official documents declare eventType as a string enum
+	// (EpisodeHistoryEventType / MovieHistoryEventType), but Sonarr sends the
+	// enum as an INTEGER on the wire; Radarr sends the string. arrapi's
+	// EventType accepts both — see EventType.UnmarshalJSON.
+	"HistoryRecord.eventType": "int-or-string decode; the documented enum is string-only but Sonarr sends an integer",
 }
 
 // wireKind classifies a Go type by the JSON wire kind it decodes from,
-// unwrapping pointers and the generated Nullable* wrappers (whose Get method
-// names the wrapped type). time.Time decodes from a JSON string (RFC 3339).
+// unwrapping pointers. time.Time decodes from a JSON string (RFC 3339).
 func wireKind(t reflect.Type) string {
 	for t.Kind() == reflect.Pointer {
 		t = t.Elem()
-	}
-	if strings.HasPrefix(t.Name(), "Nullable") {
-		if get, ok := reflect.PointerTo(t).MethodByName("Get"); ok && get.Type.NumOut() == 1 {
-			return wireKind(get.Type.Out(0))
-		}
 	}
 	if t == reflect.TypeFor[time.Time]() {
 		return "string"
@@ -107,44 +309,94 @@ func wireKind(t reflect.Type) string {
 	}
 }
 
-// wireKindCompatible reports whether a curated field and a generated field
-// decode the same JSON wire kind. A generated interface{} carries any kind.
-func wireKindCompatible(local, generated reflect.Type) bool {
-	l, g := wireKind(local), wireKind(generated)
-	return l == g || g == "any"
+// specKind classifies an OpenAPI schema by the JSON wire kind it describes,
+// resolving $ref chains against doc (a reference cycle reads as "object").
+func specKind(s *specSchema, doc *specDoc, seen map[string]bool) string {
+	if s == nil {
+		return "any"
+	}
+	if s.Ref != "" {
+		name := strings.TrimPrefix(s.Ref, "#/components/schemas/")
+		if seen[name] {
+			return "object"
+		}
+		target, ok := doc.Components.Schemas[name]
+		if !ok {
+			return "any"
+		}
+		seen[name] = true
+		return specKind(target, doc, seen)
+	}
+	switch s.Type {
+	case "string":
+		return "string"
+	case "integer", "number":
+		return "number"
+	case "boolean":
+		return "boolean"
+	case "array":
+		return "array of " + specKind(s.Items, doc, seen)
+	case "object":
+		return "object"
+	default:
+		if len(s.Properties) > 0 {
+			return "object"
+		}
+		return "any"
+	}
+}
+
+// wireKindCompatible reports whether a curated field and an official schema
+// property decode the same JSON wire kind. An untyped schema ("any") carries
+// any kind, element-wise for arrays.
+func wireKindCompatible(local, spec string) bool {
+	for {
+		if spec == "any" {
+			return true
+		}
+		l, lok := strings.CutPrefix(local, "array of ")
+		s, sok := strings.CutPrefix(spec, "array of ")
+		if lok != sok {
+			return false
+		}
+		if !lok {
+			return local == spec
+		}
+		local, spec = l, s
+	}
 }
 
 func TestUpstreamSchemaDrift(t *testing.T) {
 	tests := []struct {
 		// eachOf: every arrapi JSON tag must exist (kind-compatibly) in EVERY
-		// listed generated model. Used for types decoded from both services (a
-		// rename on either wire breaks the shared struct there).
-		eachOf []any
+		// listed official schema. Used for types decoded from both services
+		// (a rename on either wire breaks the shared struct there).
+		eachOf []specRef
 		// anyOf: every arrapi JSON tag must exist (kind-compatibly) in AT
-		// LEAST ONE listed model. Used only for HistoryRecord, a deliberate
+		// LEAST ONE listed schema. Used only for HistoryRecord, a deliberate
 		// union type (seriesId and episodeId are Sonarr-only, movieId is
 		// Radarr-only).
-		anyOf []any
+		anyOf []specRef
 		local any
 	}{
-		{local: arrapi.Series{}, eachOf: []any{sonarr.SeriesResource{}}},
-		{local: arrapi.Season{}, eachOf: []any{sonarr.SeasonResource{}}},
-		{local: arrapi.SeasonStatistics{}, eachOf: []any{sonarr.SeasonStatisticsResource{}}},
-		{local: arrapi.SeriesStatistics{}, eachOf: []any{sonarr.SeriesStatisticsResource{}}},
-		{local: arrapi.Episode{}, eachOf: []any{sonarr.EpisodeResource{}}},
-		{local: arrapi.EpisodeFile{}, eachOf: []any{sonarr.EpisodeFileResource{}}},
-		{local: arrapi.Movie{}, eachOf: []any{radarr.MovieResource{}}},
-		{local: arrapi.MovieFile{}, eachOf: []any{radarr.MovieFileResource{}}},
-		{local: arrapi.MediaInfo{}, eachOf: []any{sonarr.MediaInfoResource{}, radarr.MediaInfoResource{}}},
-		{local: arrapi.AlternateTitle{}, eachOf: []any{sonarr.AlternateTitleResource{}, radarr.AlternativeTitleResource{}}},
-		{local: arrapi.Language{}, eachOf: []any{sonarr.Language{}, radarr.Language{}}},
-		{local: arrapi.Tag{}, eachOf: []any{sonarr.TagResource{}, radarr.TagResource{}}},
-		{local: arrapi.SystemStatus{}, eachOf: []any{sonarr.SystemResource{}, radarr.SystemResource{}}},
-		{local: arrapi.QualityProfile{}, eachOf: []any{sonarr.QualityProfileResource{}, radarr.QualityProfileResource{}}},
-		{local: arrapi.RootFolder{}, eachOf: []any{sonarr.RootFolderResource{}, radarr.RootFolderResource{}}},
-		{local: arrapi.Command{}, eachOf: []any{sonarr.CommandResource{}, radarr.CommandResource{}}},
-		{local: arrapi.HistoryPage{}, eachOf: []any{sonarr.HistoryResourcePagingResource{}, radarr.HistoryResourcePagingResource{}}},
-		{local: arrapi.HistoryRecord{}, anyOf: []any{sonarr.HistoryResource{}, radarr.HistoryResource{}}},
+		{local: arrapi.Series{}, eachOf: []specRef{{"sonarr", "SeriesResource"}}},
+		{local: arrapi.Season{}, eachOf: []specRef{{"sonarr", "SeasonResource"}}},
+		{local: arrapi.SeasonStatistics{}, eachOf: []specRef{{"sonarr", "SeasonStatisticsResource"}}},
+		{local: arrapi.SeriesStatistics{}, eachOf: []specRef{{"sonarr", "SeriesStatisticsResource"}}},
+		{local: arrapi.Episode{}, eachOf: []specRef{{"sonarr", "EpisodeResource"}}},
+		{local: arrapi.EpisodeFile{}, eachOf: []specRef{{"sonarr", "EpisodeFileResource"}}},
+		{local: arrapi.Movie{}, eachOf: []specRef{{"radarr", "MovieResource"}}},
+		{local: arrapi.MovieFile{}, eachOf: []specRef{{"radarr", "MovieFileResource"}}},
+		{local: arrapi.MediaInfo{}, eachOf: []specRef{{"sonarr", "MediaInfoResource"}, {"radarr", "MediaInfoResource"}}},
+		{local: arrapi.AlternateTitle{}, eachOf: []specRef{{"sonarr", "AlternateTitleResource"}, {"radarr", "AlternativeTitleResource"}}},
+		{local: arrapi.Language{}, eachOf: []specRef{{"sonarr", "Language"}, {"radarr", "Language"}}},
+		{local: arrapi.Tag{}, eachOf: []specRef{{"sonarr", "TagResource"}, {"radarr", "TagResource"}}},
+		{local: arrapi.SystemStatus{}, eachOf: []specRef{{"sonarr", "SystemResource"}, {"radarr", "SystemResource"}}},
+		{local: arrapi.QualityProfile{}, eachOf: []specRef{{"sonarr", "QualityProfileResource"}, {"radarr", "QualityProfileResource"}}},
+		{local: arrapi.RootFolder{}, eachOf: []specRef{{"sonarr", "RootFolderResource"}, {"radarr", "RootFolderResource"}}},
+		{local: arrapi.Command{}, eachOf: []specRef{{"sonarr", "CommandResource"}, {"radarr", "CommandResource"}}},
+		{local: arrapi.HistoryPage{}, eachOf: []specRef{{"sonarr", "HistoryResourcePagingResource"}, {"radarr", "HistoryResourcePagingResource"}}},
+		{local: arrapi.HistoryRecord{}, anyOf: []specRef{{"sonarr", "HistoryResource"}, {"radarr", "HistoryResource"}}},
 	}
 
 	for _, tc := range tests {
@@ -155,22 +407,21 @@ func TestUpstreamSchemaDrift(t *testing.T) {
 				t.Fatalf("arrapi.%s declares no JSON tags; table entry is pointless", localType.Name())
 			}
 
-			for _, model := range tc.eachOf {
-				modelType := reflect.TypeOf(model)
-				modelFields := jsonTagFields(modelType)
+			for _, ref := range tc.eachOf {
+				schema, doc := ref.schema(t)
 				for tag, localFT := range localFields {
-					genFT, ok := modelFields[tag]
+					prop, ok := schema.Properties[tag]
 					if !ok {
 						t.Errorf("arrapi.%s tag %q is not carried by %s: the upstream schema renamed or removed it",
-							localType.Name(), tag, modelType)
+							localType.Name(), tag, ref)
 						continue
 					}
 					if _, exempt := wireKindExceptions[localType.Name()+"."+tag]; exempt {
 						continue
 					}
-					if !wireKindCompatible(localFT, genFT) {
-						t.Errorf("arrapi.%s tag %q decodes wire kind %q but %s declares %s (wire kind %q): the upstream field changed type",
-							localType.Name(), tag, wireKind(localFT), modelType, genFT, wireKind(genFT))
+					if got := specKind(prop, doc, map[string]bool{}); !wireKindCompatible(wireKind(localFT), got) {
+						t.Errorf("arrapi.%s tag %q decodes wire kind %q but %s declares wire kind %q: the upstream field changed type",
+							localType.Name(), tag, wireKind(localFT), ref, got)
 					}
 				}
 			}
@@ -179,22 +430,20 @@ func TestUpstreamSchemaDrift(t *testing.T) {
 				return
 			}
 			names := make([]string, 0, len(tc.anyOf))
-			models := make([]map[string]reflect.Type, 0, len(tc.anyOf))
-			for _, model := range tc.anyOf {
-				modelType := reflect.TypeOf(model)
-				names = append(names, modelType.String())
-				models = append(models, jsonTagFields(modelType))
+			for _, ref := range tc.anyOf {
+				names = append(names, ref.String())
 			}
 			for tag, localFT := range localFields {
 				_, exempt := wireKindExceptions[localType.Name()+"."+tag]
 				found, compatible := false, false
-				for _, modelFields := range models {
-					genFT, ok := modelFields[tag]
+				for _, ref := range tc.anyOf {
+					schema, doc := ref.schema(t)
+					prop, ok := schema.Properties[tag]
 					if !ok {
 						continue
 					}
 					found = true
-					if exempt || wireKindCompatible(localFT, genFT) {
+					if exempt || wireKindCompatible(wireKind(localFT), specKind(prop, doc, map[string]bool{})) {
 						compatible = true
 					}
 				}
@@ -211,204 +460,80 @@ func TestUpstreamSchemaDrift(t *testing.T) {
 	}
 }
 
-// capturedRequest records the one request a pinned generated-client call
-// issued against the recording server.
-type capturedRequest struct {
-	query  url.Values
-	method string
-	path   string
-}
-
-// newRecordingServer returns an httptest server that records each request into
-// the returned capturedRequest and answers 200 with an empty JSON object. The
-// generated clients' decode of that body may fail; the pins only assert on the
-// captured request, which is complete before decoding starts.
-func newRecordingServer(t *testing.T) (*httptest.Server, *capturedRequest) {
-	t.Helper()
-	last := &capturedRequest{}
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		last.method, last.path, last.query = r.Method, r.URL.Path, r.URL.Query()
-		w.Header().Set("Content-Type", "application/json")
-		_, _ = w.Write([]byte("{}"))
-	}))
-	t.Cleanup(srv.Close)
-	return srv, last
-}
-
 // TestUpstreamEndpointDrift pins every request path and query parameter name
 // arrapi hand-builds (client.go, sonarr.go, radarr.go, profiles.go, tags.go,
-// history.go, command.go) against the generated clients' own request
-// construction. If an upstream API move renames an endpoint or a parameter,
-// the regenerated devopsarr client stops issuing the pinned shape and this
-// test fails in the bump PR; if the generated METHOD is renamed or loses a
-// parameter, this file stops compiling there, which is the same signal
-// earlier.
+// history.go, command.go) against the official documents' paths section. If
+// an upstream API move renames an endpoint or a parameter, the document stops
+// declaring the pinned shape and this test fails. Path templates use the
+// documents' own {id} placeholders where arrapi interpolates an ID.
 func TestUpstreamEndpointDrift(t *testing.T) {
-	ctx := t.Context()
-	srv, last := newRecordingServer(t)
-
-	scfg := sonarr.NewConfiguration()
-	scfg.Servers = sonarr.ServerConfigurations{{URL: srv.URL}}
-	sc := sonarr.NewAPIClient(scfg)
-
-	rcfg := radarr.NewConfiguration()
-	rcfg.Servers = radarr.ServerConfigurations{{URL: srv.URL}}
-	rc := radarr.NewAPIClient(rcfg)
-
-	since := time.Date(2026, 1, 2, 3, 4, 5, 0, time.UTC)
-
 	pins := []struct {
-		call       func() *http.Response
-		wantQuery  []string
-		name       string
-		wantMethod string
-		wantPath   string
+		svcs   []string
+		method string
+		path   string
+		query  []string
 	}{
 		// Sonarr-only read surface (sonarr.go).
+		{svcs: []string{"sonarr"}, method: http.MethodGet, path: "/api/v3/series"},
+		{svcs: []string{"sonarr"}, method: http.MethodGet, path: "/api/v3/series/{id}"},
 		{
-			name: "sonarr ListSeries", wantMethod: "GET", wantPath: "/api/v3/series",
-			call: func() *http.Response { _, r, _ := sc.SeriesAPI.ListSeries(ctx).Execute(); return r },
+			svcs: []string{"sonarr"}, method: http.MethodGet, path: "/api/v3/episode",
+			query: []string{"seriesId", "includeEpisodeFile"},
 		},
+		{svcs: []string{"sonarr"}, method: http.MethodGet, path: "/api/v3/episode/{id}"},
 		{
-			name: "sonarr GetSeriesById", wantMethod: "GET", wantPath: "/api/v3/series/42",
-			call: func() *http.Response { _, r, _ := sc.SeriesAPI.GetSeriesById(ctx, 42).Execute(); return r },
-		},
-		{
-			name: "sonarr ListEpisode", wantMethod: "GET", wantPath: "/api/v3/episode",
-			wantQuery: []string{"seriesId", "includeEpisodeFile"},
-			call: func() *http.Response {
-				_, r, _ := sc.EpisodeAPI.ListEpisode(ctx).SeriesId(42).IncludeEpisodeFile(true).Execute()
-				return r
-			},
-		},
-		{
-			name: "sonarr GetEpisodeById", wantMethod: "GET", wantPath: "/api/v3/episode/42",
-			call: func() *http.Response { _, r, _ := sc.EpisodeAPI.GetEpisodeById(ctx, 42).Execute(); return r },
-		},
-		{
-			name: "sonarr ListEpisodeFile", wantMethod: "GET", wantPath: "/api/v3/episodefile",
-			wantQuery: []string{"seriesId"},
-			call: func() *http.Response {
-				_, r, _ := sc.EpisodeFileAPI.ListEpisodeFile(ctx).SeriesId(42).Execute()
-				return r
-			},
+			svcs: []string{"sonarr"}, method: http.MethodGet, path: "/api/v3/episodefile",
+			query: []string{"seriesId"},
 		},
 
 		// Radarr-only read surface (radarr.go).
-		{
-			name: "radarr ListMovie", wantMethod: "GET", wantPath: "/api/v3/movie",
-			call: func() *http.Response { _, r, _ := rc.MovieAPI.ListMovie(ctx).Execute(); return r },
-		},
-		{
-			name: "radarr GetMovieById", wantMethod: "GET", wantPath: "/api/v3/movie/42",
-			call: func() *http.Response { _, r, _ := rc.MovieAPI.GetMovieById(ctx, 42).Execute(); return r },
-		},
+		{svcs: []string{"radarr"}, method: http.MethodGet, path: "/api/v3/movie"},
+		{svcs: []string{"radarr"}, method: http.MethodGet, path: "/api/v3/movie/{id}"},
 
 		// Shared surface (client.go, tags.go, profiles.go, history.go,
 		// command.go) — pinned against BOTH services.
+		{svcs: []string{"sonarr", "radarr"}, method: http.MethodGet, path: "/api/v3/tag"},
+		{svcs: []string{"sonarr", "radarr"}, method: http.MethodGet, path: "/api/v3/qualityprofile"},
+		{svcs: []string{"sonarr", "radarr"}, method: http.MethodGet, path: "/api/v3/rootfolder"},
+		{svcs: []string{"sonarr", "radarr"}, method: http.MethodGet, path: "/api/v3/system/status"},
 		{
-			name: "sonarr ListTag", wantMethod: "GET", wantPath: "/api/v3/tag",
-			call: func() *http.Response { _, r, _ := sc.TagAPI.ListTag(ctx).Execute(); return r },
+			// GetHistorySince sends the include* trio to both services; each
+			// service is pinned only on the parameters it declares (the other
+			// side's flag rides along and is ignored by model binding).
+			svcs: []string{"sonarr"}, method: http.MethodGet, path: "/api/v3/history/since",
+			query: []string{"date", "includeSeries", "includeEpisode"},
 		},
 		{
-			name: "radarr ListTag", wantMethod: "GET", wantPath: "/api/v3/tag",
-			call: func() *http.Response { _, r, _ := rc.TagAPI.ListTag(ctx).Execute(); return r },
+			svcs: []string{"radarr"}, method: http.MethodGet, path: "/api/v3/history/since",
+			query: []string{"date", "includeMovie"},
 		},
 		{
-			name: "sonarr ListQualityProfile", wantMethod: "GET", wantPath: "/api/v3/qualityprofile",
-			call: func() *http.Response { _, r, _ := sc.QualityProfileAPI.ListQualityProfile(ctx).Execute(); return r },
+			svcs: []string{"sonarr", "radarr"}, method: http.MethodGet, path: "/api/v3/history",
+			query: []string{"page", "pageSize", "sortKey", "sortDirection"},
 		},
-		{
-			name: "radarr ListQualityProfile", wantMethod: "GET", wantPath: "/api/v3/qualityprofile",
-			call: func() *http.Response { _, r, _ := rc.QualityProfileAPI.ListQualityProfile(ctx).Execute(); return r },
-		},
-		{
-			name: "sonarr ListRootFolder", wantMethod: "GET", wantPath: "/api/v3/rootfolder",
-			call: func() *http.Response { _, r, _ := sc.RootFolderAPI.ListRootFolder(ctx).Execute(); return r },
-		},
-		{
-			name: "radarr ListRootFolder", wantMethod: "GET", wantPath: "/api/v3/rootfolder",
-			call: func() *http.Response { _, r, _ := rc.RootFolderAPI.ListRootFolder(ctx).Execute(); return r },
-		},
-		{
-			name: "sonarr GetSystemStatus", wantMethod: "GET", wantPath: "/api/v3/system/status",
-			call: func() *http.Response { _, r, _ := sc.SystemAPI.GetSystemStatus(ctx).Execute(); return r },
-		},
-		{
-			name: "radarr GetSystemStatus", wantMethod: "GET", wantPath: "/api/v3/system/status",
-			call: func() *http.Response { _, r, _ := rc.SystemAPI.GetSystemStatus(ctx).Execute(); return r },
-		},
-		{
-			name: "sonarr ListHistorySince", wantMethod: "GET", wantPath: "/api/v3/history/since",
-			wantQuery: []string{"date", "includeSeries", "includeEpisode"},
-			call: func() *http.Response {
-				_, r, _ := sc.HistoryAPI.ListHistorySince(ctx).Date(since).IncludeSeries(false).IncludeEpisode(false).Execute()
-				return r
-			},
-		},
-		{
-			name: "radarr ListHistorySince", wantMethod: "GET", wantPath: "/api/v3/history/since",
-			wantQuery: []string{"date", "includeMovie"},
-			call: func() *http.Response {
-				_, r, _ := rc.HistoryAPI.ListHistorySince(ctx).Date(since).IncludeMovie(false).Execute()
-				return r
-			},
-		},
-		{
-			name: "sonarr GetHistory", wantMethod: "GET", wantPath: "/api/v3/history",
-			wantQuery: []string{"page", "pageSize", "sortKey", "sortDirection"},
-			call: func() *http.Response {
-				_, r, _ := sc.HistoryAPI.GetHistory(ctx).Page(1).PageSize(50).SortKey("date").SortDirection(sonarr.SORTDIRECTION_DESCENDING).Execute()
-				return r
-			},
-		},
-		{
-			name: "radarr GetHistory", wantMethod: "GET", wantPath: "/api/v3/history",
-			wantQuery: []string{"page", "pageSize", "sortKey", "sortDirection"},
-			call: func() *http.Response {
-				_, r, _ := rc.HistoryAPI.GetHistory(ctx).Page(1).PageSize(50).SortKey("date").SortDirection(radarr.SORTDIRECTION_DESCENDING).Execute()
-				return r
-			},
-		},
-		{
-			name: "sonarr CreateCommand", wantMethod: "POST", wantPath: "/api/v3/command",
-			call: func() *http.Response {
-				_, r, _ := sc.CommandAPI.CreateCommand(ctx).CommandResource(*sonarr.NewCommandResource()).Execute()
-				return r
-			},
-		},
-		{
-			name: "radarr CreateCommand", wantMethod: "POST", wantPath: "/api/v3/command",
-			call: func() *http.Response {
-				_, r, _ := rc.CommandAPI.CreateCommand(ctx).CommandResource(*radarr.NewCommandResource()).Execute()
-				return r
-			},
-		},
-		{
-			name: "sonarr GetCommandById", wantMethod: "GET", wantPath: "/api/v3/command/42",
-			call: func() *http.Response { _, r, _ := sc.CommandAPI.GetCommandById(ctx, 42).Execute(); return r },
-		},
-		{
-			name: "radarr GetCommandById", wantMethod: "GET", wantPath: "/api/v3/command/42",
-			call: func() *http.Response { _, r, _ := rc.CommandAPI.GetCommandById(ctx, 42).Execute(); return r },
-		},
+		{svcs: []string{"sonarr", "radarr"}, method: http.MethodPost, path: "/api/v3/command"},
+		{svcs: []string{"sonarr", "radarr"}, method: http.MethodGet, path: "/api/v3/command/{id}"},
 	}
 
 	for _, tc := range pins {
-		t.Run(tc.name, func(t *testing.T) {
-			*last = capturedRequest{}
-			if resp := tc.call(); resp != nil {
-				_ = resp.Body.Close()
-			}
-			if last.method != tc.wantMethod || last.path != tc.wantPath {
-				t.Errorf("generated client issued %s %s, arrapi builds %s %s: the upstream endpoint moved",
-					last.method, last.path, tc.wantMethod, tc.wantPath)
-			}
-			for _, key := range tc.wantQuery {
-				if !last.query.Has(key) {
-					t.Errorf("generated client sent no %q query parameter (got %v): the upstream parameter was renamed or removed", key, last.query)
+		for _, svc := range tc.svcs {
+			t.Run(svc+" "+tc.method+" "+tc.path, func(t *testing.T) {
+				doc := openapiSpec(t, svc)
+				item, ok := doc.Paths[tc.path]
+				if !ok {
+					t.Fatalf("official %s document declares no path %q: the upstream endpoint moved", svc, tc.path)
 				}
-			}
-		})
+				if item.operation(tc.method) == nil {
+					t.Fatalf("official %s document declares no %s on %q: the upstream method changed", svc, tc.method, tc.path)
+				}
+				declared := item.queryParams(tc.method)
+				for _, key := range tc.query {
+					if !declared[key] {
+						t.Errorf("official %s document declares no %q query parameter on %s %s: the upstream parameter was renamed or removed",
+							svc, key, tc.method, tc.path)
+					}
+				}
+			})
+		}
 	}
 }
