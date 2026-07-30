@@ -24,7 +24,7 @@ const maxPrealloc = 8192
 // carrying the (size-capped) response body and any Retry-After hint. The
 // caller's apiKey is redacted from the captured body so a hostile or
 // compromised endpoint cannot reflect the request credential back into a
-// caller's logs, and the body is sanitized with runesafe.Sanitize so
+// caller's logs, and the body is sanitized with runesafe.SanitizeCapped so
 // terminal-escape, C1, and bidi control runes from a hostile or garbled
 // response never reach a caller's log stream.
 func statusError(resp *http.Response, path, apiKey string) error {
@@ -60,13 +60,20 @@ const truncationMarker = "..."
 // key prefix back under the cap -- so a fully-read short body whose text merely
 // happens to end with the key's first characters is never over-redacted.
 //
-// The next-to-last step sanitizes the captured body with runesafe.Sanitize:
-// C0/C1 controls, bidi controls, and the U+2028/U+2029 separators become
-// spaces, and invalid UTF-8 bytes become U+FFFD. Sanitization runs after
-// redaction so redaction string-matches the raw wire bytes, and because
-// U+FFFD replacement can grow the byte length, the result is re-capped at
-// maxErrorBodyBytes with runesafe.CapBytes, whose rune-boundary cut cannot
-// reintroduce an unsafe partial-rune tail.
+// The next-to-last step sanitizes the captured body with
+// runesafe.SanitizeCapped under the keepCRLF=true policy (the body lands in a
+// JSON sink whose encoder escapes CR/LF): C0/C1 controls, bidi controls, and
+// the U+2028/U+2029 separators become spaces, and invalid UTF-8 bytes become
+// U+FFFD. Sanitization runs after redaction so redaction string-matches the
+// raw wire bytes, and because U+FFFD replacement can grow the byte length the
+// primitive re-caps the sanitized form at maxErrorBodyBytes on a rune
+// boundary, which cannot reintroduce an unsafe partial-rune tail. It is
+// called with an EMPTY marker deliberately: this function must mark a cut
+// that happened at any of three sites, only one of which is that re-cap, and
+// an empty marker makes the primitive a silent cap that still REPORTS the
+// fact through its cut return -- so the marker below stays outside the cap
+// and the captured body is byte-identical to the hand-composed
+// Sanitize + CapBytes form it replaced.
 //
 // Finally, a capture that lost body bytes anywhere -- the read window, the
 // post-redaction cap, or the post-sanitization re-cap -- gets the
@@ -105,11 +112,8 @@ func readErrorBody(body io.ReadCloser, apiKey string) (string, error) {
 			redacted = trimTrailingSecretPrefix(redacted, trimmedKey)
 		}
 	}
-	sanitized := runesafe.Sanitize(redacted)
-	if len(sanitized) > maxErrorBodyBytes {
-		sanitized = runesafe.CapBytes(sanitized, maxErrorBodyBytes)
-		cut = true
-	}
+	sanitized, sanitizeCut := runesafe.SanitizeCapped(redacted, maxErrorBodyBytes, "")
+	cut = cut || sanitizeCut
 	if cut {
 		sanitized += truncationMarker
 	}
