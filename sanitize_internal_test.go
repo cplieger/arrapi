@@ -115,8 +115,10 @@ func TestStatusError_truncationMarked(t *testing.T) {
 }
 
 // TestStatusError_invalidUTF8ExpansionStaysUnderCap pins the post-sanitization
-// re-cap: runesafe.Sanitize maps each invalid UTF-8 byte to U+FFFD (3 bytes), so
-// a garbage body at the cap would otherwise triple past it. The re-cap must
+// re-cap: sanitizing maps each invalid UTF-8 byte to U+FFFD (3 bytes), so a
+// garbage body at the cap would otherwise triple past it. runesafe.SanitizeCapped
+// owns that re-cap (called with an empty marker, so it caps silently and reports
+// the cut, leaving readErrorBody's own marker outside the cap). The re-cap must
 // hold the 64 KiB bound (plus the marker, which sits outside the cap) and cut
 // on a rune boundary so the truncated tail cannot itself reintroduce raw
 // 0x80-0x9F (C1) bytes.
