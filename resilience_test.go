@@ -2,7 +2,6 @@ package arrapi_test
 
 import (
 	"bufio"
-	"context"
 	"errors"
 	"fmt"
 	"net/http"
@@ -45,7 +44,7 @@ func TestGetSeries_largeStreamedBody(t *testing.T) {
 	t.Cleanup(srv.Close)
 	s := fastSonarr(t, srv.URL)
 
-	series, err := s.GetSeries(context.Background()) // no caller deadline -> per-request timeout applies
+	series, err := s.GetSeries(t.Context()) // no caller deadline -> per-request timeout applies
 	if err != nil {
 		t.Fatalf("GetSeries on a large streamed body: %v", err)
 	}
