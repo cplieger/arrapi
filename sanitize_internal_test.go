@@ -168,3 +168,56 @@ func TestStatusError_bodyMatchesSharedSanitizerPolicy(t *testing.T) {
 		t.Errorf("Body is not sanitizer-stable:\n got %q\nafter %q", se.Body, got)
 	}
 }
+
+// TestStatusError_redactionRunsAfterSanitization pins the OTHER half of the
+// capture composition: sanitization is a normalizing transform, so it can
+// REBUILD an API key out of wire bytes the raw-byte redaction pass could not
+// match. runesafe maps every unsafe rune to a space and every invalid UTF-8
+// byte to U+FFFD, so a key whose own value contains a space or a U+FFFD is
+// reconstructible from a body carrying an unsafe rune (or an invalid byte) at
+// that position: the whole-occurrence needle misses on the wire bytes, then the
+// sanitizer assembles the credential after the mask has already run. Redaction
+// must therefore run again AFTER sanitization and before the cap. Nothing
+// constrains the key's charset (newClient rejects only a blank key), so every
+// case below is reachable through the exported surface.
+func TestStatusError_redactionRunsAfterSanitization(t *testing.T) {
+	tests := map[string]struct {
+		apiKey string
+		body   string
+	}{
+		// A C0 control: the seed shape's mechanism with a space in place of U+FFFD.
+		"C0 control rebuilds a space in the key": {
+			apiKey: "arr key 7f3a",
+			body:   "{\"error\":\"bad key: arr\x01key\x017f3a\"}",
+		},
+		"DEL rebuilds a space in the key": {
+			apiKey: "arr key 7f3a",
+			body:   "{\"error\":\"bad key: arr\x7fkey\x7f7f3a\"}",
+		},
+		"C1 control rebuilds a space in the key": {
+			apiKey: "arr key 7f3a",
+			body:   "{\"error\":\"bad key: arr\u0085key\u00857f3a\"}",
+		},
+		"bidi control rebuilds a space in the key": {
+			apiKey: "arr key 7f3a",
+			body:   "{\"error\":\"bad key: arr\u202ekey\u202e7f3a\"}",
+		},
+		// The literal seed shape: the needle holds U+FFFD, the wire holds the
+		// raw invalid byte, and strings.Map converts one into the other.
+		"invalid UTF-8 rebuilds a U+FFFD in the key": {
+			apiKey: "arr\uFFFDkey7f3a",
+			body:   "{\"error\":\"bad key: arr\xffkey7f3a\"}",
+		},
+	}
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+			se := captureStatusError(t, tc.body, tc.apiKey)
+			if strings.Contains(se.Body, tc.apiKey) {
+				t.Errorf("Body leaks the API key %q reconstructed by sanitization: %q", tc.apiKey, se.Body)
+			}
+			if !strings.Contains(se.Body, "REDACTED") {
+				t.Errorf("Body = %q, want the reconstructed key replaced by REDACTED", se.Body)
+			}
+		})
+	}
+}
