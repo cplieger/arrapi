@@ -16,17 +16,21 @@ import (
 // Retry-After header (in practice a 429 or a 503); it is zero otherwise. Only a
 // transient status actually consults it during retry.
 //
-// Body carries the response body already made log-safe at capture: the
-// caller's API key is redacted, the body is capped at 64 KiB, and unsafe
-// runes (C0/C1 controls, Unicode bidi controls, U+2028/U+2029) are replaced
-// with spaces via runesafe.Sanitize, with invalid UTF-8 mapped to
-// U+FFFD. A capture that lost body bytes to the cap ends in a "..." marker
-// (runesafe's bounded-preset convention, at most 64 KiB + 3 bytes total), so
-// a truncated capture is distinguishable from a short response. An arr
-// response body is untrusted text that consumers pass to slog ("error", err)
-// without any escaping hop, so a hostile or garbled upstream could otherwise
-// inject terminal escapes or reorder rendered log lines; sanitizing the field
-// itself makes every access path safe, not just Error().
+// Body carries the response body already made log-safe at capture. The capture
+// composes redaction on both sides of the sanitizing transform, with the cap
+// last: the caller's API key is redacted from the raw wire bytes, unsafe runes
+// (C0/C1 controls, Unicode bidi controls, U+2028/U+2029) are replaced with
+// spaces via runesafe.Sanitize and invalid UTF-8 is mapped to U+FFFD, the key
+// is redacted again from the sanitized text (sanitization can REBUILD a key
+// whose value contains a space or U+FFFD out of wire bytes the first pass did
+// not match), and only then is the body capped at 64 KiB. A capture that lost
+// body bytes to the cap ends in a "..." marker (runesafe's bounded-preset
+// convention, at most 64 KiB + 3 bytes total), so a truncated capture is
+// distinguishable from a short response. An arr response body is untrusted
+// text that consumers pass to slog ("error", err) without any escaping hop, so
+// a hostile or garbled upstream could otherwise inject terminal escapes or
+// reorder rendered log lines; sanitizing the field itself makes every access
+// path safe, not just Error().
 type StatusError struct {
 	Body       string
 	Path       string

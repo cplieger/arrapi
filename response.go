@@ -22,11 +22,12 @@ const maxPrealloc = 8192
 
 // statusError drains and closes a non-2xx response and returns a *StatusError
 // carrying the (size-capped) response body and any Retry-After hint. The
-// caller's apiKey is redacted from the captured body so a hostile or
-// compromised endpoint cannot reflect the request credential back into a
-// caller's logs, and the body is sanitized with runesafe.SanitizeCapped so
-// terminal-escape, C1, and bidi control runes from a hostile or garbled
-// response never reach a caller's log stream.
+// caller's apiKey is redacted from the captured body -- on both sides of the
+// sanitizing transform, so neither a key the transform garbles nor one it
+// reconstructs survives -- so a hostile or compromised endpoint cannot reflect
+// the request credential back into a caller's logs, and the body is sanitized
+// with runesafe.Sanitize so terminal-escape, C1, and bidi control runes from a
+// hostile or garbled response never reach a caller's log stream.
 func statusError(resp *http.Response, path, apiKey string) error {
 	body, err := readErrorBody(resp.Body, apiKey)
 	e := &StatusError{
@@ -54,32 +55,41 @@ const truncationMarker = "..."
 // stripping header OWS), then caps the result at maxErrorBodyBytes. Redaction
 // happens before the cap (over a maxErrorBodyBytes+len(apiKey) read window) so a
 // key straddling the cap boundary is still matched and stripped in full rather
-// than leaving a credential prefix in the captured body. The residual
+// than leaving a credential prefix in the captured body. The pre-sanitization
 // trailing-key-prefix cleanup runs only when the read window actually truncated
 // the body AND redaction shrank it -- the sole case that can pull an unmatched
 // key prefix back under the cap -- so a fully-read short body whose text merely
 // happens to end with the key's first characters is never over-redacted.
 //
-// The next-to-last step sanitizes the captured body with
-// runesafe.SanitizeCapped under the keepCRLF=true policy (the body lands in a
-// JSON sink whose encoder escapes CR/LF): C0/C1 controls, bidi controls, and
-// the U+2028/U+2029 separators become spaces, and invalid UTF-8 bytes become
-// U+FFFD. Sanitization runs after redaction so redaction string-matches the
-// raw wire bytes, and because U+FFFD replacement can grow the byte length the
-// primitive re-caps the sanitized form at maxErrorBodyBytes on a rune
-// boundary, which cannot reintroduce an unsafe partial-rune tail. It is
-// called with an EMPTY marker deliberately: this function must mark a cut
-// that happened at any of three sites, only one of which is that re-cap, and
-// an empty marker makes the primitive a silent cap that still REPORTS the
-// fact through its cut return -- so the marker below stays outside the cap
-// and the captured body is byte-identical to the hand-composed
-// Sanitize + CapBytes form it replaced.
+// Redaction runs on BOTH sides of the sanitizing transform, and the cap comes
+// last: redact -> sanitize -> redact -> cap. Each position earns its place.
+// Redaction BEFORE the transform catches a key the transform would garble: an
+// unsafe rune or invalid byte inside the key value is rewritten, after which
+// the whole-value needle no longer matches and a near-complete fragment of the
+// key would survive. Redaction AFTER the transform catches a key the transform
+// CONSTRUCTS: sanitization maps every unsafe rune to a space and every invalid
+// UTF-8 byte to U+FFFD, so a body carrying "arr\x01key" against the key
+// "arr key" matches no whole occurrence on the wire bytes and becomes an exact
+// match once sanitized -- the key reassembled after the mask already ran. A
+// redaction on one side only leaves the other path open. The cap is last so a
+// key straddling the cap boundary is already gone rather than sliced into a
+// surviving prefix, and it follows the second redaction because "REDACTED" can
+// be longer than the key it replaces.
+//
+// Sanitization uses runesafe.Sanitize under the keepCRLF=true policy (the body
+// lands in a JSON sink whose encoder escapes CR/LF): C0/C1 controls, bidi
+// controls, and the U+2028/U+2029 separators become spaces, and invalid UTF-8
+// bytes become U+FFFD. Because U+FFFD replacement can grow the byte length,
+// runesafe.CapBytes re-caps the sanitized form at maxErrorBodyBytes on a rune
+// boundary, which cannot reintroduce an unsafe partial-rune tail.
 //
 // Finally, a capture that lost body bytes anywhere -- the read window, the
-// post-redaction cap, or the post-sanitization re-cap -- gets the
-// truncationMarker appended, so an operator reading the logged body can tell
-// a truncated capture from a genuinely short response. Redaction and
-// whitespace trimming are substitutions, not cuts, and do not mark.
+// post-redaction cap, or the post-sanitization re-cap -- gets a second
+// trailing-key-prefix cleanup (a cut is the only way a key can survive as a
+// prefix, including one the sanitizer had just constructed) and the
+// truncationMarker appended, so an operator reading the logged body can tell a
+// truncated capture from a genuinely short response. Redaction and whitespace
+// trimming are substitutions, not cuts, and do not mark.
 func readErrorBody(body io.ReadCloser, apiKey string) (string, error) {
 	defer body.Close()
 	readLimit := maxErrorBodyBytes
@@ -112,9 +122,20 @@ func readErrorBody(body io.ReadCloser, apiKey string) (string, error) {
 			redacted = trimTrailingSecretPrefix(redacted, trimmedKey)
 		}
 	}
-	sanitized, sanitizeCut := runesafe.SanitizeCapped(redacted, maxErrorBodyBytes, "")
-	cut = cut || sanitizeCut
+	sanitized := runesafe.Sanitize(redacted)
+	sanitized = httpx.RedactSecretString(sanitized, apiKey)
+	if trimmedKey != apiKey {
+		sanitized = httpx.RedactSecretString(sanitized, trimmedKey)
+	}
+	if capped := runesafe.CapBytes(sanitized, maxErrorBodyBytes); len(capped) < len(sanitized) {
+		sanitized = capped
+		cut = true
+	}
 	if cut {
+		sanitized = trimTrailingSecretPrefix(sanitized, apiKey)
+		if trimmedKey != apiKey {
+			sanitized = trimTrailingSecretPrefix(sanitized, trimmedKey)
+		}
 		sanitized += truncationMarker
 	}
 	return sanitized, nil
