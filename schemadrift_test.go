@@ -53,7 +53,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/cplieger/arrapi"
+	"github.com/cplieger/arrapi/v2"
 )
 
 // specURLs locates the OpenAPI document each project generates and commits in

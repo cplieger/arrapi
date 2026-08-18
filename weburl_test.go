@@ -3,7 +3,7 @@ package arrapi_test
 import (
 	"testing"
 
-	"github.com/cplieger/arrapi"
+	"github.com/cplieger/arrapi/v2"
 )
 
 func TestSeries_WebURL(t *testing.T) {

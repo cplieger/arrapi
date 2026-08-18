@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/cplieger/arrapi"
+	"github.com/cplieger/arrapi/v2"
 )
 
 // ExampleTagIDs shows resolving tag labels to IDs and using the result to
