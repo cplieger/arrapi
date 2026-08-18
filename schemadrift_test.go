@@ -153,7 +153,7 @@ type specSchema struct {
 // specCache shares one download per service across both tests. err is
 // remembered so a failed download is reported once per test, not re-fetched.
 var specCache = struct {
-	sync.Mutex
+	mu   sync.Mutex
 	docs map[string]*specDoc
 	errs map[string]error
 }{
@@ -171,8 +171,8 @@ func openapiSpec(t *testing.T, svc string) *specDoc {
 		t.Skip("drift guard downloads the official OpenAPI documents; skipped with -short")
 	}
 
-	specCache.Lock()
-	defer specCache.Unlock()
+	specCache.mu.Lock()
+	defer specCache.mu.Unlock()
 	if doc, ok := specCache.docs[svc]; ok {
 		return doc
 	}
