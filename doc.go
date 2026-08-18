@@ -12,7 +12,7 @@
 // Every request is authenticated with the instance's X-Api-Key, bounded by a
 // per-request timeout, and retried on transient failures (HTTP 429, any 5xx,
 // and transient transport errors) with jittered exponential backoff via
-// github.com/cplieger/httpx/v3. Non-2xx responses surface as a *StatusError, which
+// github.com/cplieger/httpx/v5. Non-2xx responses surface as a *StatusError, which
 // reports whether it was transient and lets callers detect a 404 with
 // IsNotFound. Its captured Body is made log-safe at capture: the API key is
 // redacted, and terminal-escape, C1, and bidi control runes are neutralized
