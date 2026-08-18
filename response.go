@@ -8,8 +8,8 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/cplieger/httpx/v4"
-	"github.com/cplieger/runesafe"
+	"github.com/cplieger/httpx/v5"
+	"github.com/cplieger/runesafe/v2"
 )
 
 // avgItemSize is a rough per-item JSON size used only to seed slice capacity;
@@ -28,7 +28,7 @@ const maxPrealloc = 8192
 // the request credential back into a caller's logs, and the body is sanitized
 // with runesafe.Sanitize so terminal-escape, C1, and bidi control runes from a
 // hostile or garbled response never reach a caller's log stream.
-func statusError(resp *http.Response, path, apiKey string) error {
+func statusError(resp *http.Response, path string, apiKey httpx.Secret) error {
 	body, err := readErrorBody(resp.Body, apiKey)
 	e := &StatusError{
 		Code:       resp.StatusCode,
@@ -90,7 +90,7 @@ const truncationMarker = "..."
 // truncationMarker appended, so an operator reading the logged body can tell a
 // truncated capture from a genuinely short response. Redaction and whitespace
 // trimming are substitutions, not cuts, and do not mark.
-func readErrorBody(body io.ReadCloser, apiKey string) (string, error) {
+func readErrorBody(body io.ReadCloser, apiKey httpx.Secret) (string, error) {
 	defer body.Close()
 	readLimit := maxErrorBodyBytes
 	if apiKey != "" {
@@ -106,7 +106,7 @@ func readErrorBody(body io.ReadCloser, apiKey string) (string, error) {
 	}
 	trimmed := strings.TrimSpace(string(data))
 	redacted := httpx.RedactSecretString(trimmed, apiKey)
-	trimmedKey := strings.TrimSpace(apiKey)
+	trimmedKey := httpx.Secret(strings.TrimSpace(string(apiKey)))
 	if trimmedKey != apiKey {
 		redacted = httpx.RedactSecretString(redacted, trimmedKey)
 	}
@@ -146,13 +146,13 @@ func readErrorBody(body io.ReadCloser, apiKey string) (string, error) {
 // read-window boundary is truncated to a prefix ReplaceAll cannot match; that prefix is
 // always a suffix of the redacted, capped body. Stripping it closes the residual
 // credential-prefix leak. Returns s unchanged when secret is empty.
-func trimTrailingSecretPrefix(s, secret string) string {
+func trimTrailingSecretPrefix(s string, secret httpx.Secret) string {
 	if secret == "" {
 		return s
 	}
 	maxLen := min(len(secret)-1, len(s))
 	for n := maxLen; n >= 1; n-- {
-		if strings.HasSuffix(s, secret[:n]) {
+		if strings.HasSuffix(s, string(secret[:n])) {
 			return s[:len(s)-n]
 		}
 	}

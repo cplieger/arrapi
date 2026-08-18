@@ -8,12 +8,13 @@ import (
 	"testing"
 	"unicode/utf8"
 
-	"github.com/cplieger/runesafe"
+	"github.com/cplieger/httpx/v5"
+	"github.com/cplieger/runesafe/v2"
 )
 
 // captureStatusError runs statusError over a synthetic non-2xx response and
 // returns the typed *StatusError.
-func captureStatusError(t *testing.T, body, apiKey string) *StatusError {
+func captureStatusError(t *testing.T, body string, apiKey httpx.Secret) *StatusError {
 	t.Helper()
 	resp := &http.Response{
 		StatusCode: http.StatusInternalServerError,
@@ -146,7 +147,7 @@ func TestStatusError_invalidUTF8ExpansionStaysUnderCap(t *testing.T) {
 func TestStatusError_redactionStillMatchesRawBytes(t *testing.T) {
 	const apiKey = "reflected-secret-key"
 	se := captureStatusError(t, "unauthorized:\x1b[31m "+apiKey+" \x1b[0m(rejected)", apiKey)
-	if strings.Contains(se.Body, apiKey) {
+	if strings.Contains(se.Body, string(apiKey)) {
 		t.Errorf("Body leaks the API key: %q", se.Body)
 	}
 	if !strings.Contains(se.Body, "REDACTED") {
@@ -182,7 +183,7 @@ func TestStatusError_bodyMatchesSharedSanitizerPolicy(t *testing.T) {
 // case below is reachable through the exported surface.
 func TestStatusError_redactionRunsAfterSanitization(t *testing.T) {
 	tests := map[string]struct {
-		apiKey string
+		apiKey httpx.Secret
 		body   string
 	}{
 		// A C0 control: the seed shape's mechanism with a space in place of U+FFFD.
@@ -212,7 +213,7 @@ func TestStatusError_redactionRunsAfterSanitization(t *testing.T) {
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
 			se := captureStatusError(t, tc.body, tc.apiKey)
-			if strings.Contains(se.Body, tc.apiKey) {
+			if strings.Contains(se.Body, string(tc.apiKey)) {
 				t.Errorf("Body leaks the API key %q reconstructed by sanitization: %q", tc.apiKey, se.Body)
 			}
 			if !strings.Contains(se.Body, "REDACTED") {

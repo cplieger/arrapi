@@ -29,7 +29,7 @@ type Option func(*config)
 // supplied here that follows cross-host redirects (for example one using
 // net/http's default policy) leaks the X-Api-Key to the redirect target, and a
 // same-host downgrade sends it over cleartext. Set CheckRedirect to a policy
-// such as httpx.RedirectPolicyFunc(httpx.WithSameHost(), httpx.WithMaxHops(10))
+// such as httpx.RedirectPolicyFunc(httpx.WithSameHost(true), httpx.WithMaxHops(10))
 // from github.com/cplieger/httpx/v3; that policy keeps both guards unless
 // WithAllowSchemeDowngrade is explicitly enabled.
 func WithHTTPClient(c *http.Client) Option {
