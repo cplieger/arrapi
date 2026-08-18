@@ -249,15 +249,16 @@ func fetchOne[T any](ctx context.Context, c *client, path string) (T, error) {
 	})
 }
 
-// fetchPage performs an authenticated GET and decodes a paged-collection JSON object
-// bounded by the list cap, with the same retry policy as fetchAll.
-func fetchPage[T any](ctx context.Context, c *client, path string) (T, error) {
-	return doRetry(ctx, c, func(ctx context.Context) (T, error) {
-		var zero T
+// fetchPage performs an authenticated GET and decodes a paged-collection JSON
+// object bounded by the list cap, with the same retry policy as fetchAll. It
+// is concrete on HistoryPage — the one paged collection either service
+// exposes; make it generic again only when a second page type exists.
+func fetchPage(ctx context.Context, c *client, path string) (HistoryPage, error) {
+	return doRetry(ctx, c, func(ctx context.Context) (HistoryPage, error) {
 		resp, err := c.get(ctx, path) //nolint:bodyclose // closed by decodePage
 		if err != nil {
-			return zero, err
+			return HistoryPage{}, err
 		}
-		return decodePage[T](resp, path)
+		return decodePage(resp, path)
 	})
 }

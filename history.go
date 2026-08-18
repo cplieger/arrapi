@@ -216,7 +216,7 @@ func (c *client) GetHistory(ctx context.Context, opts HistoryOptions) (HistoryPa
 	}
 	params.Set("sortKey", "date")
 	params.Set("sortDirection", "descending")
-	return fetchPage[HistoryPage](ctx, c, apiPrefix+"/history?"+params.Encode())
+	return fetchPage(ctx, c, apiPrefix+"/history?"+params.Encode())
 }
 
 // filterByEventType returns the records whose EventType is among want, matching

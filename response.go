@@ -211,7 +211,8 @@ func decodeObject[T any](resp *http.Response, path string) (T, error) {
 
 // decodePage reads a bounded paged-collection JSON object and decodes it. It
 // uses the list cap (maxListBytes) rather than the single-object cap because a
-// history page wraps an arbitrarily long records array.
-func decodePage[T any](resp *http.Response, path string) (T, error) {
-	return decodeBounded[T](resp, maxListBytes, path)
+// history page wraps an arbitrarily long records array. Concrete on
+// HistoryPage for the same reason fetchPage is.
+func decodePage(resp *http.Response, path string) (HistoryPage, error) {
+	return decodeBounded[HistoryPage](resp, maxListBytes, path)
 }
