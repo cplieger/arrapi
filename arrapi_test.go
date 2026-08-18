@@ -10,12 +10,11 @@ import (
 	"time"
 
 	"github.com/cplieger/arrapi/v2"
-	"github.com/cplieger/httpx/v5"
 )
 
 // testKey is a low-entropy placeholder, not a real credential. Typed as an
-// httpx.Secret because that is what the constructors take.
-const testKey httpx.Secret = "test-key"
+// arrapi.APIKey because that is what the constructors take.
+const testKey arrapi.APIKey = "test-key"
 
 // recordingServer is an httptest server that records the last request's path
 // and API-key header and replies with a scripted status + body.
@@ -55,7 +54,7 @@ func TestNewClient_validation(t *testing.T) {
 	tests := []struct {
 		name    string
 		url     string
-		key     httpx.Secret
+		key     arrapi.APIKey
 		wantErr bool
 	}{
 		{"valid http", "http://sonarr:8989", testKey, false},
@@ -108,7 +107,7 @@ func TestGetSeries_success(t *testing.T) {
 	if got := deref(rs.lastPath.Load()); got != "/api/v3/series?" {
 		t.Errorf("request path = %q, want /api/v3/series?", got)
 	}
-	if got := deref(rs.lastKey.Load()); httpx.Secret(got) != testKey {
+	if got := deref(rs.lastKey.Load()); arrapi.APIKey(got) != testKey {
 		t.Errorf("api key header = %q, want %q", got, testKey)
 	}
 }

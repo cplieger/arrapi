@@ -3,8 +3,6 @@ package arrapi
 import (
 	"context"
 	"fmt"
-
-	"github.com/cplieger/httpx/v5"
 )
 
 // Radarr is a client for a single Radarr v3 instance. The zero value is not
@@ -17,7 +15,7 @@ type Radarr struct {
 // "http://radarr:7878") and API key. It returns an error if the URL is not an
 // absolute http(s) URL or the key is empty. The key is an [httpx.Secret] for
 // the reason [NewSonarr] gives.
-func NewRadarr(baseURL string, apiKey httpx.Secret, opts ...Option) (*Radarr, error) {
+func NewRadarr(baseURL string, apiKey APIKey, opts ...Option) (*Radarr, error) {
 	c, err := newClient(baseURL, apiKey, opts...)
 	if err != nil {
 		return nil, err

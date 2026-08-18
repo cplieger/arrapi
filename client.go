@@ -38,6 +38,24 @@ const (
 	maxErrorBodyBytes = 64 << 10
 )
 
+// APIKey is an arr instance's API key, the credential sent as X-Api-Key.
+//
+// It is a distinct type so it cannot be transposed with the base URL on the
+// constructors: the two are adjacent and both are strings on the wire. A swap
+// was previously caught only because a key does not parse as an http(s) URL,
+// which is detection at run time; a named type makes a swapped pair of
+// VARIABLES a compile error instead. (Two untyped string LITERALS still
+// convert, so the run-time check in validateClientParams stays.)
+//
+// arrapi declares its own rather than reusing [httpx.Secret]: that type is
+// arrapi's redaction vocabulary INTERNALLY, and putting it on the exported
+// constructors would make httpx part of this package's public contract, which
+// it otherwise is not. Every consumer would then have to import httpx to build
+// a client, and an httpx major bump would move this signature with it -- which
+// is exactly what happened when v2 first shipped, forcing httpx/v5 on two
+// consumers that needed nothing else from it.
+type APIKey string
+
 // client is the shared Sonarr/Radarr HTTP core. It is embedded by the exported
 // Sonarr and Radarr types, which add the resource-specific methods; the
 // endpoints common to both services (GetTags, GetSystemStatus, Ping, Close) are
@@ -55,7 +73,7 @@ type client struct {
 // returns a ready client. baseURL must be an absolute http(s) URL with a host
 // and no query or fragment (a path is allowed, for reverse-proxy sub-paths);
 // apiKey must be non-empty.
-func newClient(baseURL string, apiKey httpx.Secret, opts ...Option) (*client, error) {
+func newClient(baseURL string, apiKey APIKey, opts ...Option) (*client, error) {
 	if err := validateClientParams(baseURL, apiKey); err != nil {
 		return nil, err
 	}
@@ -63,7 +81,7 @@ func newClient(baseURL string, apiKey httpx.Secret, opts ...Option) (*client, er
 	return &client{
 		httpClient:  configuredHTTPClient(cfg.httpClient),
 		baseURL:     strings.TrimRight(baseURL, "/"),
-		apiKey:      apiKey,
+		apiKey:      httpx.Secret(apiKey),
 		baseDelay:   cfg.baseDelay,
 		timeout:     cfg.timeout,
 		maxAttempts: cfg.maxAttempts,
@@ -73,7 +91,7 @@ func newClient(baseURL string, apiKey httpx.Secret, opts ...Option) (*client, er
 // validateClientParams enforces the connection-parameter contract: baseURL must
 // be an absolute http(s) URL with a host and no query or fragment (a path is
 // allowed for reverse-proxy sub-paths), and apiKey must be non-empty.
-func validateClientParams(baseURL string, apiKey httpx.Secret) error {
+func validateClientParams(baseURL string, apiKey APIKey) error {
 	u, err := url.Parse(baseURL)
 	if err != nil {
 		return fmt.Errorf("arrapi: invalid baseURL %q: %w", baseURL, err)
