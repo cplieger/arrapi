@@ -3,6 +3,8 @@ package arrapi
 import (
 	"context"
 	"fmt"
+
+	"github.com/cplieger/httpx/v5"
 )
 
 // Sonarr is a client for a single Sonarr v3 instance. The zero value is not
@@ -14,7 +16,15 @@ type Sonarr struct {
 // NewSonarr returns a Sonarr client for the given base URL (e.g.
 // "http://sonarr:8989") and API key. It returns an error if the URL is not an
 // absolute http(s) URL or the key is empty.
-func NewSonarr(baseURL, apiKey string, opts ...Option) (*Sonarr, error) {
+//
+// The key is an [httpx.Secret] rather than a string so it cannot be
+// transposed with the base URL: the two are adjacent, and both are strings on
+// the wire. A swap was caught before this only because a key does not parse as
+// an http(s) URL, which is detection at run time; typing the credential makes
+// a swapped pair of VARIABLES a compile error instead. It is httpx's type
+// rather than a local one because that is the credential vocabulary this
+// client already redacts errors through.
+func NewSonarr(baseURL string, apiKey httpx.Secret, opts ...Option) (*Sonarr, error) {
 	c, err := newClient(baseURL, apiKey, opts...)
 	if err != nil {
 		return nil, err

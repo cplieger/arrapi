@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/cplieger/arrapi"
+	"github.com/cplieger/arrapi/v2"
 )
 
 // commandCapture records the method, path, content-type, and decoded JSON body

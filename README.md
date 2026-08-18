@@ -1,6 +1,6 @@
 # arrapi
 
-[![Go Reference](https://pkg.go.dev/badge/github.com/cplieger/arrapi.svg)](https://pkg.go.dev/github.com/cplieger/arrapi)
+[![Go Reference](https://pkg.go.dev/badge/github.com/cplieger/arrapi/v2.svg)](https://pkg.go.dev/github.com/cplieger/arrapi/v2)
 [![Go version](https://img.shields.io/github/go-mod/go-version/cplieger/arrapi)](https://github.com/cplieger/arrapi/blob/main/go.mod)
 [![Test coverage](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/cplieger/arrapi/badges/coverage.json)](https://github.com/cplieger/arrapi/actions/workflows/coverage.yml)
 [![Mutation](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/cplieger/arrapi/badges/mutation.json)](https://github.com/cplieger/arrapi/issues?q=label%3Agremlins-tracker)
@@ -22,7 +22,7 @@ Both embed a shared core exposing the endpoints common to either service (`GetTa
 
 ## Install
 
-`go get github.com/cplieger/arrapi@latest`
+`go get github.com/cplieger/arrapi/v2@latest`
 
 ## Usage
 
@@ -34,7 +34,7 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/cplieger/arrapi"
+	"github.com/cplieger/arrapi/v2"
 )
 
 func main() {
@@ -89,8 +89,8 @@ func main() {
 
 ### Constructors
 
-- `NewSonarr(baseURL, apiKey string, opts ...Option) (*Sonarr, error)`
-- `NewRadarr(baseURL, apiKey string, opts ...Option) (*Radarr, error)`
+- `NewSonarr(baseURL string, apiKey httpx.Secret, opts ...Option) (*Sonarr, error)` — the key is typed apart from the URL so an adjacent pair of string variables cannot be transposed; an untyped literal still converts
+- `NewRadarr(baseURL string, apiKey httpx.Secret, opts ...Option) (*Radarr, error)`
 
 `baseURL` must be an absolute `http(s)` URL with a host and no query or fragment (a path is allowed, for reverse-proxy sub-paths); `apiKey` must be non-empty. Both are validated at construction.
 

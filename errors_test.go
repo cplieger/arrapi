@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/cplieger/arrapi"
+	"github.com/cplieger/arrapi/v2"
 )
 
 func TestStatusError_Error(t *testing.T) {
@@ -92,7 +92,7 @@ func TestStatusError_redactsAPIKey(t *testing.T) {
 	// A hostile or misconfigured arr endpoint (or a reverse proxy) may reflect
 	// the request's X-Api-Key back in its error body. The captured StatusError
 	// must redact the exact key so it never reaches a caller's logs.
-	body := "unauthorized: key " + testKey + " is not recognized"
+	body := "unauthorized: key " + string(testKey) + " is not recognized"
 	rs := newServer(t, http.StatusUnauthorized, body)
 	s := fastSonarr(t, rs.srv.URL, arrapi.WithMaxAttempts(1))
 
@@ -104,13 +104,13 @@ func TestStatusError_redactsAPIKey(t *testing.T) {
 	if !errors.As(err, &se) {
 		t.Fatalf("want *StatusError, got %v", err)
 	}
-	if strings.Contains(se.Body, testKey) {
+	if strings.Contains(se.Body, string(testKey)) {
 		t.Errorf("StatusError.Body leaks the API key: %q", se.Body)
 	}
 	if !strings.Contains(se.Body, "REDACTED") {
 		t.Errorf("StatusError.Body = %q, want it to contain REDACTED", se.Body)
 	}
-	if strings.Contains(se.Error(), testKey) {
+	if strings.Contains(se.Error(), string(testKey)) {
 		t.Errorf("Error() leaks the API key: %q", se.Error())
 	}
 	if !strings.Contains(se.Error(), "REDACTED") {

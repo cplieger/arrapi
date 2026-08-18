@@ -55,7 +55,7 @@ type client struct {
 // returns a ready client. baseURL must be an absolute http(s) URL with a host
 // and no query or fragment (a path is allowed, for reverse-proxy sub-paths);
 // apiKey must be non-empty.
-func newClient(baseURL, apiKey string, opts ...Option) (*client, error) {
+func newClient(baseURL string, apiKey httpx.Secret, opts ...Option) (*client, error) {
 	if err := validateClientParams(baseURL, apiKey); err != nil {
 		return nil, err
 	}
@@ -63,7 +63,7 @@ func newClient(baseURL, apiKey string, opts ...Option) (*client, error) {
 	return &client{
 		httpClient:  configuredHTTPClient(cfg.httpClient),
 		baseURL:     strings.TrimRight(baseURL, "/"),
-		apiKey:      httpx.Secret(apiKey),
+		apiKey:      apiKey,
 		baseDelay:   cfg.baseDelay,
 		timeout:     cfg.timeout,
 		maxAttempts: cfg.maxAttempts,
@@ -73,7 +73,7 @@ func newClient(baseURL, apiKey string, opts ...Option) (*client, error) {
 // validateClientParams enforces the connection-parameter contract: baseURL must
 // be an absolute http(s) URL with a host and no query or fragment (a path is
 // allowed for reverse-proxy sub-paths), and apiKey must be non-empty.
-func validateClientParams(baseURL, apiKey string) error {
+func validateClientParams(baseURL string, apiKey httpx.Secret) error {
 	u, err := url.Parse(baseURL)
 	if err != nil {
 		return fmt.Errorf("arrapi: invalid baseURL %q: %w", baseURL, err)
@@ -81,7 +81,7 @@ func validateClientParams(baseURL, apiKey string) error {
 	if (u.Scheme != "http" && u.Scheme != "https") || u.Host == "" || u.RawQuery != "" || u.Fragment != "" {
 		return fmt.Errorf("arrapi: baseURL must be an absolute http(s) URL with a host and no query or fragment, got %q", baseURL)
 	}
-	if strings.TrimSpace(apiKey) == "" {
+	if strings.TrimSpace(string(apiKey)) == "" {
 		return errors.New("arrapi: apiKey must not be empty")
 	}
 	return nil

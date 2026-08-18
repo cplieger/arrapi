@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/cplieger/arrapi"
+	"github.com/cplieger/arrapi/v2"
 )
 
 func TestEventType_UnmarshalJSON(t *testing.T) {
