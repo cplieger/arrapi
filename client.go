@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/cplieger/httpx/v4"
+	"github.com/cplieger/httpx/v5"
 )
 
 const (
@@ -45,7 +45,7 @@ const (
 type client struct {
 	httpClient  *http.Client
 	baseURL     string
-	apiKey      string
+	apiKey      httpx.Secret
 	baseDelay   time.Duration
 	timeout     time.Duration
 	maxAttempts int
@@ -63,7 +63,7 @@ func newClient(baseURL, apiKey string, opts ...Option) (*client, error) {
 	return &client{
 		httpClient:  configuredHTTPClient(cfg.httpClient),
 		baseURL:     strings.TrimRight(baseURL, "/"),
-		apiKey:      apiKey,
+		apiKey:      httpx.Secret(apiKey),
 		baseDelay:   cfg.baseDelay,
 		timeout:     cfg.timeout,
 		maxAttempts: cfg.maxAttempts,
@@ -118,7 +118,7 @@ func resolveConfig(opts []Option) config {
 // so the X-Api-Key is never forwarded to another origin or onto a cleartext
 // hop. A same-host http->https upgrade is followed (a reverse proxy that
 // force-redirects to TLS is a common, safe setup). httpx.RedirectPolicyFunc
-// with httpx.WithSameHost is the shared implementation of that policy.
+// with httpx.WithSameHost(true) is the shared implementation of that policy.
 //
 // The default client sets no http.Client.Timeout: every request is bounded by
 // its context (a caller-supplied deadline, or the per-request timeout applied
@@ -131,7 +131,7 @@ func configuredHTTPClient(hc *http.Client) *http.Client {
 	}
 	return &http.Client{
 		Transport:     newTransport(),
-		CheckRedirect: httpx.RedirectPolicyFunc(httpx.WithSameHost(), httpx.WithMaxHops(maxRedirects)),
+		CheckRedirect: httpx.RedirectPolicyFunc(httpx.WithSameHost(true), httpx.WithMaxHops(maxRedirects)),
 	}
 }
 
@@ -147,7 +147,7 @@ func newTransport() *http.Transport {
 // setStandardHeaders sets the authentication and identification headers that
 // every arrapi request carries.
 func (c *client) setStandardHeaders(req *http.Request) {
-	req.Header.Set(headerAPIKey, c.apiKey)
+	req.Header.Set(headerAPIKey, string(c.apiKey))
 	req.Header.Set("User-Agent", userAgent)
 }
 
