@@ -63,7 +63,7 @@ type APIKey string
 type client struct {
 	httpClient  *http.Client
 	baseURL     string
-	apiKey      httpx.Secret
+	apiKey      APIKey
 	baseDelay   time.Duration
 	timeout     time.Duration
 	maxAttempts int
@@ -81,7 +81,7 @@ func newClient(baseURL string, apiKey APIKey, opts ...Option) (*client, error) {
 	return &client{
 		httpClient:  configuredHTTPClient(cfg.httpClient),
 		baseURL:     strings.TrimRight(baseURL, "/"),
-		apiKey:      httpx.Secret(apiKey),
+		apiKey:      apiKey,
 		baseDelay:   cfg.baseDelay,
 		timeout:     cfg.timeout,
 		maxAttempts: cfg.maxAttempts,

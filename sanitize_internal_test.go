@@ -8,13 +8,12 @@ import (
 	"testing"
 	"unicode/utf8"
 
-	"github.com/cplieger/httpx/v5"
 	"github.com/cplieger/runesafe/v2"
 )
 
 // captureStatusError runs statusError over a synthetic non-2xx response and
 // returns the typed *StatusError.
-func captureStatusError(t *testing.T, body string, apiKey httpx.Secret) *StatusError {
+func captureStatusError(t *testing.T, body string, apiKey APIKey) *StatusError {
 	t.Helper()
 	resp := &http.Response{
 		StatusCode: http.StatusInternalServerError,
@@ -183,7 +182,7 @@ func TestStatusError_bodyMatchesSharedSanitizerPolicy(t *testing.T) {
 // case below is reachable through the exported surface.
 func TestStatusError_redactionRunsAfterSanitization(t *testing.T) {
 	tests := map[string]struct {
-		apiKey httpx.Secret
+		apiKey APIKey
 		body   string
 	}{
 		// A C0 control: the seed shape's mechanism with a space in place of U+FFFD.
