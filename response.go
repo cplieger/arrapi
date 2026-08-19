@@ -28,8 +28,12 @@ const maxPrealloc = 8192
 // the request credential back into a caller's logs, and the body is sanitized
 // with runesafe.Sanitize so terminal-escape, C1, and bidi control runes from a
 // hostile or garbled response never reach a caller's log stream.
-func statusError(resp *http.Response, path string, apiKey httpx.Secret) error {
-	body, err := readErrorBody(resp.Body, apiKey)
+func statusError(resp *http.Response, path string, apiKey APIKey) error {
+	// The one conversion: the client STORES its own APIKey (httpx.Secret's
+	// contract is convert-at-the-boundary, never store) and this is the
+	// boundary -- everything below here is the redaction routine, whose
+	// needle parameters are httpx.Secret by design.
+	body, err := readErrorBody(resp.Body, httpx.Secret(apiKey))
 	e := &StatusError{
 		Code:       resp.StatusCode,
 		Path:       path,
