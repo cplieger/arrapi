@@ -9,6 +9,7 @@ import (
 	"strings"
 	"sync/atomic"
 	"testing"
+	"testing/synctest"
 	"time"
 
 	"github.com/cplieger/arrapi/v2"
@@ -124,37 +125,51 @@ func TestResponseTooLarge_objectRejected(t *testing.T) {
 	}
 }
 
-// TestRetryAfter_honored confirms a 429's Retry-After hint drives the wait. The
-// base delay is set very high, so a fast retry proves the ~1s hint was used
-// instead of the 10s backoff.
+// TestRetryAfter_honored confirms a 429's Retry-After hint drives the wait
+// instead of the jittered backoff. The base delay is set far above the hint, so
+// the elapsed time distinguishes the two: honoring the hint waits exactly the
+// 1s the server asked for, ignoring it would wait the 10s base delay.
+//
+// It runs in a synctest bubble over httptest's in-memory network, so the wait
+// happens in synthetic time at the PRODUCTION delays rather than at a
+// millisecond override. That makes the assertion an exact equality — the
+// Retry-After path applies the hint verbatim, with no jitter — where a
+// real-clock test could only bound it loosely, and it costs no wall time.
 func TestRetryAfter_honored(t *testing.T) {
-	var calls atomic.Int64
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-		if calls.Add(1) == 1 {
-			w.Header().Set("Retry-After", "1")
-			w.WriteHeader(http.StatusTooManyRequests)
-			return
+	synctest.Test(t, func(t *testing.T) {
+		var calls atomic.Int64
+		srv := httptest.NewTestServer(t, http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+			if calls.Add(1) == 1 {
+				w.Header().Set("Retry-After", "1")
+				w.WriteHeader(http.StatusTooManyRequests)
+				return
+			}
+			_, _ = w.Write([]byte(`[{"id":1,"title":"ok"}]`))
+		}))
+		s, err := arrapi.NewSonarr(srv.URL, testKey,
+			arrapi.WithHTTPClient(srv.Client()),
+			arrapi.WithBaseDelay(10*time.Second),
+			arrapi.WithMaxAttempts(2))
+		if err != nil {
+			t.Fatalf("NewSonarr: %v", err)
 		}
-		_, _ = w.Write([]byte(`[{"id":1,"title":"ok"}]`))
-	}))
-	t.Cleanup(srv.Close)
-	s := fastSonarr(t, srv.URL, arrapi.WithBaseDelay(10*time.Second), arrapi.WithMaxAttempts(2))
 
-	start := time.Now()
-	series, err := s.GetSeries(t.Context())
-	elapsed := time.Since(start)
-	if err != nil {
-		t.Fatalf("GetSeries: %v", err)
-	}
-	if len(series) != 1 {
-		t.Fatalf("got %d series, want 1", len(series))
-	}
-	if elapsed > 5*time.Second {
-		t.Errorf("retry waited %v; Retry-After (1s) not honored over the 10s base delay", elapsed)
-	}
-	if elapsed < 900*time.Millisecond {
-		t.Errorf("retry waited %v; expected to honor the ~1s Retry-After hint", elapsed)
-	}
+		start := time.Now()
+		series, err := s.GetSeries(t.Context())
+		elapsed := time.Since(start)
+		if err != nil {
+			t.Fatalf("GetSeries: %v", err)
+		}
+		if len(series) != 1 {
+			t.Fatalf("got %d series, want 1", len(series))
+		}
+		if elapsed != time.Second {
+			t.Errorf("retry waited %v, want exactly 1s (the Retry-After hint, not the 10s base delay)", elapsed)
+		}
+		if n := calls.Load(); n != 2 {
+			t.Errorf("attempts = %d, want 2 (the 429 then the success)", n)
+		}
+	})
 }
 
 // TestStatusError_rateLimitFields checks the 429 hint is parsed onto the error
