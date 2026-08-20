@@ -89,9 +89,9 @@ func main() {
 
 ### Constructors
 
-- `NewSonarr(baseURL string, apiKey APIKey, opts ...Option) (*Sonarr, error)` — the key is typed apart from the URL so an adjacent pair of string variables cannot be transposed; an untyped literal still converts
+- `NewSonarr(baseURL string, apiKey APIKey, opts ...Option) (*Sonarr, error)`: the key is typed apart from the URL so an adjacent pair of string variables cannot be transposed; an untyped literal still converts
 - `NewRadarr(baseURL string, apiKey APIKey, opts ...Option) (*Radarr, error)`
-- `APIKey` — an arr instance's API key. arrapi's own type rather than `httpx.Secret`, so building a client needs no httpx import and an httpx major bump does not move these signatures. httpx stays an internal dependency, used for error redaction.
+- `APIKey`: an arr instance's API key. arrapi's own type rather than `httpx.Secret`, so building a client needs no httpx import and an httpx major bump does not move these signatures. httpx stays an internal dependency, used for error redaction.
 
 `baseURL` must be an absolute `http(s)` URL with a host and no query or fragment (a path is allowed, for reverse-proxy sub-paths); `apiKey` must be non-empty. Both are validated at construction.
 
