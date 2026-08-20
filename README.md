@@ -15,10 +15,10 @@ A standalone Go library that wraps the [Sonarr](https://sonarr.tv) and [Radarr](
 
 Two constructors return two concrete types, so an operation can only be called against the service that supports it:
 
-- `NewSonarr(...)` returns a `*Sonarr` with `GetSeries`, `GetEpisodes`, and `GetEpisodeFiles`.
-- `NewRadarr(...)` returns a `*Radarr` with `GetMovies`.
+- `NewSonarr(...)` returns a `*Sonarr` with `Series`, `Episodes`, and `EpisodeFiles`.
+- `NewRadarr(...)` returns a `*Radarr` with `Movies`.
 
-Both embed a shared core exposing the endpoints common to either service (`GetTags`, `GetSystemStatus`, `Ping`, `Close`). A wrong call (`GetMovies` against a Sonarr instance) is a compile error instead of a runtime 404.
+Both embed a shared core exposing the endpoints common to either service (`Tags`, `SystemStatus`, `Ping`, `Close`). A wrong call (`Movies` against a Sonarr instance) is a compile error instead of a runtime 404.
 
 ## Install
 
@@ -52,13 +52,13 @@ func main() {
 	}
 
 	// Fetch the whole series library in one batched, retried request.
-	series, err := sonarr.GetSeries(ctx)
+	series, err := sonarr.Series(ctx)
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	// Tag filtering: keep series tagged "anime", drop those tagged "skip".
-	tags, err := sonarr.GetTags(ctx)
+	tags, err := sonarr.Tags(ctx)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -77,7 +77,7 @@ func main() {
 	}
 	defer radarr.Close()
 
-	movies, err := radarr.GetMovies(ctx)
+	movies, err := radarr.Movies(ctx)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -97,39 +97,39 @@ func main() {
 
 ### Sonarr
 
-- `GetSeries(ctx) ([]Series, error)`: every series in the library
-- `GetSeriesByID(ctx, seriesID int) (Series, error)`: a single series by ID (`IsNotFound` reports a missing ID)
-- `GetEpisodes(ctx, seriesID int) ([]Episode, error)`: episodes for a series, including episode-file details
-- `GetEpisodeFiles(ctx, seriesID int) ([]EpisodeFile, error)`: the series' episode files from the dedicated episodefile endpoint; only the episodes with a file on disk, without the fileless rows `GetEpisodes` includes (a smaller payload on a long airing series). Each file carries its `SeriesID` and `SeasonNumber`
-- `GetEpisodeByID(ctx, episodeID int) (Episode, error)`: a single episode by ID (`IsNotFound` reports a missing ID)
+- `Series(ctx) ([]Series, error)`: every series in the library
+- `SeriesByID(ctx, seriesID int) (Series, error)`: a single series by ID (`IsNotFound` reports a missing ID)
+- `Episodes(ctx, seriesID int) ([]Episode, error)`: episodes for a series, including episode-file details
+- `EpisodeFiles(ctx, seriesID int) ([]EpisodeFile, error)`: the series' episode files from the dedicated episodefile endpoint; only the episodes with a file on disk, without the fileless rows `Episodes` includes (a smaller payload on a long airing series). Each file carries its `SeriesID` and `SeasonNumber`
+- `EpisodeByID(ctx, episodeID int) (Episode, error)`: a single episode by ID (`IsNotFound` reports a missing ID)
 - `RescanSeries(ctx, seriesID int) (Command, error)`: rescan the series' folder for new or changed files; returns the queued command
 - `RefreshSeries(ctx, seriesID int) (Command, error)`: refresh series metadata and rescan; returns the queued command
 
 ### Radarr
 
-- `GetMovies(ctx) ([]Movie, error)`: every movie in the library
-- `GetMovieByID(ctx, movieID int) (Movie, error)`: a single movie by ID (`IsNotFound` reports a missing ID)
+- `Movies(ctx) ([]Movie, error)`: every movie in the library
+- `MovieByID(ctx, movieID int) (Movie, error)`: a single movie by ID (`IsNotFound` reports a missing ID)
 - `RescanMovie(ctx, movieID int) (Command, error)`: rescan the movie's folder for new or changed files; returns the queued command
 - `RefreshMovie(ctx, movieID int) (Command, error)`: refresh movie metadata and rescan; returns the queued command
 
 ### Shared (both clients)
 
-- `GetTags(ctx) ([]Tag, error)`: all tags defined on the instance
+- `Tags(ctx) ([]Tag, error)`: all tags defined on the instance
 - `ResolveTagIDs(ctx, labels ...string) (ids map[int]struct{}, unmatched []string, err error)`: fetch tags and resolve labels to IDs in one call; returns the matched IDs and the labels that matched no tag (no labels = no request)
-- `GetQualityProfiles(ctx) ([]QualityProfile, error)`: configured quality profiles
-- `GetRootFolders(ctx) ([]RootFolder, error)`: configured root folders
-- `GetSystemStatus(ctx) (SystemStatus, error)`: version and app name
-- `GetHistorySince(ctx, since time.Time, eventTypes ...EventType) ([]HistoryRecord, error)`: history events on or after `since`, newest first; pass one or more `EventType`s to filter (client-side), or none for all
-- `GetHistory(ctx, opts HistoryOptions) (HistoryPage, error)`: one page of history (newest first), bounded by page size for backfills and large scans
-- `GetCommandByID(ctx, id int) (Command, error)`: the state of a queued command, to poll a rescan or refresh to completion
+- `QualityProfiles(ctx) ([]QualityProfile, error)`: configured quality profiles
+- `RootFolders(ctx) ([]RootFolder, error)`: configured root folders
+- `SystemStatus(ctx) (SystemStatus, error)`: version and app name
+- `HistorySince(ctx, since time.Time, eventTypes ...EventType) ([]HistoryRecord, error)`: history events on or after `since`, newest first; pass one or more `EventType`s to filter (client-side), or none for all
+- `History(ctx, opts HistoryOptions) (HistoryPage, error)`: one page of history (newest first), bounded by page size for backfills and large scans
+- `CommandByID(ctx, id int) (Command, error)`: the state of a queued command, to poll a rescan or refresh to completion
 - `Ping(ctx) error`: connectivity + credential check with a short timeout (no retry)
 - `Close()`: release idle connections; safe to call more than once
 
 ### History types
 
-`GetHistorySince` returns `[]HistoryRecord` (`Date`, `EventType`, `SourceTitle`, `SeriesID`/`EpisodeID` for Sonarr or `MovieID` for Radarr, plus a `Data` map). `HistoryRecord.ImportedPath()` pulls the imported file path from a download-import event. `EventType` decodes both Sonarr's integer and Radarr's string encodings; the exported constants are `EventGrabbed`, `EventFolderImported`, `EventDownloadImported`, `EventDownloadFailed`, `EventFileDeleted`, `EventFileRenamed`, and `EventDownloadIgnored`. It implements `fmt.Stringer` for logs, and an unrecognized upstream event decodes to `0` with its raw name preserved in `HistoryRecord.RawEventType`. Event filtering is client-side: the arr `eventType` query parameter is numbered per service (Sonarr and Radarr disagree on the integers), so a server-side filter is not portable.
+`HistorySince` returns `[]HistoryRecord` (`Date`, `EventType`, `SourceTitle`, `SeriesID`/`EpisodeID` for Sonarr or `MovieID` for Radarr, plus a `Data` map). `HistoryRecord.ImportedPath()` pulls the imported file path from a download-import event. `EventType` decodes both Sonarr's integer and Radarr's string encodings; the exported constants are `EventGrabbed`, `EventFolderImported`, `EventDownloadImported`, `EventDownloadFailed`, `EventFileDeleted`, `EventFileRenamed`, and `EventDownloadIgnored`. It implements `fmt.Stringer` for logs, and an unrecognized upstream event decodes to `0` with its raw name preserved in `HistoryRecord.RawEventType`. Event filtering is client-side: the arr `eventType` query parameter is numbered per service (Sonarr and Radarr disagree on the integers), so a server-side filter is not portable.
 
-`GetHistory` returns a `HistoryPage` (`Records`, `Page`, `PageSize`, `TotalRecords`) for bounded paging; `HistoryOptions` sets `Page` and `PageSize`.
+`History` returns a `HistoryPage` (`Records`, `Page`, `PageSize`, `TotalRecords`) for bounded paging; `HistoryOptions` sets `Page` and `PageSize`.
 
 ### Tag helpers (pure)
 
