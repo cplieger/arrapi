@@ -1,10 +1,10 @@
 module github.com/cplieger/arrapi
 
-go 1.26.7
+go 1.27.0
 
 require (
 	github.com/cplieger/httpx/v4 v4.3.2
-	github.com/cplieger/runesafe v1.4.2
+	github.com/cplieger/runesafe/v2 v2.0.0
 )
 
 // v1.0.0 through v1.0.2 shipped a large-read context-cancellation bug and a
