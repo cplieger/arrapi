@@ -100,8 +100,8 @@ func TestStatusError_redactsAPIKey(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected error on 401")
 	}
-	var se *arrapi.StatusError
-	if !errors.As(err, &se) {
+	se, ok := errors.AsType[*arrapi.StatusError](err)
+	if !ok {
 		t.Fatalf("want *StatusError, got %v", err)
 	}
 	if strings.Contains(se.Body, string(testKey)) {

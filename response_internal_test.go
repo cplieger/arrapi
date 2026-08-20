@@ -27,8 +27,8 @@ func TestStatusError_secretStraddlingCapBoundaryIsRedacted(t *testing.T) {
 		Body:       io.NopCloser(strings.NewReader(payload)),
 	}
 	err := statusError(resp, "/api/v3/series", apiKey)
-	var se *StatusError
-	if !errors.As(err, &se) {
+	se, ok := errors.AsType[*StatusError](err)
+	if !ok {
 		t.Fatalf("statusError returned %T, want *StatusError", err)
 	}
 	if strings.Contains(se.Body, apiKey) {
@@ -64,8 +64,8 @@ func TestStatusError_secretPrefixSurvivesRedactionShrinkage(t *testing.T) {
 		Body:       io.NopCloser(strings.NewReader(payload)),
 	}
 	err := statusError(resp, "/api/v3/series", apiKey)
-	var se *StatusError
-	if !errors.As(err, &se) {
+	se, ok := errors.AsType[*StatusError](err)
+	if !ok {
 		t.Fatalf("statusError returned %T, want *StatusError", err)
 	}
 	maxPrefix := 0
@@ -105,8 +105,8 @@ func TestStatusError_whitespacePaddedKeyVariantIsRedacted(t *testing.T) {
 		Body:       io.NopCloser(strings.NewReader(payload)),
 	}
 	err := statusError(resp, "/api/v3/series", apiKey)
-	var se *StatusError
-	if !errors.As(err, &se) {
+	se, ok := errors.AsType[*StatusError](err)
+	if !ok {
 		t.Fatalf("statusError returned %T, want *StatusError", err)
 	}
 	if strings.Contains(se.Body, trimmedKey) {
@@ -134,8 +134,8 @@ func TestStatusError_fullyReadBodyEndingInKeyPrefixNotOverRedacted(t *testing.T)
 		Body:       io.NopCloser(strings.NewReader(payload)),
 	}
 	err := statusError(resp, "/api/v3/series", apiKey)
-	var se *StatusError
-	if !errors.As(err, &se) {
+	se, ok := errors.AsType[*StatusError](err)
+	if !ok {
 		t.Fatalf("statusError returned %T, want *StatusError", err)
 	}
 	if strings.Contains(se.Body, apiKey) {
