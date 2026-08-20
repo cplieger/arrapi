@@ -4,10 +4,10 @@
 //
 // Two constructors return two concrete client types, so an operation can only
 // be called against the instance that supports it: NewSonarr returns a *Sonarr
-// (GetSeries, GetEpisodes, GetEpisodeFiles, RescanSeries, RefreshSeries) and
-// NewRadarr returns a *Radarr (GetMovies, RescanMovie, RefreshMovie). Both
+// (Series, Episodes, EpisodeFiles, RescanSeries, RefreshSeries) and
+// NewRadarr returns a *Radarr (Movies, RescanMovie, RefreshMovie). Both
 // embed a shared core that exposes the endpoints common to either service
-// (GetTags, GetSystemStatus, Ping, Close).
+// (Tags, SystemStatus, Ping, Close).
 //
 // Every request is authenticated with the instance's X-Api-Key, bounded by a
 // per-request timeout, and retried on transient failures (HTTP 429, any 5xx,

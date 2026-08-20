@@ -60,9 +60,9 @@ func TestGetHistorySince_sonarrSingleTypeFilteredClientSide(t *testing.T) {
 	rs := newServer(t, http.StatusOK, body)
 	s := fastSonarr(t, rs.srv.URL)
 
-	recs, err := s.GetHistorySince(t.Context(), time.Date(2026, 7, 1, 0, 0, 0, 0, time.UTC), arrapi.EventDownloadImported)
+	recs, err := s.HistorySince(t.Context(), time.Date(2026, 7, 1, 0, 0, 0, 0, time.UTC), arrapi.EventDownloadImported)
 	if err != nil {
-		t.Fatalf("GetHistorySince: %v", err)
+		t.Fatalf("HistorySince: %v", err)
 	}
 	if len(recs) != 1 {
 		t.Fatalf("got %d records, want 1 (grabbed filtered out)", len(recs))
@@ -104,9 +104,9 @@ func TestGetHistorySince_radarrSingleTypeFilter(t *testing.T) {
 	}
 	t.Cleanup(r.Close)
 
-	recs, err := r.GetHistorySince(t.Context(), time.Date(2026, 7, 1, 0, 0, 0, 0, time.UTC), arrapi.EventFileRenamed)
+	recs, err := r.HistorySince(t.Context(), time.Date(2026, 7, 1, 0, 0, 0, 0, time.UTC), arrapi.EventFileRenamed)
 	if err != nil {
-		t.Fatalf("GetHistorySince: %v", err)
+		t.Fatalf("HistorySince: %v", err)
 	}
 	if len(recs) != 1 || recs[0].ID != 2 || recs[0].EventType != arrapi.EventFileRenamed {
 		t.Fatalf("records = %+v, want only the renamed event (id 2)", recs)
@@ -121,9 +121,9 @@ func TestGetHistorySince_noFilterReturnsAll(t *testing.T) {
 	}
 	t.Cleanup(r.Close)
 
-	recs, err := r.GetHistorySince(t.Context(), time.Date(2026, 7, 1, 0, 0, 0, 0, time.UTC))
+	recs, err := r.HistorySince(t.Context(), time.Date(2026, 7, 1, 0, 0, 0, 0, time.UTC))
 	if err != nil {
-		t.Fatalf("GetHistorySince: %v", err)
+		t.Fatalf("HistorySince: %v", err)
 	}
 	if len(recs) != 1 || recs[0].EventType != arrapi.EventDownloadImported || recs[0].MovieID != 100 {
 		t.Fatalf("records = %+v, want one imported movie 100", recs)
@@ -138,9 +138,9 @@ func TestGetHistorySince_zeroValueFilterReturnsAll(t *testing.T) {
 	rs := newServer(t, http.StatusOK, body)
 	s := fastSonarr(t, rs.srv.URL)
 
-	recs, err := s.GetHistorySince(t.Context(), time.Date(2026, 7, 1, 0, 0, 0, 0, time.UTC), arrapi.EventType(0))
+	recs, err := s.HistorySince(t.Context(), time.Date(2026, 7, 1, 0, 0, 0, 0, time.UTC), arrapi.EventType(0))
 	if err != nil {
-		t.Fatalf("GetHistorySince: %v", err)
+		t.Fatalf("HistorySince: %v", err)
 	}
 	if len(recs) != 2 {
 		t.Fatalf("got %d records, want 2 (a zero-value-only filter is ignored, returns all)", len(recs))
@@ -153,10 +153,10 @@ func TestGetHistorySince_multipleEventTypesFilteredClientSide(t *testing.T) {
 	rs := newServer(t, http.StatusOK, body)
 	s := fastSonarr(t, rs.srv.URL)
 
-	recs, err := s.GetHistorySince(t.Context(), time.Date(2026, 7, 1, 0, 0, 0, 0, time.UTC),
+	recs, err := s.HistorySince(t.Context(), time.Date(2026, 7, 1, 0, 0, 0, 0, time.UTC),
 		arrapi.EventGrabbed, arrapi.EventDownloadImported)
 	if err != nil {
-		t.Fatalf("GetHistorySince: %v", err)
+		t.Fatalf("HistorySince: %v", err)
 	}
 	if len(recs) != 3 {
 		t.Fatalf("got %d records, want 3 (grabbed + two imported)", len(recs))
@@ -175,9 +175,9 @@ func TestHistoryRecord_rawEventTypePreserved(t *testing.T) {
 	rs := newServer(t, http.StatusOK, `[{"id":1,"eventType":"someFutureEvent","seriesId":7}]`)
 	s := fastSonarr(t, rs.srv.URL)
 
-	recs, err := s.GetHistorySince(t.Context(), time.Date(2026, 7, 1, 0, 0, 0, 0, time.UTC))
+	recs, err := s.HistorySince(t.Context(), time.Date(2026, 7, 1, 0, 0, 0, 0, time.UTC))
 	if err != nil {
-		t.Fatalf("GetHistorySince: %v", err)
+		t.Fatalf("HistorySince: %v", err)
 	}
 	if len(recs) != 1 {
 		t.Fatalf("got %d records, want 1", len(recs))
@@ -198,9 +198,9 @@ func TestHistoryRecord_rawEventTypeDecodesEscapes(t *testing.T) {
 	rs := newServer(t, http.StatusOK, `[{"id":1,"eventType":"odd\"name\"","seriesId":7}]`)
 	s := fastSonarr(t, rs.srv.URL)
 
-	recs, err := s.GetHistorySince(t.Context(), time.Date(2026, 7, 1, 0, 0, 0, 0, time.UTC))
+	recs, err := s.HistorySince(t.Context(), time.Date(2026, 7, 1, 0, 0, 0, 0, time.UTC))
 	if err != nil {
-		t.Fatalf("GetHistorySince: %v", err)
+		t.Fatalf("HistorySince: %v", err)
 	}
 	if len(recs) != 1 {
 		t.Fatalf("got %d records, want 1", len(recs))
@@ -217,9 +217,9 @@ func TestHistoryRecord_rawEventTypePreservedForUnknownInt(t *testing.T) {
 	rs := newServer(t, http.StatusOK, `[{"id":1,"eventType":99,"seriesId":7}]`)
 	s := fastSonarr(t, rs.srv.URL)
 
-	recs, err := s.GetHistorySince(t.Context(), time.Date(2026, 7, 1, 0, 0, 0, 0, time.UTC))
+	recs, err := s.HistorySince(t.Context(), time.Date(2026, 7, 1, 0, 0, 0, 0, time.UTC))
 	if err != nil {
-		t.Fatalf("GetHistorySince: %v", err)
+		t.Fatalf("HistorySince: %v", err)
 	}
 	if len(recs) != 1 {
 		t.Fatalf("got %d records, want 1", len(recs))
@@ -238,9 +238,9 @@ func TestGetHistory_paged(t *testing.T) {
 	rs := newServer(t, http.StatusOK, body)
 	s := fastSonarr(t, rs.srv.URL)
 
-	page, err := s.GetHistory(t.Context(), arrapi.HistoryOptions{Page: 2, PageSize: 10})
+	page, err := s.History(t.Context(), arrapi.HistoryOptions{Page: 2, PageSize: 10})
 	if err != nil {
-		t.Fatalf("GetHistory: %v", err)
+		t.Fatalf("History: %v", err)
 	}
 	if page.Page != 2 || page.PageSize != 10 || page.TotalRecords != 25 || len(page.Records) != 2 {
 		t.Errorf("page = %+v, want page 2 size 10 total 25 with 2 records", page)
@@ -283,9 +283,9 @@ func TestGetHistory_largePageUsesListLimit(t *testing.T) {
 	rs := newServer(t, http.StatusOK, `{"page":1,"pageSize":1,"totalRecords":1,"records":[{"id":1,"eventType":3,"sourceTitle":"`+largeTitle+`"}]}`)
 	s := fastSonarr(t, rs.srv.URL)
 
-	page, err := s.GetHistory(t.Context(), arrapi.HistoryOptions{Page: 1, PageSize: 1})
+	page, err := s.History(t.Context(), arrapi.HistoryOptions{Page: 1, PageSize: 1})
 	if err != nil {
-		t.Fatalf("GetHistory on page larger than maxObjectBytes but below maxListBytes: %v", err)
+		t.Fatalf("History on page larger than maxObjectBytes but below maxListBytes: %v", err)
 	}
 	if len(page.Records) != 1 || page.Records[0].SourceTitle != largeTitle {
 		t.Errorf("records = %+v, want one large source title of length %d", page.Records, len(largeTitle))
@@ -296,9 +296,9 @@ func TestGetHistory_defaultOptionsOmitPageParams(t *testing.T) {
 	rs := newServer(t, http.StatusOK, `{"page":1,"pageSize":20,"totalRecords":0,"records":[]}`)
 	s := fastSonarr(t, rs.srv.URL)
 
-	page, err := s.GetHistory(t.Context(), arrapi.HistoryOptions{})
+	page, err := s.History(t.Context(), arrapi.HistoryOptions{})
 	if err != nil {
-		t.Fatalf("GetHistory with default options: %v", err)
+		t.Fatalf("History with default options: %v", err)
 	}
 	if page.Page != 1 || page.PageSize != 20 || page.TotalRecords != 0 || len(page.Records) != 0 {
 		t.Errorf("page = %+v, want server defaults page 1 size 20 with no records", page)
@@ -324,9 +324,9 @@ func TestGetHistorySince_zeroValueMixedWithFilterIsIgnored(t *testing.T) {
 	rs := newServer(t, http.StatusOK, body)
 	s := fastSonarr(t, rs.srv.URL)
 
-	recs, err := s.GetHistorySince(t.Context(), time.Date(2026, 7, 1, 0, 0, 0, 0, time.UTC), arrapi.EventType(0), arrapi.EventDownloadImported)
+	recs, err := s.HistorySince(t.Context(), time.Date(2026, 7, 1, 0, 0, 0, 0, time.UTC), arrapi.EventType(0), arrapi.EventDownloadImported)
 	if err != nil {
-		t.Fatalf("GetHistorySince: %v", err)
+		t.Fatalf("HistorySince: %v", err)
 	}
 	if len(recs) != 1 || recs[0].ID != 2 || recs[0].EventType != arrapi.EventDownloadImported {
 		t.Fatalf("records = %+v, want only the imported event (id 2); zero-value filter entries are ignored", recs)

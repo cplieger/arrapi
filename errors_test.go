@@ -96,7 +96,7 @@ func TestStatusError_redactsAPIKey(t *testing.T) {
 	rs := newServer(t, http.StatusUnauthorized, body)
 	s := fastSonarr(t, rs.srv.URL, arrapi.WithMaxAttempts(1))
 
-	_, err := s.GetSeries(t.Context())
+	_, err := s.Series(t.Context())
 	if err == nil {
 		t.Fatal("expected error on 401")
 	}

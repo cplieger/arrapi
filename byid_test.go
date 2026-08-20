@@ -12,9 +12,9 @@ func TestGetSeriesByID(t *testing.T) {
 	rs := newServer(t, http.StatusOK, `{"id":42,"title":"Frieren","tvdbId":424536,"year":2023,"monitored":true}`)
 	s := fastSonarr(t, rs.srv.URL)
 
-	series, err := s.GetSeriesByID(t.Context(), 42)
+	series, err := s.SeriesByID(t.Context(), 42)
 	if err != nil {
-		t.Fatalf("GetSeriesByID: %v", err)
+		t.Fatalf("SeriesByID: %v", err)
 	}
 	if series.ID != 42 || series.Title != "Frieren" || series.TvdbID != 424536 {
 		t.Errorf("series = %+v, want id 42 Frieren tvdb 424536", series)
@@ -28,7 +28,7 @@ func TestGetSeriesByID_notFound(t *testing.T) {
 	rs := newServer(t, http.StatusNotFound, `{"message":"NotFound"}`)
 	s := fastSonarr(t, rs.srv.URL)
 
-	if _, err := s.GetSeriesByID(t.Context(), 999); !arrapi.IsNotFound(err) {
+	if _, err := s.SeriesByID(t.Context(), 999); !arrapi.IsNotFound(err) {
 		t.Errorf("IsNotFound(%v) = false, want true", err)
 	}
 }
@@ -37,9 +37,9 @@ func TestGetEpisodeByID(t *testing.T) {
 	rs := newServer(t, http.StatusOK, `{"id":10,"seriesId":7,"seasonNumber":1,"episodeNumber":1,"hasFile":true}`)
 	s := fastSonarr(t, rs.srv.URL)
 
-	ep, err := s.GetEpisodeByID(t.Context(), 10)
+	ep, err := s.EpisodeByID(t.Context(), 10)
 	if err != nil {
-		t.Fatalf("GetEpisodeByID: %v", err)
+		t.Fatalf("EpisodeByID: %v", err)
 	}
 	if ep.ID != 10 || ep.SeriesID != 7 || !ep.HasFile {
 		t.Errorf("episode = %+v, want id 10 series 7 hasFile", ep)
@@ -57,9 +57,9 @@ func TestGetMovieByID(t *testing.T) {
 	}
 	t.Cleanup(r.Close)
 
-	movie, err := r.GetMovieByID(t.Context(), 100)
+	movie, err := r.MovieByID(t.Context(), 100)
 	if err != nil {
-		t.Fatalf("GetMovieByID: %v", err)
+		t.Fatalf("MovieByID: %v", err)
 	}
 	if movie.ID != 100 || movie.TmdbID != 378064 || !movie.HasFile {
 		t.Errorf("movie = %+v, want id 100 tmdb 378064 hasFile", movie)
@@ -77,7 +77,7 @@ func TestGetMovieByID_notFound(t *testing.T) {
 	}
 	t.Cleanup(r.Close)
 
-	if _, err := r.GetMovieByID(t.Context(), 999); !arrapi.IsNotFound(err) {
+	if _, err := r.MovieByID(t.Context(), 999); !arrapi.IsNotFound(err) {
 		t.Errorf("IsNotFound(%v) = false, want true", err)
 	}
 }

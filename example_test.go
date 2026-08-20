@@ -38,7 +38,7 @@ func ExampleNewSonarr() {
 	if err := sonarr.Ping(ctx); err != nil {
 		return
 	}
-	series, err := sonarr.GetSeries(ctx)
+	series, err := sonarr.Series(ctx)
 	if err != nil {
 		return
 	}

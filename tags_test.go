@@ -66,9 +66,9 @@ func TestGetTags(t *testing.T) {
 	rs := newServer(t, http.StatusOK, `[{"id":1,"label":"anime"},{"id":2,"label":"4k"}]`)
 	s := fastSonarr(t, rs.srv.URL)
 
-	tags, err := s.GetTags(t.Context())
+	tags, err := s.Tags(t.Context())
 	if err != nil {
-		t.Fatalf("GetTags: %v", err)
+		t.Fatalf("Tags: %v", err)
 	}
 	if len(tags) != 2 || tags[0].ID != 1 || tags[0].Label != "anime" {
 		t.Errorf("tags = %+v, want [{anime 1} {4k 2}]", tags)

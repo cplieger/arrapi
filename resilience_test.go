@@ -45,9 +45,9 @@ func TestGetSeries_largeStreamedBody(t *testing.T) {
 	t.Cleanup(srv.Close)
 	s := fastSonarr(t, srv.URL)
 
-	series, err := s.GetSeries(t.Context()) // no caller deadline -> per-request timeout applies
+	series, err := s.Series(t.Context()) // no caller deadline -> per-request timeout applies
 	if err != nil {
-		t.Fatalf("GetSeries on a large streamed body: %v", err)
+		t.Fatalf("Series on a large streamed body: %v", err)
 	}
 	if len(series) != n {
 		t.Errorf("got %d series, want %d", len(series), n)
@@ -78,7 +78,7 @@ func TestCrossHostRedirect_doesNotForwardAPIKey(t *testing.T) {
 	t.Cleanup(origin.Close)
 
 	s := fastSonarr(t, origin.URL)
-	if _, err := s.GetSeries(t.Context()); err == nil {
+	if _, err := s.Series(t.Context()); err == nil {
 		t.Fatal("expected an error refusing the cross-host redirect")
 	}
 	if got := leaked.Load(); got != nil && *got != "" {
@@ -100,7 +100,7 @@ func TestSameHostRedirect_followed(t *testing.T) {
 	t.Cleanup(srv.Close)
 	s := fastSonarr(t, srv.URL)
 
-	series, err := s.GetSeries(t.Context())
+	series, err := s.Series(t.Context())
 	if err != nil {
 		t.Fatalf("same-host redirect should be followed: %v", err)
 	}
@@ -116,7 +116,7 @@ func TestResponseTooLarge_objectRejected(t *testing.T) {
 	rs := newServer(t, http.StatusOK, `{"version":"4.0.0","appName":"`+huge+`"}`)
 	s := fastSonarr(t, rs.srv.URL)
 
-	_, err := s.GetSystemStatus(t.Context())
+	_, err := s.SystemStatus(t.Context())
 	if err == nil {
 		t.Fatal("expected ResponseTooLargeError for an over-cap body")
 	}
@@ -155,10 +155,10 @@ func TestRetryAfter_honored(t *testing.T) {
 		}
 
 		start := time.Now()
-		series, err := s.GetSeries(t.Context())
+		series, err := s.Series(t.Context())
 		elapsed := time.Since(start)
 		if err != nil {
-			t.Fatalf("GetSeries: %v", err)
+			t.Fatalf("Series: %v", err)
 		}
 		if len(series) != 1 {
 			t.Fatalf("got %d series, want 1", len(series))
@@ -182,13 +182,13 @@ func TestStatusError_rateLimitFields(t *testing.T) {
 	t.Cleanup(srv.Close)
 	s := fastSonarr(t, srv.URL, arrapi.WithMaxAttempts(1))
 
-	_, err := s.GetSeries(t.Context())
+	_, err := s.Series(t.Context())
 	if !arrapi.IsRateLimited(err) {
 		t.Fatalf("IsRateLimited(%v) = false, want true", err)
 	}
 	se, ok := errors.AsType[*arrapi.StatusError](err)
 	if !ok {
-		t.Fatalf("GetSeries error = %v, want *StatusError", err)
+		t.Fatalf("Series error = %v, want *StatusError", err)
 	}
 	if se.RetryAfter != 30*time.Second {
 		t.Errorf("StatusError.RetryAfter = %v, want 30s", se.RetryAfter)
@@ -206,8 +206,8 @@ func TestUserAgentHeaderSet(t *testing.T) {
 	t.Cleanup(srv.Close)
 	s := fastSonarr(t, srv.URL)
 
-	if _, err := s.GetSeries(t.Context()); err != nil {
-		t.Fatalf("GetSeries: %v", err)
+	if _, err := s.Series(t.Context()); err != nil {
+		t.Fatalf("Series: %v", err)
 	}
 	if got := ua.Load(); got == nil || !strings.Contains(*got, "arrapi") {
 		t.Errorf("User-Agent header did not contain arrapi: %v", got)
@@ -224,10 +224,10 @@ func TestStatusError_errorBodyIsCapped(t *testing.T) {
 	rs := newServer(t, http.StatusInternalServerError, body)
 	s := fastSonarr(t, rs.srv.URL, arrapi.WithMaxAttempts(1))
 
-	_, err := s.GetSeries(t.Context())
+	_, err := s.Series(t.Context())
 	se, ok := errors.AsType[*arrapi.StatusError](err)
 	if !ok {
-		t.Fatalf("GetSeries error = %v, want *StatusError", err)
+		t.Fatalf("Series error = %v, want *StatusError", err)
 	}
 	if len(se.Body) != 64<<10+len("...") {
 		t.Errorf("StatusError.Body length = %d, want %d (cap + truncation marker)", len(se.Body), 64<<10+len("..."))
