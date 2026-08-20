@@ -164,7 +164,7 @@ The captured `Body` is made log-safe at capture (via [`cplieger/runesafe`](https
 
 ## Resilience
 
-- Retries `429`, any `5xx`, and transient transport errors (timeouts, connection resets, DNS failures) with jittered exponential backoff (via `httpx.RetryWithBackoff`), honoring the server's `Retry-After` hint (capped) on a `429`. `4xx` (non-429) and non-transient transport errors fail immediately.
+- Retries `429`, any `5xx`, and transient transport errors (timeouts, connection resets, DNS failures) with jittered exponential backoff (via `httpx.Do`), honoring the server's `Retry-After` hint (capped) on a `429`. `4xx` (non-429) and non-transient transport errors fail immediately.
 - Retry diagnostics are emitted through `slog` (a `Debug` line per retry, a `Warn` when retries are exhausted, tagged `arrapi`). Pass `WithLogger` to route them into your own logger; without it they go to `slog.Default()`. The library logs nothing else and owns no logger of its own.
 - Every request carries the `X-Api-Key` header and a `User-Agent`.
 - Redirects are followed only within the same host, so the `X-Api-Key` never reaches another origin. A same-host `http`->`https` upgrade is followed; an `https`->`http` downgrade is refused so the key never rides a cleartext hop. The policy matches on host only, not port, so a same-host redirect to a different port is followed. A caller-supplied client via `WithHTTPClient` owns its own redirect policy.
