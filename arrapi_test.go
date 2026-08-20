@@ -7,6 +7,7 @@ import (
 	"net/http/httptest"
 	"sync/atomic"
 	"testing"
+	"testing/synctest"
 	"time"
 
 	"github.com/cplieger/arrapi/v2"
@@ -391,52 +392,114 @@ func TestGetSystemStatus(t *testing.T) {
 	}
 }
 
+// TestWithTimeout_cancelsSlowRequest pins the per-request timeout: with no
+// caller deadline, a request that outlasts WithTimeout is cancelled at exactly
+// that budget. Runs in synthetic time at production-scale durations, so the
+// assertion is an exact equality on the deadline rather than "an error
+// eventually arrived".
 func TestWithTimeout_cancelsSlowRequest(t *testing.T) {
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-		time.Sleep(200 * time.Millisecond)
-		_, _ = w.Write([]byte(`[]`))
-	}))
-	t.Cleanup(srv.Close)
-	s := fastSonarr(t, srv.URL, arrapi.WithTimeout(20*time.Millisecond), arrapi.WithMaxAttempts(1))
+	synctest.Test(t, func(t *testing.T) {
+		srv := httptest.NewTestServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			select {
+			case <-time.After(200 * time.Second):
+			case <-r.Context().Done():
+				return
+			}
+			_, _ = w.Write([]byte(`[]`))
+		}))
+		s, err := arrapi.NewSonarr(srv.URL, testKey,
+			arrapi.WithHTTPClient(srv.Client()),
+			arrapi.WithTimeout(20*time.Second),
+			arrapi.WithMaxAttempts(1))
+		if err != nil {
+			t.Fatalf("NewSonarr: %v", err)
+		}
 
-	if _, err := s.GetSeries(t.Context()); err == nil {
-		t.Fatal("expected timeout error")
-	}
+		start := time.Now()
+		_, err = s.GetSeries(t.Context())
+		elapsed := time.Since(start)
+		if err == nil {
+			t.Fatal("expected timeout error")
+		}
+		if elapsed != 20*time.Second {
+			t.Errorf("request ran for %v, want exactly the 20s WithTimeout budget", elapsed)
+		}
+	})
 }
 
+// TestWithTimeout_doesNotOverrideCallerDeadline pins that a caller deadline is
+// authoritative: arrapi must not undercut it with the shorter per-request
+// timeout. In synthetic time the elapsed duration proves WHICH deadline
+// governed — a request that takes exactly 80s under a 20s WithTimeout and a
+// 500s caller deadline can only have run on the caller's.
+//
+// The exact equality is what earns the rewrite. The previous real-clock version
+// asserted only that the call succeeded, which does catch a WithTimeout that
+// overrides the deadline outright, but passes for any schedule that still lands
+// inside the caller's budget: a spurious 200ms pre-request delay injected into
+// doRetry keeps the old assertion green and fails this one (measured).
 func TestWithTimeout_doesNotOverrideCallerDeadline(t *testing.T) {
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-		time.Sleep(80 * time.Millisecond)
-		_, _ = w.Write([]byte(`[{"id":1,"title":"ok"}]`))
-	}))
-	t.Cleanup(srv.Close)
-	s := fastSonarr(t, srv.URL, arrapi.WithTimeout(20*time.Millisecond), arrapi.WithMaxAttempts(1))
+	synctest.Test(t, func(t *testing.T) {
+		srv := httptest.NewTestServer(t, http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+			time.Sleep(80 * time.Second)
+			_, _ = w.Write([]byte(`[{"id":1,"title":"ok"}]`))
+		}))
+		s, err := arrapi.NewSonarr(srv.URL, testKey,
+			arrapi.WithHTTPClient(srv.Client()),
+			arrapi.WithTimeout(20*time.Second),
+			arrapi.WithMaxAttempts(1))
+		if err != nil {
+			t.Fatalf("NewSonarr: %v", err)
+		}
 
-	ctx, cancel := context.WithTimeout(t.Context(), 500*time.Millisecond)
-	defer cancel()
+		ctx, cancel := context.WithTimeout(t.Context(), 500*time.Second)
+		defer cancel()
 
-	series, err := s.GetSeries(ctx)
-	if err != nil {
-		t.Fatalf("GetSeries with caller deadline and shorter WithTimeout: %v", err)
-	}
-	if len(series) != 1 || series[0].Title != "ok" {
-		t.Fatalf("series = %+v, want one titled ok", series)
-	}
+		start := time.Now()
+		series, err := s.GetSeries(ctx)
+		elapsed := time.Since(start)
+		if err != nil {
+			t.Fatalf("GetSeries with caller deadline and shorter WithTimeout: %v", err)
+		}
+		if len(series) != 1 || series[0].Title != "ok" {
+			t.Fatalf("series = %+v, want one titled ok", series)
+		}
+		if elapsed != 80*time.Second {
+			t.Errorf("request ran for %v, want 80s; anything near the 20s WithTimeout means it undercut the caller deadline", elapsed)
+		}
+	})
 }
 
+// TestContextCancellation confirms a caller deadline shorter than the handler's
+// work surfaces as context.DeadlineExceeded, at exactly that deadline.
 func TestContextCancellation(t *testing.T) {
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-		time.Sleep(200 * time.Millisecond)
-		_, _ = w.Write([]byte(`[]`))
-	}))
-	t.Cleanup(srv.Close)
-	s := fastSonarr(t, srv.URL)
+	synctest.Test(t, func(t *testing.T) {
+		srv := httptest.NewTestServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			select {
+			case <-time.After(200 * time.Second):
+			case <-r.Context().Done():
+				return
+			}
+			_, _ = w.Write([]byte(`[]`))
+		}))
+		s, err := arrapi.NewSonarr(srv.URL, testKey, arrapi.WithHTTPClient(srv.Client()))
+		if err != nil {
+			t.Fatalf("NewSonarr: %v", err)
+		}
 
-	ctx, cancel := context.WithTimeout(t.Context(), 20*time.Millisecond)
-	defer cancel()
-	if _, err := s.GetSeries(ctx); !errors.Is(err, context.DeadlineExceeded) {
-		t.Errorf("err = %v, want context.DeadlineExceeded", err)
-	}
+		ctx, cancel := context.WithTimeout(t.Context(), 20*time.Second)
+		defer cancel()
+
+		start := time.Now()
+		_, err = s.GetSeries(ctx)
+		elapsed := time.Since(start)
+		if !errors.Is(err, context.DeadlineExceeded) {
+			t.Errorf("err = %v, want context.DeadlineExceeded", err)
+		}
+		if elapsed != 20*time.Second {
+			t.Errorf("request ran for %v, want exactly the 20s caller deadline", elapsed)
+		}
+	})
 }
 
 func TestWithHTTPClient_usesProvidedClient(t *testing.T) {
