@@ -23,12 +23,10 @@ func TestGetSeries_concurrentCallsAreSafe(t *testing.T) {
 	errs := make([]error, n)
 	lens := make([]int, n)
 	for i := range n {
-		wg.Add(1)
-		go func(i int) {
-			defer wg.Done()
+		wg.Go(func() {
 			series, err := s.GetSeries(t.Context())
 			errs[i], lens[i] = err, len(series)
-		}(i)
+		})
 	}
 	wg.Wait()
 
