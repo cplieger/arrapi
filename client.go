@@ -59,7 +59,7 @@ type APIKey string
 
 // client is the shared Sonarr/Radarr HTTP core. It is embedded by the exported
 // Sonarr and Radarr types, which add the resource-specific methods; the
-// endpoints common to both services (GetTags, GetSystemStatus, Ping, Close) are
+// endpoints common to both services (Tags, SystemStatus, Ping, Close) are
 // promoted from here.
 type client struct {
 	httpClient  *http.Client
@@ -209,8 +209,8 @@ func (c *client) Ping(ctx context.Context) error {
 	return nil
 }
 
-// GetSystemStatus returns the instance's system status (version, app name).
-func (c *client) GetSystemStatus(ctx context.Context) (SystemStatus, error) {
+// SystemStatus returns the instance's system status (version, app name).
+func (c *client) SystemStatus(ctx context.Context) (SystemStatus, error) {
 	return c.fetchOne[SystemStatus](ctx, apiPrefix+"/system/status")
 }
 

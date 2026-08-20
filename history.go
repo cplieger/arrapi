@@ -160,7 +160,7 @@ func (h *HistoryRecord) UnmarshalJSON(data []byte) error {
 // data dictionary, or "" when absent.
 func (h *HistoryRecord) ImportedPath() string { return h.Data["importedPath"] }
 
-// GetHistorySince returns history records on or after since (the arr endpoint
+// HistorySince returns history records on or after since (the arr endpoint
 // orders newest first). Pass one or more event types to filter the result;
 // pass none to return every type. Available on both Sonarr and Radarr.
 //
@@ -171,8 +171,8 @@ func (h *HistoryRecord) ImportedPath() string { return h.Data["importedPath"] }
 // service (Sonarr and Radarr disagree on the integers), so a server-side filter
 // is not portable. Note that /history/since is unbounded, so a wide since
 // window can return a large payload (subject to the response size cap); use
-// GetHistory for bounded, paged scans.
-func (c *client) GetHistorySince(ctx context.Context, since time.Time, eventTypes ...EventType) ([]HistoryRecord, error) {
+// History for bounded, paged scans.
+func (c *client) HistorySince(ctx context.Context, since time.Time, eventTypes ...EventType) ([]HistoryRecord, error) {
 	params := url.Values{}
 	params.Set("date", since.UTC().Format(time.RFC3339))
 	params.Set("includeSeries", "false")
@@ -194,19 +194,19 @@ type HistoryPage struct {
 	TotalRecords int             `json:"totalRecords"`
 }
 
-// HistoryOptions parameterizes a paged GetHistory call. A zero Page or PageSize
+// HistoryOptions parameterizes a paged History call. A zero Page or PageSize
 // uses the arr default (page 1; the server's default page size).
 type HistoryOptions struct {
 	Page     int
 	PageSize int
 }
 
-// GetHistory returns one page of history from the paged /history endpoint,
-// newest first. Unlike GetHistorySince it is bounded by page size, so it suits
+// History returns one page of history from the paged /history endpoint,
+// newest first. Unlike HistorySince it is bounded by page size, so it suits
 // backfills and large scans. Filter the returned records by EventType
 // client-side; the arr eventType query parameter is numbered per service and is
 // not portable. Available on both Sonarr and Radarr.
-func (c *client) GetHistory(ctx context.Context, opts HistoryOptions) (HistoryPage, error) {
+func (c *client) History(ctx context.Context, opts HistoryOptions) (HistoryPage, error) {
 	params := url.Values{}
 	if opts.Page > 0 {
 		params.Set("page", strconv.Itoa(opts.Page))

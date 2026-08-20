@@ -92,9 +92,9 @@ func TestGetSeries_success(t *testing.T) {
 	rs := newServer(t, http.StatusOK, body)
 	s := fastSonarr(t, rs.srv.URL)
 
-	series, err := s.GetSeries(t.Context())
+	series, err := s.Series(t.Context())
 	if err != nil {
-		t.Fatalf("GetSeries: %v", err)
+		t.Fatalf("Series: %v", err)
 	}
 	if len(series) != 2 {
 		t.Fatalf("got %d series, want 2", len(series))
@@ -118,9 +118,9 @@ func TestGetEpisodes_pathIncludesSeriesAndFileFlag(t *testing.T) {
 	   "episodeFile":{"id":99,"relativePath":"S01E01.mkv","releaseGroup":"CRUCiBLE","size":734003200}}]`)
 	s := fastSonarr(t, rs.srv.URL)
 
-	eps, err := s.GetEpisodes(t.Context(), 7)
+	eps, err := s.Episodes(t.Context(), 7)
 	if err != nil {
-		t.Fatalf("GetEpisodes: %v", err)
+		t.Fatalf("Episodes: %v", err)
 	}
 	if len(eps) != 1 || eps[0].EpisodeFile == nil {
 		t.Fatalf("got %d episodes (file nil=%v), want 1 with file", len(eps), len(eps) == 0 || eps[0].EpisodeFile == nil)
@@ -140,9 +140,9 @@ func TestGetEpisodeFiles_success(t *testing.T) {
 	  {"id":100,"seriesId":7,"seasonNumber":2,"relativePath":"Season 02/S02E01.mkv","releaseGroup":"LostYears","size":1073741824}]`)
 	s := fastSonarr(t, rs.srv.URL)
 
-	files, err := s.GetEpisodeFiles(t.Context(), 7)
+	files, err := s.EpisodeFiles(t.Context(), 7)
 	if err != nil {
-		t.Fatalf("GetEpisodeFiles: %v", err)
+		t.Fatalf("EpisodeFiles: %v", err)
 	}
 	if len(files) != 2 {
 		t.Fatalf("got %d files, want 2", len(files))
@@ -168,9 +168,9 @@ func TestGetEpisodeFiles_empty(t *testing.T) {
 	rs := newServer(t, http.StatusOK, `[]`)
 	s := fastSonarr(t, rs.srv.URL)
 
-	files, err := s.GetEpisodeFiles(t.Context(), 7)
+	files, err := s.EpisodeFiles(t.Context(), 7)
 	if err != nil {
-		t.Fatalf("GetEpisodeFiles on empty list: %v", err)
+		t.Fatalf("EpisodeFiles on empty list: %v", err)
 	}
 	if len(files) != 0 {
 		t.Errorf("got %d files, want 0", len(files))
@@ -181,7 +181,7 @@ func TestGetEpisodeFiles_malformedJSON(t *testing.T) {
 	rs := newServer(t, http.StatusOK, `{not valid json`)
 	s := fastSonarr(t, rs.srv.URL)
 
-	if _, err := s.GetEpisodeFiles(t.Context(), 7); err == nil {
+	if _, err := s.EpisodeFiles(t.Context(), 7); err == nil {
 		t.Fatal("expected decode error on malformed JSON")
 	}
 }
@@ -190,7 +190,7 @@ func TestGetEpisodeFiles_httpError(t *testing.T) {
 	rs := newServer(t, http.StatusNotFound, `{"message":"NotFound"}`)
 	s := fastSonarr(t, rs.srv.URL)
 
-	_, err := s.GetEpisodeFiles(t.Context(), 999)
+	_, err := s.EpisodeFiles(t.Context(), 999)
 	if err == nil {
 		t.Fatal("expected error on 404")
 	}
@@ -211,9 +211,9 @@ func TestGetMovies_success(t *testing.T) {
 	}
 	t.Cleanup(r.Close)
 
-	movies, err := r.GetMovies(t.Context())
+	movies, err := r.Movies(t.Context())
 	if err != nil {
-		t.Fatalf("GetMovies: %v", err)
+		t.Fatalf("Movies: %v", err)
 	}
 	if len(movies) != 1 || movies[0].TmdbID != 378064 || !movies[0].HasFile {
 		t.Fatalf("movies = %+v, want one tmdb 378064 with file", movies)
@@ -227,7 +227,7 @@ func TestGet_notFoundIsStatusError(t *testing.T) {
 	rs := newServer(t, http.StatusNotFound, "not found")
 	s := fastSonarr(t, rs.srv.URL)
 
-	_, err := s.GetSeries(t.Context())
+	_, err := s.Series(t.Context())
 	if err == nil {
 		t.Fatal("expected error on 404")
 	}
@@ -252,7 +252,7 @@ func TestGet_clientErrorNotRetried(t *testing.T) {
 	t.Cleanup(srv.Close)
 	s := fastSonarr(t, srv.URL, arrapi.WithMaxAttempts(3))
 
-	if _, err := s.GetSeries(t.Context()); err == nil {
+	if _, err := s.Series(t.Context()); err == nil {
 		t.Fatal("expected error on 400")
 	}
 	if n := calls.Load(); n != 1 {
@@ -272,9 +272,9 @@ func TestGet_retriesTransientThenSucceeds(t *testing.T) {
 	t.Cleanup(srv.Close)
 	s := fastSonarr(t, srv.URL, arrapi.WithMaxAttempts(3))
 
-	series, err := s.GetSeries(t.Context())
+	series, err := s.Series(t.Context())
 	if err != nil {
-		t.Fatalf("GetSeries after retries: %v", err)
+		t.Fatalf("Series after retries: %v", err)
 	}
 	if len(series) != 1 || series[0].Title != "ok" {
 		t.Errorf("series = %+v, want one titled ok", series)
@@ -293,7 +293,7 @@ func TestGet_retriesExhausted(t *testing.T) {
 	t.Cleanup(srv.Close)
 	s := fastSonarr(t, srv.URL, arrapi.WithMaxAttempts(3))
 
-	_, err := s.GetSeries(t.Context())
+	_, err := s.Series(t.Context())
 	if err == nil {
 		t.Fatal("expected error after exhausting retries")
 	}
@@ -315,7 +315,7 @@ func TestWithMaxAttempts_clampedToOne(t *testing.T) {
 	t.Cleanup(srv.Close)
 	s := fastSonarr(t, srv.URL, arrapi.WithMaxAttempts(0))
 
-	if _, err := s.GetSeries(t.Context()); err == nil {
+	if _, err := s.Series(t.Context()); err == nil {
 		t.Fatal("expected error")
 	}
 	if n := calls.Load(); n != 1 {
@@ -327,7 +327,7 @@ func TestGet_malformedJSON(t *testing.T) {
 	rs := newServer(t, http.StatusOK, `{not valid json`)
 	s := fastSonarr(t, rs.srv.URL)
 
-	if _, err := s.GetSeries(t.Context()); err == nil {
+	if _, err := s.Series(t.Context()); err == nil {
 		t.Fatal("expected decode error on malformed JSON")
 	}
 }
@@ -383,9 +383,9 @@ func TestGetSystemStatus(t *testing.T) {
 	rs := newServer(t, http.StatusOK, `{"version":"4.0.14","appName":"Sonarr","instanceName":"Main"}`)
 	s := fastSonarr(t, rs.srv.URL)
 
-	st, err := s.GetSystemStatus(t.Context())
+	st, err := s.SystemStatus(t.Context())
 	if err != nil {
-		t.Fatalf("GetSystemStatus: %v", err)
+		t.Fatalf("SystemStatus: %v", err)
 	}
 	if st.Version != "4.0.14" || st.AppName != "Sonarr" {
 		t.Errorf("status = %+v, want version 4.0.14 appName Sonarr", st)
@@ -416,7 +416,7 @@ func TestWithTimeout_cancelsSlowRequest(t *testing.T) {
 		}
 
 		start := time.Now()
-		_, err = s.GetSeries(t.Context())
+		_, err = s.Series(t.Context())
 		elapsed := time.Since(start)
 		if err == nil {
 			t.Fatal("expected timeout error")
@@ -456,10 +456,10 @@ func TestWithTimeout_doesNotOverrideCallerDeadline(t *testing.T) {
 		defer cancel()
 
 		start := time.Now()
-		series, err := s.GetSeries(ctx)
+		series, err := s.Series(ctx)
 		elapsed := time.Since(start)
 		if err != nil {
-			t.Fatalf("GetSeries with caller deadline and shorter WithTimeout: %v", err)
+			t.Fatalf("Series with caller deadline and shorter WithTimeout: %v", err)
 		}
 		if len(series) != 1 || series[0].Title != "ok" {
 			t.Fatalf("series = %+v, want one titled ok", series)
@@ -491,7 +491,7 @@ func TestContextCancellation(t *testing.T) {
 		defer cancel()
 
 		start := time.Now()
-		_, err = s.GetSeries(ctx)
+		_, err = s.Series(ctx)
 		elapsed := time.Since(start)
 		if !errors.Is(err, context.DeadlineExceeded) {
 			t.Errorf("err = %v, want context.DeadlineExceeded", err)
@@ -511,8 +511,8 @@ func TestWithHTTPClient_usesProvidedClient(t *testing.T) {
 	})}
 	s := fastSonarr(t, rs.srv.URL, arrapi.WithHTTPClient(hc))
 
-	if _, err := s.GetSeries(t.Context()); err != nil {
-		t.Fatalf("GetSeries: %v", err)
+	if _, err := s.Series(t.Context()); err != nil {
+		t.Fatalf("Series: %v", err)
 	}
 	if !used.Load() {
 		t.Error("WithHTTPClient client was not used for the request")

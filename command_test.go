@@ -143,9 +143,9 @@ func TestGetCommandByID(t *testing.T) {
 	rs := newServer(t, http.StatusOK, `{"id":7,"name":"RescanSeries","status":"completed"}`)
 	s := fastSonarr(t, rs.srv.URL)
 
-	cmd, err := s.GetCommandByID(t.Context(), 7)
+	cmd, err := s.CommandByID(t.Context(), 7)
 	if err != nil {
-		t.Fatalf("GetCommandByID: %v", err)
+		t.Fatalf("CommandByID: %v", err)
 	}
 	if cmd.ID != 7 || cmd.Status != "completed" {
 		t.Errorf("command = %+v, want id 7 status completed", cmd)

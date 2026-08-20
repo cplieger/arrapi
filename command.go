@@ -19,7 +19,7 @@ const (
 
 // Command is a Sonarr/Radarr command resource. The endpoint queues the command
 // and returns it with an ID and a Status ("queued", "started", "completed", or
-// "failed"); poll GetCommandByID to follow it to completion.
+// "failed"); poll CommandByID to follow it to completion.
 type Command struct {
 	Name   string `json:"name"`
 	Status string `json:"status"`
@@ -59,11 +59,11 @@ func (r *Radarr) RefreshMovie(ctx context.Context, movieID int) (Command, error)
 	return r.postCommand(ctx, commandBody{Name: cmdRefreshMovie, MovieID: movieID})
 }
 
-// GetCommandByID returns the current state of a previously issued command, so a
+// CommandByID returns the current state of a previously issued command, so a
 // caller can poll a rescan or refresh to completion. It returns a *StatusError
 // for which IsNotFound reports true when no command has that ID. Available on
 // both Sonarr and Radarr.
-func (c *client) GetCommandByID(ctx context.Context, id int) (Command, error) {
+func (c *client) CommandByID(ctx context.Context, id int) (Command, error) {
 	return c.fetchOne[Command](ctx, fmt.Sprintf("%s/command/%d", apiPrefix, id))
 }
 

@@ -519,7 +519,7 @@ func TestUpstreamEndpointDrift(t *testing.T) {
 		{svcs: []string{"sonarr", "radarr"}, method: http.MethodGet, path: "/api/v3/rootfolder"},
 		{svcs: []string{"sonarr", "radarr"}, method: http.MethodGet, path: "/api/v3/system/status"},
 		{
-			// GetHistorySince sends the include* trio to both services; each
+			// HistorySince sends the include* trio to both services; each
 			// service is pinned only on the parameters it declares (the other
 			// side's flag rides along and is ignored by model binding).
 			svcs: []string{"sonarr"}, method: http.MethodGet, path: "/api/v3/history/since",

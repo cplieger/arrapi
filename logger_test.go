@@ -40,8 +40,8 @@ func TestWithLogger_receivesRetryDiagnostics(t *testing.T) {
 		if err != nil {
 			t.Fatalf("NewSonarr: %v", err)
 		}
-		if _, err := s.GetSeries(t.Context()); err != nil {
-			t.Fatalf("GetSeries: %v", err)
+		if _, err := s.Series(t.Context()); err != nil {
+			t.Fatalf("Series: %v", err)
 		}
 
 		got := buf.String()
@@ -81,7 +81,7 @@ func TestWithLogger_exhaustionWarnsOnTheInjectedLogger(t *testing.T) {
 		if err != nil {
 			t.Fatalf("NewSonarr: %v", err)
 		}
-		if _, err := s.GetSeries(t.Context()); err == nil {
+		if _, err := s.Series(t.Context()); err == nil {
 			t.Fatal("expected an error after exhausting attempts")
 		}
 		if got := buf.String(); !strings.Contains(got, "level=WARN") {
@@ -104,8 +104,8 @@ func TestWithLogger_nilIgnored(t *testing.T) {
 		if err != nil {
 			t.Fatalf("NewSonarr with a nil logger: %v", err)
 		}
-		if _, err := s.GetSeries(t.Context()); err != nil {
-			t.Fatalf("GetSeries: %v", err)
+		if _, err := s.Series(t.Context()); err != nil {
+			t.Fatalf("Series: %v", err)
 		}
 	})
 }

@@ -5,8 +5,8 @@ import (
 	"strings"
 )
 
-// GetTags returns all tags defined in the Sonarr or Radarr instance.
-func (c *client) GetTags(ctx context.Context) ([]Tag, error) {
+// Tags returns all tags defined in the Sonarr or Radarr instance.
+func (c *client) Tags(ctx context.Context) ([]Tag, error) {
 	return c.fetchAll[Tag](ctx, apiPrefix+"/tag")
 }
 
@@ -16,12 +16,12 @@ func (c *client) GetTags(ctx context.Context) ([]Tag, error) {
 // misconfiguration rather than silently ignore it. Matching is case-insensitive
 // and trims surrounding whitespace. Passing no labels returns (nil, nil, nil)
 // without issuing a request. It is the network-backed convenience over
-// GetTags + TagIDs + UnmatchedLabels. Available on both Sonarr and Radarr.
+// Tags + TagIDs + UnmatchedLabels. Available on both Sonarr and Radarr.
 func (c *client) ResolveTagIDs(ctx context.Context, labels ...string) (ids map[int]struct{}, unmatched []string, err error) {
 	if len(labels) == 0 {
 		return nil, nil, nil
 	}
-	tags, err := c.GetTags(ctx)
+	tags, err := c.Tags(ctx)
 	if err != nil {
 		return nil, nil, err
 	}
