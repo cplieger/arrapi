@@ -154,7 +154,7 @@ Each returns `""` when `baseURL` or the required field (the Sonarr title slug / 
 | `WithMaxAttempts(n)` | Total attempts including the first, for a transient failure. Clamped to ≥1. Default 3 |
 | `WithBaseDelay(d)`   | Base delay for the exponential backoff between retries. Default 1s                    |
 | `WithTimeout(d)`     | Per-request timeout applied when the caller's context has no deadline. Default 120s   |
-| `WithLogger(l)`      | `*slog.Logger` for the retry diagnostics. Default `slog.Default()`                     |
+| `WithLogger(l)`      | `*slog.Logger` for the retry diagnostics. Default `slog.Default()`                    |
 
 ### Errors
 
