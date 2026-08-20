@@ -63,7 +63,6 @@ func WithTimeout(d time.Duration) Option {
 	return func(cfg *config) { cfg.timeout = d }
 }
 
-
 // WithLogger sets the logger for the retry diagnostics arrapi emits while it
 // supervises a request over time: one Debug record per retry and one Warn
 // record when the attempts are exhausted, each labeled "arrapi". A nil logger
