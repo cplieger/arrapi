@@ -64,7 +64,7 @@ func (r *Radarr) RefreshMovie(ctx context.Context, movieID int) (Command, error)
 // for which IsNotFound reports true when no command has that ID. Available on
 // both Sonarr and Radarr.
 func (c *client) GetCommandByID(ctx context.Context, id int) (Command, error) {
-	return fetchOne[Command](ctx, c, fmt.Sprintf("%s/command/%d", apiPrefix, id))
+	return c.fetchOne[Command](ctx, fmt.Sprintf("%s/command/%d", apiPrefix, id))
 }
 
 // postCommand sends a command to the instance's /command endpoint and decodes

@@ -179,7 +179,7 @@ func (c *client) GetHistorySince(ctx context.Context, since time.Time, eventType
 	params.Set("includeEpisode", "false")
 	params.Set("includeMovie", "false")
 
-	recs, err := fetchAll[HistoryRecord](ctx, c, apiPrefix+"/history/since?"+params.Encode())
+	recs, err := c.fetchAll[HistoryRecord](ctx, apiPrefix+"/history/since?"+params.Encode())
 	if err != nil {
 		return nil, err
 	}
@@ -216,7 +216,7 @@ func (c *client) GetHistory(ctx context.Context, opts HistoryOptions) (HistoryPa
 	}
 	params.Set("sortKey", "date")
 	params.Set("sortDirection", "descending")
-	return fetchPage(ctx, c, apiPrefix+"/history?"+params.Encode())
+	return c.fetchPage(ctx, apiPrefix+"/history?"+params.Encode())
 }
 
 // filterByEventType returns the records whose EventType is among want, matching

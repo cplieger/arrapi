@@ -28,14 +28,14 @@ func NewSonarr(baseURL string, apiKey APIKey, opts ...Option) (*Sonarr, error) {
 
 // GetSeries returns every series in the Sonarr library.
 func (s *Sonarr) GetSeries(ctx context.Context) ([]Series, error) {
-	return fetchAll[Series](ctx, s.client, apiPrefix+"/series")
+	return s.fetchAll[Series](ctx, apiPrefix+"/series")
 }
 
 // GetEpisodes returns all episodes for the given series, including
 // episode-file details (release group, size, media info) where present.
 func (s *Sonarr) GetEpisodes(ctx context.Context, seriesID int) ([]Episode, error) {
 	path := fmt.Sprintf("%s/episode?seriesId=%d&includeEpisodeFile=true", apiPrefix, seriesID)
-	return fetchAll[Episode](ctx, s.client, path)
+	return s.fetchAll[Episode](ctx, path)
 }
 
 // GetEpisodeFiles returns the episode files for the given series, from the
@@ -48,18 +48,18 @@ func (s *Sonarr) GetEpisodes(ctx context.Context, seriesID int) ([]Episode, erro
 // attribute it.
 func (s *Sonarr) GetEpisodeFiles(ctx context.Context, seriesID int) ([]EpisodeFile, error) {
 	path := fmt.Sprintf("%s/episodefile?seriesId=%d", apiPrefix, seriesID)
-	return fetchAll[EpisodeFile](ctx, s.client, path)
+	return s.fetchAll[EpisodeFile](ctx, path)
 }
 
 // GetSeriesByID returns the single series with the given Sonarr ID. It returns
 // a *StatusError for which IsNotFound reports true when no series has that ID.
 func (s *Sonarr) GetSeriesByID(ctx context.Context, seriesID int) (Series, error) {
-	return fetchOne[Series](ctx, s.client, fmt.Sprintf("%s/series/%d", apiPrefix, seriesID))
+	return s.fetchOne[Series](ctx, fmt.Sprintf("%s/series/%d", apiPrefix, seriesID))
 }
 
 // GetEpisodeByID returns the single episode with the given Sonarr ID. It
 // returns a *StatusError for which IsNotFound reports true when no episode has
 // that ID.
 func (s *Sonarr) GetEpisodeByID(ctx context.Context, episodeID int) (Episode, error) {
-	return fetchOne[Episode](ctx, s.client, fmt.Sprintf("%s/episode/%d", apiPrefix, episodeID))
+	return s.fetchOne[Episode](ctx, fmt.Sprintf("%s/episode/%d", apiPrefix, episodeID))
 }
