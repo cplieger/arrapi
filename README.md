@@ -154,6 +154,7 @@ Each returns `""` when `baseURL` or the required field (the Sonarr title slug / 
 | `WithMaxAttempts(n)` | Total attempts including the first, for a transient failure. Clamped to ≥1. Default 3 |
 | `WithBaseDelay(d)`   | Base delay for the exponential backoff between retries. Default 1s                    |
 | `WithTimeout(d)`     | Per-request timeout applied when the caller's context has no deadline. Default 120s   |
+| `WithLogger(l)`      | `*slog.Logger` for the retry diagnostics. Default `slog.Default()`                     |
 
 ### Errors
 
@@ -164,7 +165,7 @@ The captured `Body` is made log-safe at capture (via [`cplieger/runesafe`](https
 ## Resilience
 
 - Retries `429`, any `5xx`, and transient transport errors (timeouts, connection resets, DNS failures) with jittered exponential backoff (via `httpx.RetryWithBackoff`), honoring the server's `Retry-After` hint (capped) on a `429`. `4xx` (non-429) and non-transient transport errors fail immediately.
-- Retry diagnostics are emitted through `httpx`'s default `slog` logger (a `Debug` line per retry, a `Warn` when retries are exhausted, tagged `arrapi`); the library owns no logger of its own.
+- Retry diagnostics are emitted through `slog` (a `Debug` line per retry, a `Warn` when retries are exhausted, tagged `arrapi`). Pass `WithLogger` to route them into your own logger; without it they go to `slog.Default()`. The library logs nothing else and owns no logger of its own.
 - Every request carries the `X-Api-Key` header and a `User-Agent`.
 - Redirects are followed only within the same host, so the `X-Api-Key` never reaches another origin. A same-host `http`->`https` upgrade is followed; an `https`->`http` downgrade is refused so the key never rides a cleartext hop. The policy matches on host only, not port, so a same-host redirect to a different port is followed. A caller-supplied client via `WithHTTPClient` owns its own redirect policy.
 - Response bodies are size-capped before decoding (64 MB for list endpoints, 1 MB for single objects); an over-cap body is rejected as `*ResponseTooLargeError` rather than truncated.

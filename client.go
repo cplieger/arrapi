@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 	"net/http"
 	"net/url"
 	"strings"
@@ -62,6 +63,7 @@ type APIKey string
 // promoted from here.
 type client struct {
 	httpClient  *http.Client
+	logger      *slog.Logger
 	baseURL     string
 	apiKey      APIKey
 	baseDelay   time.Duration
@@ -80,6 +82,7 @@ func newClient(baseURL string, apiKey APIKey, opts ...Option) (*client, error) {
 	cfg := resolveConfig(opts)
 	return &client{
 		httpClient:  configuredHTTPClient(cfg.httpClient),
+		logger:      cfg.logger,
 		baseURL:     strings.TrimRight(baseURL, "/"),
 		apiKey:      apiKey,
 		baseDelay:   cfg.baseDelay,
@@ -239,6 +242,7 @@ func (c *client) doRetry[T any](ctx context.Context, fn func(context.Context) (T
 		},
 		httpx.WithMaxAttempts(c.maxAttempts),
 		httpx.WithBaseDelay(c.baseDelay),
+		httpx.WithLogger(c.logger),
 		httpx.WithLabel("arrapi"))
 }
 

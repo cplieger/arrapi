@@ -1,6 +1,7 @@
 package arrapi
 
 import (
+	"log/slog"
 	"net/http"
 	"time"
 )
@@ -8,6 +9,7 @@ import (
 // config holds resolved client configuration built from the functional options.
 type config struct {
 	httpClient  *http.Client
+	logger      *slog.Logger
 	baseDelay   time.Duration
 	timeout     time.Duration
 	maxAttempts int
@@ -59,4 +61,25 @@ func WithBaseDelay(d time.Duration) Option {
 // ceiling on top of it. Default: 120s.
 func WithTimeout(d time.Duration) Option {
 	return func(cfg *config) { cfg.timeout = d }
+}
+
+
+// WithLogger sets the logger for the retry diagnostics arrapi emits while it
+// supervises a request over time: one Debug record per retry and one Warn
+// record when the attempts are exhausted, each labeled "arrapi". A nil logger
+// is ignored.
+//
+// Without this option those records go to slog.Default(), which is the right
+// default but not a choice the consumer got to make: a library that retries on
+// the caller's behalf is narrating work the caller owns, so the caller should
+// be able to say where that narration lands — into its own request-scoped
+// logger, into a handler that drops Debug, or into a discard handler for a
+// test. arrapi returns typed errors and logs nothing else; this governs the
+// retry diagnostics only.
+func WithLogger(l *slog.Logger) Option {
+	return func(cfg *config) {
+		if l != nil {
+			cfg.logger = l
+		}
+	}
 }
