@@ -208,7 +208,7 @@ func (c *client) Ping(ctx context.Context) error {
 
 // GetSystemStatus returns the instance's system status (version, app name).
 func (c *client) GetSystemStatus(ctx context.Context) (SystemStatus, error) {
-	return fetchOne[SystemStatus](ctx, c, apiPrefix+"/system/status")
+	return c.fetchOne[SystemStatus](ctx, apiPrefix+"/system/status")
 }
 
 // Close releases idle connections held by the client's HTTP transport. It is
@@ -230,7 +230,7 @@ func (c *client) requestContext(ctx context.Context) (context.Context, context.C
 // which Do honors. Each attempt runs under a per-attempt context (spanning
 // the whole request and its decode, so the deadline is never cancelled
 // mid-body); GETs are idempotent, so retry is safe.
-func doRetry[T any](ctx context.Context, c *client, fn func(context.Context) (T, error)) (T, error) {
+func (c *client) doRetry[T any](ctx context.Context, fn func(context.Context) (T, error)) (T, error) {
 	return httpx.Do(ctx,
 		func(rctx context.Context) (T, error) {
 			rctx, cancel := c.requestContext(rctx)
@@ -244,8 +244,8 @@ func doRetry[T any](ctx context.Context, c *client, fn func(context.Context) (T,
 
 // fetchAll performs an authenticated GET and decodes the JSON array response,
 // with retry (see doRetry).
-func fetchAll[T any](ctx context.Context, c *client, path string) ([]T, error) {
-	return doRetry(ctx, c, func(ctx context.Context) ([]T, error) {
+func (c *client) fetchAll[T any](ctx context.Context, path string) ([]T, error) {
+	return c.doRetry(ctx, func(ctx context.Context) ([]T, error) {
 		resp, err := c.get(ctx, path) //nolint:bodyclose // closed by decodeSlice
 		if err != nil {
 			return nil, err
@@ -256,8 +256,8 @@ func fetchAll[T any](ctx context.Context, c *client, path string) ([]T, error) {
 
 // fetchOne performs an authenticated GET and decodes a single JSON object, with
 // the same retry policy as fetchAll.
-func fetchOne[T any](ctx context.Context, c *client, path string) (T, error) {
-	return doRetry(ctx, c, func(ctx context.Context) (T, error) {
+func (c *client) fetchOne[T any](ctx context.Context, path string) (T, error) {
+	return c.doRetry(ctx, func(ctx context.Context) (T, error) {
 		var zero T
 		resp, err := c.get(ctx, path) //nolint:bodyclose // closed by decodeObject
 		if err != nil {
@@ -271,8 +271,8 @@ func fetchOne[T any](ctx context.Context, c *client, path string) (T, error) {
 // object bounded by the list cap, with the same retry policy as fetchAll. It
 // is concrete on HistoryPage — the one paged collection either service
 // exposes; make it generic again only when a second page type exists.
-func fetchPage(ctx context.Context, c *client, path string) (HistoryPage, error) {
-	return doRetry(ctx, c, func(ctx context.Context) (HistoryPage, error) {
+func (c *client) fetchPage(ctx context.Context, path string) (HistoryPage, error) {
+	return c.doRetry(ctx, func(ctx context.Context) (HistoryPage, error) {
 		resp, err := c.get(ctx, path) //nolint:bodyclose // closed by decodePage
 		if err != nil {
 			return HistoryPage{}, err

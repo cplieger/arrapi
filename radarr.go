@@ -25,11 +25,11 @@ func NewRadarr(baseURL string, apiKey APIKey, opts ...Option) (*Radarr, error) {
 
 // GetMovies returns every movie in the Radarr library.
 func (r *Radarr) GetMovies(ctx context.Context) ([]Movie, error) {
-	return fetchAll[Movie](ctx, r.client, apiPrefix+"/movie")
+	return r.fetchAll[Movie](ctx, apiPrefix+"/movie")
 }
 
 // GetMovieByID returns the single movie with the given Radarr ID. It returns a
 // *StatusError for which IsNotFound reports true when no movie has that ID.
 func (r *Radarr) GetMovieByID(ctx context.Context, movieID int) (Movie, error) {
-	return fetchOne[Movie](ctx, r.client, fmt.Sprintf("%s/movie/%d", apiPrefix, movieID))
+	return r.fetchOne[Movie](ctx, fmt.Sprintf("%s/movie/%d", apiPrefix, movieID))
 }
