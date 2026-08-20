@@ -169,8 +169,7 @@ func trimTrailingSecretPrefix(s string, secret httpx.Secret) string {
 func readBounded(resp *http.Response, limit int64, path string) ([]byte, error) {
 	data, err := httpx.ReadLimitedBody(resp.Body, limit)
 	if err != nil {
-		var tooLarge *httpx.ResponseTooLargeError
-		if errors.As(err, &tooLarge) {
+		if _, ok := errors.AsType[*httpx.ResponseTooLargeError](err); ok {
 			return nil, &ResponseTooLargeError{Path: path, Limit: limit}
 		}
 		return nil, fmt.Errorf("arrapi: read %s: %w", path, err)

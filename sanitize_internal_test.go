@@ -21,8 +21,8 @@ func captureStatusError(t *testing.T, body string, apiKey APIKey) *StatusError {
 		Body:       io.NopCloser(strings.NewReader(body)),
 	}
 	err := statusError(resp, "/api/v3/series", apiKey)
-	var se *StatusError
-	if !errors.As(err, &se) {
+	se, ok := errors.AsType[*StatusError](err)
+	if !ok {
 		t.Fatalf("statusError returned %T, want *StatusError", err)
 	}
 	return se

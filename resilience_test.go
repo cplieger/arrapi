@@ -119,8 +119,7 @@ func TestResponseTooLarge_objectRejected(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected ResponseTooLargeError for an over-cap body")
 	}
-	var tooLarge *arrapi.ResponseTooLargeError
-	if !errors.As(err, &tooLarge) {
+	if _, ok := errors.AsType[*arrapi.ResponseTooLargeError](err); !ok {
 		t.Errorf("want *ResponseTooLargeError, got %v", err)
 	}
 }
@@ -172,9 +171,12 @@ func TestStatusError_rateLimitFields(t *testing.T) {
 	if !arrapi.IsRateLimited(err) {
 		t.Fatalf("IsRateLimited(%v) = false, want true", err)
 	}
-	var se *arrapi.StatusError
-	if !errors.As(err, &se) || se.RetryAfter != 30*time.Second {
-		t.Errorf("StatusError.RetryAfter = %v, want 30s (err %v)", se.RetryAfter, err)
+	se, ok := errors.AsType[*arrapi.StatusError](err)
+	if !ok {
+		t.Fatalf("GetSeries error = %v, want *StatusError", err)
+	}
+	if se.RetryAfter != 30*time.Second {
+		t.Errorf("StatusError.RetryAfter = %v, want 30s", se.RetryAfter)
 	}
 }
 
@@ -208,8 +210,8 @@ func TestStatusError_errorBodyIsCapped(t *testing.T) {
 	s := fastSonarr(t, rs.srv.URL, arrapi.WithMaxAttempts(1))
 
 	_, err := s.GetSeries(t.Context())
-	var se *arrapi.StatusError
-	if !errors.As(err, &se) {
+	se, ok := errors.AsType[*arrapi.StatusError](err)
+	if !ok {
 		t.Fatalf("GetSeries error = %v, want *StatusError", err)
 	}
 	if len(se.Body) != 64<<10+len("...") {

@@ -196,8 +196,8 @@ func TestGetEpisodeFiles_httpError(t *testing.T) {
 	if !arrapi.IsNotFound(err) {
 		t.Errorf("IsNotFound(%v) = false, want true", err)
 	}
-	var se *arrapi.StatusError
-	if !errors.As(err, &se) || se.Code != http.StatusNotFound {
+	se, ok := errors.AsType[*arrapi.StatusError](err)
+	if !ok || se.Code != http.StatusNotFound {
 		t.Errorf("want *StatusError code 404, got %v", err)
 	}
 }
@@ -233,8 +233,8 @@ func TestGet_notFoundIsStatusError(t *testing.T) {
 	if !arrapi.IsNotFound(err) {
 		t.Errorf("IsNotFound(%v) = false, want true", err)
 	}
-	var se *arrapi.StatusError
-	if !errors.As(err, &se) || se.Code != http.StatusNotFound {
+	se, ok := errors.AsType[*arrapi.StatusError](err)
+	if !ok || se.Code != http.StatusNotFound {
 		t.Errorf("want *StatusError code 404, got %v", err)
 	}
 	if se.IsTransient() {
@@ -296,8 +296,8 @@ func TestGet_retriesExhausted(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected error after exhausting retries")
 	}
-	var se *arrapi.StatusError
-	if !errors.As(err, &se) || se.Code != http.StatusBadGateway {
+	se, ok := errors.AsType[*arrapi.StatusError](err)
+	if !ok || se.Code != http.StatusBadGateway {
 		t.Errorf("want *StatusError 502, got %v", err)
 	}
 	if n := calls.Load(); n != 3 {
@@ -351,8 +351,8 @@ func TestPing(t *testing.T) {
 				t.Fatalf("Ping err = %v, wantErr %v", err, tc.wantErr)
 			}
 			if tc.want401 {
-				var se *arrapi.StatusError
-				if !errors.As(err, &se) || se.Code != http.StatusUnauthorized {
+				se, ok := errors.AsType[*arrapi.StatusError](err)
+				if !ok || se.Code != http.StatusUnauthorized {
 					t.Errorf("want *StatusError 401, got %v", err)
 				}
 			}

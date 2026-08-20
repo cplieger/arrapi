@@ -81,14 +81,14 @@ func (e *ResponseTooLargeError) Error() string {
 
 // IsNotFound reports whether err is (or wraps) a *StatusError with a 404 status.
 func IsNotFound(err error) bool {
-	var se *StatusError
-	return errors.As(err, &se) && se.Code == http.StatusNotFound
+	se, ok := errors.AsType[*StatusError](err)
+	return ok && se.Code == http.StatusNotFound
 }
 
 // IsRateLimited reports whether err is (or wraps) a *StatusError with a 429
 // status. When true, the *StatusError's RetryAfter carries the server's hint if
 // it sent one.
 func IsRateLimited(err error) bool {
-	var se *StatusError
-	return errors.As(err, &se) && se.Code == http.StatusTooManyRequests
+	se, ok := errors.AsType[*StatusError](err)
+	return ok && se.Code == http.StatusTooManyRequests
 }

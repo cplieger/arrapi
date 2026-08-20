@@ -119,8 +119,8 @@ func TestCommand_errorStatus(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected error on 400 command response")
 	}
-	var se *arrapi.StatusError
-	if !errors.As(err, &se) || se.Code != http.StatusBadRequest {
+	se, ok := errors.AsType[*arrapi.StatusError](err)
+	if !ok || se.Code != http.StatusBadRequest {
 		t.Errorf("want *StatusError 400, got %v", err)
 	}
 }
@@ -133,8 +133,8 @@ func TestCommand_redirectStatusRejected(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected error on 300 command response")
 	}
-	var se *arrapi.StatusError
-	if !errors.As(err, &se) || se.Code != http.StatusMultipleChoices {
+	se, ok := errors.AsType[*arrapi.StatusError](err)
+	if !ok || se.Code != http.StatusMultipleChoices {
 		t.Errorf("want *StatusError 300, got %v", err)
 	}
 }
