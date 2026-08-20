@@ -24,7 +24,7 @@ Two invariants are load-bearing:
 - **Transient failures are retried; permanent ones are not.** A non-2xx
   response becomes a `*StatusError`, whose `IsTransient()` returns true for
   `429` and any `5xx`. The `doRetry` helper delegates to
-  `httpx.RetryWithBackoff` (label `"arrapi"`); `*StatusError` implements
+  `httpx.Do` (label `"arrapi"`); `*StatusError` implements
   `httpx.RetryAfterHint` (returning its capped `RetryAfter`), so a `429`'s
   `Retry-After` is still honored in place of the jittered backoff. Keep
   `StatusError` satisfying both `httpx.Transient` and `httpx.RetryAfterHint`,
@@ -46,7 +46,7 @@ When you add an endpoint:
   are already `int`; never interpolate an unvalidated string into a path.
 - Preserve the client hardening: `newClient` validates the base URL with
   `url.Parse` (scheme + host, no query/fragment); the default client's redirect
-  policy is `httpx.RedirectPolicyFunc(httpx.WithSameHost(), httpx.WithMaxHops(10))`,
+  policy is `httpx.RedirectPolicyFunc(httpx.WithSameHost(true), httpx.WithMaxHops(10))`,
   which follows a same-host redirect (including an `http`->`https` upgrade) but
   refuses a cross-host hop or an `https`->`http` downgrade so `X-Api-Key` never
   leaks to another origin or onto a cleartext hop; and every request sends a
