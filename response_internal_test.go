@@ -17,9 +17,15 @@ import (
 // over a maxErrorBodyBytes+len(apiKey) read window before the final cap, so the
 // full key is matched and stripped. Padding uses a byte absent from the key so
 // any surviving key prefix is unambiguous.
+//
+// Absence alone is a weak witness -- a capture that simply cut the key off
+// satisfies it too -- so the capture is also pinned positively: the key is
+// REPLACED by the redaction mask, and it is the mask, not the key, that the
+// final cap then cuts through.
 func TestStatusError_secretStraddlingCapBoundaryIsRedacted(t *testing.T) {
 	const apiKey = "supersecretkey"
-	pad := strings.Repeat("A", maxErrorBodyBytes-3)
+	const maskHead = "RED" // the mask "REDACTED" starts 3 bytes below the cap
+	pad := strings.Repeat("A", maxErrorBodyBytes-len(maskHead))
 	payload := pad + apiKey
 	resp := &http.Response{
 		StatusCode: http.StatusUnauthorized,
@@ -33,6 +39,10 @@ func TestStatusError_secretStraddlingCapBoundaryIsRedacted(t *testing.T) {
 	}
 	if strings.Contains(se.Body, apiKey) {
 		t.Error("StatusError.Body contains the full API key")
+	}
+	if want := maskHead + truncationMarker; !strings.HasSuffix(se.Body, want) {
+		t.Errorf("StatusError.Body (length %d) ends %q, want it to end %q: the straddling key must be masked, not cut away",
+			len(se.Body), se.Body[max(0, len(se.Body)-16):], want)
 	}
 	for n := 2; n <= len(apiKey); n++ {
 		if strings.Contains(se.Body, apiKey[:n]) {
@@ -52,36 +62,73 @@ func TestStatusError_secretStraddlingCapBoundaryIsRedacted(t *testing.T) {
 // is shorter than the key, redacting the earlier full copies shrinks the buffer
 // and shifts that unmatched prefix back below the maxErrorBodyBytes cap, where
 // it survives. trimTrailingSecretPrefix strips the trailing key-prefix run after
-// the cap, so no key prefix survives (maxPrefix == 0). The pad is a byte absent
-// from the key, chosen so the read-window boundary falls mid-key.
+// the cap, so no key prefix survives (maxPrefix == 0), for a prefix of ANY
+// length -- a single byte of a credential is as unwelcome as thirty.
+//
+// The pad picks the fragment length: the read window (maxErrorBodyBytes plus the
+// 32-byte key) is a whole multiple of the key, so a pad of p bytes made of a
+// byte absent from the key leaves a trailing fragment of 32-p bytes. 31 is the
+// longest fragment the trim examines (a proper prefix of a 32-byte key), and the
+// marker is stripped before the check because it is appended AFTER the trim.
 func TestStatusError_secretPrefixSurvivesRedactionShrinkage(t *testing.T) {
 	const apiKey = "0123456789abcdef0123456789abcdef" // 32 chars, no 'A'; gitleaks:allow (fake key, redaction test fixture)
-	pad := strings.Repeat("A", 5)
-	payload := pad + strings.Repeat(apiKey, (maxErrorBodyBytes/len(apiKey))+2)
-	resp := &http.Response{
-		StatusCode: http.StatusUnauthorized,
-		Header:     make(http.Header),
-		Body:       io.NopCloser(strings.NewReader(payload)),
+	tests := []struct {
+		name string
+		pad  int
+	}{
+		{"one_byte_fragment", 31},
+		{"mid_key_fragment", 5},
+		{"longest_examined_fragment", 1},
 	}
-	err := statusError(resp, "/api/v3/series", apiKey)
-	se, ok := errors.AsType[*StatusError](err)
-	if !ok {
-		t.Fatalf("statusError returned %T, want *StatusError", err)
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			payload := strings.Repeat("A", tc.pad) + strings.Repeat(apiKey, (maxErrorBodyBytes/len(apiKey))+2)
+			se := captureStatusError(t, payload, apiKey)
+			captured := strings.TrimSuffix(se.Body, truncationMarker)
+			maxPrefix := 0
+			for n := 1; n <= len(apiKey); n++ {
+				if strings.HasSuffix(captured, apiKey[:n]) {
+					maxPrefix = n
+				}
+			}
+			if maxPrefix != 0 {
+				t.Errorf("captured body (pad %d) ends with a %d-char key prefix %q; want maxPrefix=0",
+					tc.pad, maxPrefix, apiKey[:maxPrefix])
+			}
+			if strings.Contains(se.Body, apiKey) {
+				t.Errorf("StatusError.Body (pad %d) contains the full API key", tc.pad)
+			}
+			if len(se.Body) > maxErrorBodyBytes+len(truncationMarker) {
+				t.Errorf("StatusError.Body (pad %d) length %d exceeds cap %d + marker", tc.pad, len(se.Body), maxErrorBodyBytes)
+			}
+		})
 	}
-	maxPrefix := 0
-	for n := 1; n <= len(apiKey); n++ {
-		if strings.HasSuffix(se.Body, apiKey[:n]) {
-			maxPrefix = n
-		}
+}
+
+// TestStatusError_bodyRedactedToExactlyTheCapIsNotMarkedTruncated pins the
+// other side of the marker contract: the marker means bytes were LOST, so a
+// body the read window held in full must not carry one however close to the cap
+// it lands. Both cuts that could mark it sit exactly one byte away here -- the
+// payload fills the read window to its last byte, and redaction brings it to
+// exactly maxErrorBodyBytes -- so a marker on this capture would be reporting a
+// loss that never happened, and an operator reading the logged body would
+// mistake a complete arr error for a clipped one.
+func TestStatusError_bodyRedactedToExactlyTheCapIsNotMarkedTruncated(t *testing.T) {
+	const apiKey = "0123456789abcdef" // 16 chars, no 'A'; gitleaks:allow (fake key, redaction test fixture)
+	// The read window is maxErrorBodyBytes+16. Fill it to the byte with two
+	// reflected keys plus padding, so redaction (16 bytes in, 8 bytes of mask
+	// out, twice) shrinks the capture by exactly 16 to land on the cap itself.
+	payload := apiKey + apiKey + strings.Repeat("A", maxErrorBodyBytes-len(apiKey))
+	se := captureStatusError(t, payload, apiKey)
+
+	if !strings.HasPrefix(se.Body, "REDACTEDREDACTED") {
+		t.Fatalf("StatusError.Body starts %q, want it to start with both keys masked", se.Body[:min(24, len(se.Body))])
 	}
-	if maxPrefix != 0 {
-		t.Errorf("StatusError.Body ends with a %d-char key prefix %q; want maxPrefix=0", maxPrefix, apiKey[:maxPrefix])
+	if strings.HasSuffix(se.Body, truncationMarker) {
+		t.Errorf("StatusError.Body ends in the %q marker, want no marker: the read window held the whole body", truncationMarker)
 	}
-	if strings.Contains(se.Body, apiKey) {
-		t.Error("StatusError.Body contains the full API key")
-	}
-	if len(se.Body) > maxErrorBodyBytes+len(truncationMarker) {
-		t.Errorf("StatusError.Body length %d exceeds cap %d + marker", len(se.Body), maxErrorBodyBytes)
+	if len(se.Body) != maxErrorBodyBytes {
+		t.Errorf("StatusError.Body length = %d, want exactly %d (the cap, unmarked)", len(se.Body), maxErrorBodyBytes)
 	}
 }
 
@@ -114,6 +161,111 @@ func TestStatusError_whitespacePaddedKeyVariantIsRedacted(t *testing.T) {
 	}
 	if strings.Contains(se.Body, apiKey) {
 		t.Errorf("StatusError.Body %q leaks the padded key %q", se.Body, apiKey)
+	}
+}
+
+// TestStatusError_keyVariantRebuiltBySanitizationIsRedacted pins the OWS
+// variant's half of the redact-after-sanitize rule. Sanitization is a
+// normalizing transform: it maps every unsafe rune to a space, so a body
+// carrying "arr\x01key\x017f3a" holds no occurrence of the trimmed key on the
+// wire, and the pre-transform redaction pass cannot match it -- then
+// sanitization turns those controls into the very spaces the key contains and
+// ASSEMBLES the credential after the mask has already run. Only a second
+// redaction of the trimmed variant, after the transform, catches it, and
+// without one the reflected key would land in a caller's log verbatim.
+func TestStatusError_keyVariantRebuiltBySanitizationIsRedacted(t *testing.T) {
+	const apiKey = "  arr key 7f3a  " // pasted with OWS the peer may strip
+	const trimmedKey = "arr key 7f3a" // what an OWS-stripping peer reflects
+	se := captureStatusError(t, "{\"error\":\"bad key: arr\x01key\x017f3a\"}", apiKey)
+
+	if strings.Contains(se.Body, trimmedKey) {
+		t.Errorf("StatusError.Body = %q, want no occurrence of the trimmed key %q that sanitization reassembled", se.Body, trimmedKey)
+	}
+	if !strings.Contains(se.Body, "REDACTED") {
+		t.Errorf("StatusError.Body = %q, want the reassembled key replaced by REDACTED", se.Body)
+	}
+}
+
+// TestStatusError_keyVariantGarbledBySanitizationIsRedacted pins the mirror
+// case, and the reason the OWS variant is redacted on BOTH sides of the
+// transform. Here the trimmed key itself carries an unsafe rune, so the body
+// reflects it verbatim but sanitization rewrites that rune to a space in the
+// body while the needle keeps it: after the transform the two can never match
+// again, and only the redaction that ran BEFORE it removes the credential. Skip
+// that pass and a near-complete fragment of the key -- every character but the
+// rewritten one -- survives into the caller's log.
+func TestStatusError_keyVariantGarbledBySanitizationIsRedacted(t *testing.T) {
+	const apiKey = "  arr\x01key7f3a  " // pasted with OWS the peer may strip
+	const trimmedKey = "arr\x01key7f3a" // what an OWS-stripping peer reflects
+	const sanitizedKey = "arr key7f3a"  // what the transform makes of it
+	se := captureStatusError(t, "{\"error\":\"bad key: "+trimmedKey+"\"}", apiKey)
+
+	if strings.Contains(se.Body, trimmedKey) {
+		t.Errorf("StatusError.Body = %q, want no occurrence of the trimmed key %q", se.Body, trimmedKey)
+	}
+	if strings.Contains(se.Body, sanitizedKey) {
+		t.Errorf("StatusError.Body = %q, want no occurrence of %q either: the transform must not be able to leave a near-complete key behind", se.Body, sanitizedKey)
+	}
+	if !strings.Contains(se.Body, "REDACTED") {
+		t.Errorf("StatusError.Body = %q, want the reflected key replaced by REDACTED", se.Body)
+	}
+}
+
+// TestStatusError_capCutDropsTrailingKeyVariantFragment pins the trailing-prefix
+// cleanup for the OWS variant. RedactSecretString matches whole occurrences
+// only, so a fragment of the key is invisible to it and reaches the cap intact;
+// when the cap then cuts the body right after that fragment, the fragment
+// becomes the captured body's tail. The cleanup keyed on the PADDED key cannot
+// remove it -- every prefix of "  key  " starts with a space, and the capture
+// was whitespace-trimmed -- so the pass keyed on the trimmed variant is the one
+// that closes it. The body here is read whole and cut only by the cap, which is
+// what keeps the pre-cap cleanup out of the way.
+func TestStatusError_capCutDropsTrailingKeyVariantFragment(t *testing.T) {
+	const apiKey = "  0123456789abcdef0123456789abcdef  " // gitleaks:allow (fake key, redaction test fixture)
+	const fragment = "01"                                 // the trimmed variant's first two bytes
+	// Sit the fragment on the last two bytes of the cap, with a tail that keeps
+	// the whole payload inside the read window (maxErrorBodyBytes+36) so the
+	// cap is the only cut. 'A' and 'B' are absent from the key.
+	payload := strings.Repeat("A", maxErrorBodyBytes-len(fragment)) + fragment + strings.Repeat("B", 34)
+	se := captureStatusError(t, payload, apiKey)
+	captured := strings.TrimSuffix(se.Body, truncationMarker)
+
+	if !strings.HasSuffix(se.Body, truncationMarker) {
+		t.Fatalf("StatusError.Body (length %d) does not end in the %q marker; the cap cut must be marked", len(se.Body), truncationMarker)
+	}
+	if strings.HasSuffix(captured, fragment) {
+		t.Errorf("captured body ends %q, want the trailing key fragment %q dropped", captured[max(0, len(captured)-8):], fragment)
+	}
+	if len(captured) != maxErrorBodyBytes-len(fragment) {
+		t.Errorf("captured body length = %d, want %d (the cap less the dropped fragment)", len(captured), maxErrorBodyBytes-len(fragment))
+	}
+}
+
+// TestStatusError_truncatedBodyDropsUnsafeKeyVariantFragment pins the cleanup
+// that has to run BEFORE sanitization. When the read window cuts mid-key and
+// the fragment left behind contains an unsafe rune, the post-transform cleanup
+// is already too late: sanitization has rewritten that rune in the body while
+// the needle still holds it, so no suffix of the body matches any prefix of the
+// key and the fragment stays. Removing it while the capture still holds raw
+// wire bytes is the only pass that can, so a body of reflected keys cut mid-key
+// must come back holding nothing but mask.
+func TestStatusError_truncatedBodyDropsUnsafeKeyVariantFragment(t *testing.T) {
+	const apiKey = "  ab\x01cdef0123456789abcdef01234567  " // gitleaks:allow (fake key, redaction test fixture)
+	const trimmedKey = "ab\x01cdef0123456789abcdef01234567" // 31 bytes, an unsafe rune at index 2
+	// The read window (maxErrorBodyBytes+35) is not a whole multiple of the
+	// key, so filling past it with whole keys leaves a partial key as the tail.
+	payload := strings.Repeat(trimmedKey, (maxErrorBodyBytes/len(trimmedKey))+2)
+	se := captureStatusError(t, payload, apiKey)
+	captured := strings.TrimSuffix(se.Body, truncationMarker)
+
+	if !strings.HasSuffix(captured, "REDACTED") {
+		t.Errorf("captured body ends %q, want it to end in mask: the partial key at the cut must be dropped, not carried through the transform",
+			captured[max(0, len(captured)-12):])
+	}
+	// Every byte of the payload is mask or hex, so a space can only be an
+	// unsafe rune of the key that survived the transform.
+	if strings.ContainsRune(captured, ' ') {
+		t.Errorf("captured body %q contains a space, want none: a rewritten key rune survived capture", captured[max(0, len(captured)-24):])
 	}
 }
 

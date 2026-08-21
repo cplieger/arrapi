@@ -125,6 +125,23 @@ func TestCommand_errorStatus(t *testing.T) {
 	}
 }
 
+// TestCommand_okStatusAccepted pins the lower edge of the success window. The
+// endpoint replies 201 Created in practice, but the check is a 2xx range: a 200
+// OK is a success response and must decode into the queued command, not become
+// a *StatusError.
+func TestCommand_okStatusAccepted(t *testing.T) {
+	cc := newCommandServer(t, http.StatusOK)
+	s := fastSonarr(t, cc.srv.URL)
+
+	cmd, err := s.RescanSeries(t.Context(), 7)
+	if err != nil {
+		t.Fatalf("RescanSeries against a 200 response = %v, want the decoded command", err)
+	}
+	if cmd.ID != 42 || cmd.Status != "queued" {
+		t.Errorf("RescanSeries against a 200 response = %+v, want id 42 status queued", cmd)
+	}
+}
+
 func TestCommand_redirectStatusRejected(t *testing.T) {
 	cc := newCommandServer(t, http.StatusMultipleChoices)
 	s := fastSonarr(t, cc.srv.URL)
