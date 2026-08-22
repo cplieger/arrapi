@@ -60,10 +60,15 @@ const truncationMarker = "..."
 // happens before the cap (over a maxErrorBodyBytes+len(apiKey) read window) so a
 // key straddling the cap boundary is still matched and stripped in full rather
 // than leaving a credential prefix in the captured body. The pre-sanitization
-// trailing-key-prefix cleanup runs only when the read window actually truncated
-// the body AND redaction shrank it -- the sole case that can pull an unmatched
-// key prefix back under the cap -- so a fully-read short body whose text merely
-// happens to end with the key's first characters is never over-redacted.
+// trailing-key-prefix cleanup runs whenever the read window actually truncated
+// the body: a cut at the window is the only thing that can leave an unmatched
+// key prefix as the body's tail, and requiring nothing further is what closes
+// the case where the cut key was the body's ONLY occurrence -- there is then no
+// whole occurrence for redaction to replace, so the body never shrinks and a
+// shrinkage condition would skip the cleanup and let the fragment through. A
+// fully-read short body whose text merely happens to end with the key's first
+// characters is still never over-redacted, because the truncation condition is
+// false for it.
 //
 // Redaction runs on BOTH sides of the sanitizing transform, and the cap comes
 // last: redact -> sanitize -> redact -> cap. Each position earns its place.
@@ -114,13 +119,12 @@ func readErrorBody(body io.ReadCloser, apiKey httpx.Secret) (string, error) {
 	if trimmedKey != apiKey {
 		redacted = httpx.RedactSecretString(redacted, trimmedKey)
 	}
-	redactionShrank := len(redacted) < len(trimmed)
 	cut := truncatedAtReadWindow
 	if len(redacted) > maxErrorBodyBytes {
 		redacted = redacted[:maxErrorBodyBytes]
 		cut = true
 	}
-	if truncatedAtReadWindow && redactionShrank {
+	if truncatedAtReadWindow {
 		redacted = trimTrailingSecretPrefix(redacted, apiKey)
 		if trimmedKey != apiKey {
 			redacted = trimTrailingSecretPrefix(redacted, trimmedKey)
