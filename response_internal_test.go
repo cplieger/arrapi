@@ -298,3 +298,56 @@ func TestStatusError_fullyReadBodyEndingInKeyPrefixNotOverRedacted(t *testing.T)
 			"the over-redaction guard must not trim a fully-read body", se.Body, apiKey[:8])
 	}
 }
+
+// TestStatusError_soleKeyOccurrenceCutAtTheWindowLeavesNoFragment pins the
+// pre-sanitization cleanup for the case where the cut key is the body's ONLY
+// occurrence. Every other truncation test here reflects the key many times, so
+// redaction replaces whole occurrences and the body shrinks; a cleanup gated on
+// that shrinkage still runs and the fragment goes. Reflect the key ONCE,
+// straddling the read window, and redaction finds nothing to replace: the body
+// keeps its length, so a shrinkage gate skips the cleanup entirely.
+//
+// The fragment then reaches sanitization, which rewrites the key's unsafe rune
+// in the body while the needle keeps it, and from there no suffix of the body
+// matches any prefix of the key -- so the post-transform cleanup cannot remove
+// it either and it lands in the caller's log. Measured leak: "ab cde", five of
+// the credential's first six characters.
+//
+// Two pieces of arithmetic make the case reachable, and both are load-bearing.
+// The read window is maxErrorBodyBytes+len(apiKey), and the cap immediately
+// slices back to maxErrorBodyBytes, which would discard a fragment sitting in
+// those last len(apiKey) bytes -- so the body opens with whitespace that
+// TrimSpace removes AFTER the cut, pulling the fragment under the cap. And the
+// filler is sized so exactly `keep` bytes of the key fall inside the window,
+// which is what makes the tail a proper prefix rather than the whole key.
+func TestStatusError_soleKeyOccurrenceCutAtTheWindowLeavesNoFragment(t *testing.T) {
+	const apiKey = "ab\x01cdef0123456789abcdef01234" // 28 bytes, unsafe rune at index 2; gitleaks:allow (fake key, redaction test fixture)
+	const keep = 6                                   // "ab\x01cde" is the part that falls inside the window
+	const lead = 40                                  // >= len(apiKey), so the trim pulls the fragment under the cap
+
+	readLimit := maxErrorBodyBytes + len(apiKey)
+	// 'A' and 'Z' share no byte with the key, so any key byte in the captured
+	// body came from the reflected key and nothing else.
+	filler := strings.Repeat("A", readLimit-lead-keep)
+	payload := strings.Repeat(" ", lead) + filler + apiKey + strings.Repeat("Z", 100)
+
+	se := captureStatusError(t, payload, apiKey)
+	captured := strings.TrimSuffix(se.Body, truncationMarker)
+	tail := captured[max(0, len(captured)-24):]
+
+	if strings.Contains(se.Body, apiKey) {
+		t.Errorf("StatusError.Body contains the whole API key; tail %q", tail)
+	}
+	if strings.Contains(se.Body, apiKey[:keep]) {
+		t.Errorf("StatusError.Body ends %q, want the raw key fragment %q dropped", tail, apiKey[:keep])
+	}
+	// The sanitized spelling is the one that actually leaked: the transform
+	// rewrote the key's unsafe rune, so the raw needle no longer matches.
+	if sanitizedFragment := "ab cde"; strings.Contains(se.Body, sanitizedFragment) {
+		t.Errorf("StatusError.Body ends %q, want no occurrence of %q: the fragment must be dropped BEFORE the transform can garble it",
+			tail, sanitizedFragment)
+	}
+	if !strings.HasSuffix(captured, "A") {
+		t.Errorf("captured body ends %q, want it to end in filler with the whole fragment removed", tail)
+	}
+}
