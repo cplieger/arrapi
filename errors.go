@@ -45,7 +45,6 @@ var (
 	_ httpx.RetryAfterHint = (*StatusError)(nil)
 )
 
-// Error implements the error interface.
 func (e *StatusError) Error() string {
 	if e.Body != "" {
 		return fmt.Sprintf("arrapi: %s: HTTP %d: %s", e.Path, e.Code, e.Body)
@@ -74,7 +73,6 @@ type ResponseTooLargeError struct {
 	Limit int64
 }
 
-// Error implements the error interface.
 func (e *ResponseTooLargeError) Error() string {
 	return fmt.Sprintf("arrapi: %s: response exceeds %d-byte limit", e.Path, e.Limit)
 }
