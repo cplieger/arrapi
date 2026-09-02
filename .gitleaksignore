@@ -2,3 +2,16 @@
 # The current tree uses testKey="test-key"; this fingerprint silences the
 # false positive on that historical commit.
 6f9fadcf6eca0770c51ae0b3059728fb9daee1cd:arrapi_test.go:generic-api-key:15
+
+
+# Historical test placeholders: dummy API-key literals in commit 65fd3f4d.
+# response_internal_test.go:58  is the 32-char key in
+#   TestStatusError_secretPrefixSurvivesRedactionShrinkage
+# response_internal_test.go:129 is the 16-char key in
+#   TestStatusError_fullyReadBodyEndingInKeyPrefixNotOverRedacted
+# Both are values the tests assert are redacted. The working tree carries
+# // gitleaks:allow, which the full-history scan cannot honour for a past
+# commit, so without these the advisory scan re-mints two code-scanning
+# alerts on every run.
+65fd3f4df2f4439c187d952b918b6e5e68ff0f01:response_internal_test.go:generic-api-key:58
+65fd3f4df2f4439c187d952b918b6e5e68ff0f01:response_internal_test.go:generic-api-key:129
