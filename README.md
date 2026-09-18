@@ -1,8 +1,6 @@
 # arrapi
 
-[![Go Reference](https://pkg.go.dev/badge/github.com/cplieger/arrapi/v2.svg)](https://pkg.go.dev/github.com/cplieger/arrapi/v2)
-[![Go version](https://img.shields.io/github/go-mod/go-version/cplieger/arrapi)](https://github.com/cplieger/arrapi/blob/main/go.mod)
-[![Mutation](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/cplieger/arrapi/badges/mutation.json)](https://github.com/cplieger/arrapi/issues?q=label%3Agremlins-tracker)
+[![Go Reference](https://pkg.go.dev/badge/github.com/cplieger/arrapi/v2.svg)](https://pkg.go.dev/github.com/cplieger/arrapi/v2) [![Go version](https://img.shields.io/github/go-mod/go-version/cplieger/arrapi)](https://github.com/cplieger/arrapi/blob/main/go.mod) [![Mutation](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/cplieger/arrapi/badges/mutation.json)](https://github.com/cplieger/arrapi/issues?q=label%3Agremlins-tracker)
 
 > Typed, resilient Go clients for the Sonarr and Radarr v3 APIs
 
