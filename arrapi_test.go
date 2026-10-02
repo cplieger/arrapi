@@ -3,6 +3,7 @@ package arrapi_test
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"sync/atomic"
@@ -161,6 +162,67 @@ func TestGetEpisodeFiles_success(t *testing.T) {
 	}
 	if got := deref(rs.lastPath.Load()); got != "/api/v3/episodefile?seriesId=7" {
 		t.Errorf("request path = %q, want /api/v3/episodefile?seriesId=7", got)
+	}
+}
+
+func TestGetEpisodeFiles_decodesQualityRevision(t *testing.T) {
+	rs := newServer(t, http.StatusOK, `[
+	  {"id":1,"seasonNumber":1,"quality":{"quality":{"id":7,"name":"Bluray-1080p"},"revision":{"version":2,"real":0,"isRepack":false}}},
+	  {"id":2,"seasonNumber":1,"quality":{"quality":{"id":7,"name":"Bluray-1080p"},"revision":{"version":3,"real":1,"isRepack":true}}},
+	  {"id":3,"seasonNumber":1,"quality":{"quality":{"id":7,"name":"Bluray-1080p"}}},
+	  {"id":4,"seasonNumber":1}]`)
+	s := fastSonarr(t, rs.srv.URL)
+
+	files, err := s.EpisodeFiles(t.Context(), 7)
+	if err != nil {
+		t.Fatalf("EpisodeFiles: %v", err)
+	}
+	if len(files) != 4 {
+		t.Fatalf("got %d files, want 4", len(files))
+	}
+	if q := files[0].Quality; q == nil || q.Revision == nil || *q.Revision != (arrapi.Revision{Version: 2}) {
+		t.Errorf("files[0] revision = %s, want {Version:2 IsRepack:false}", describeQuality(q))
+	}
+	if q := files[1].Quality; q == nil || q.Revision == nil || *q.Revision != (arrapi.Revision{Version: 3, IsRepack: true}) {
+		t.Errorf("files[1] revision = %s, want {Version:3 IsRepack:true}", describeQuality(q))
+	}
+	if q := files[2].Quality; q == nil || q.Revision != nil {
+		t.Errorf("files[2] revision = %s, want a quality with a nil revision", describeQuality(q))
+	}
+	if files[3].Quality != nil {
+		t.Errorf("files[3] revision = %s, want a nil quality for a payload without one", describeQuality(files[3].Quality))
+	}
+}
+
+func describeQuality(q *arrapi.QualityModel) string {
+	switch {
+	case q == nil:
+		return "nil quality"
+	case q.Revision == nil:
+		return "nil revision"
+	default:
+		return fmt.Sprintf("%+v", *q.Revision)
+	}
+}
+
+func TestGetMovies_decodesMovieFileQualityRevision(t *testing.T) {
+	rs := newServer(t, http.StatusOK, `[{"id":1,"tmdbId":111734,"hasFile":true,
+	  "movieFile":{"id":9,"releaseGroup":"PTP","quality":{"quality":{"id":7,"name":"Bluray-1080p"},"revision":{"version":2,"real":0,"isRepack":true}}}}]`)
+	r, err := arrapi.NewRadarr(rs.srv.URL, testKey, arrapi.WithBaseDelay(time.Millisecond))
+	if err != nil {
+		t.Fatalf("NewRadarr: %v", err)
+	}
+	t.Cleanup(r.Close)
+
+	movies, err := r.Movies(t.Context())
+	if err != nil {
+		t.Fatalf("Movies: %v", err)
+	}
+	if len(movies) != 1 || movies[0].MovieFile == nil {
+		t.Fatalf("movies = %+v, want one movie with a file", movies)
+	}
+	if q := movies[0].MovieFile.Quality; q == nil || q.Revision == nil || *q.Revision != (arrapi.Revision{Version: 2, IsRepack: true}) {
+		t.Errorf("movieFile revision = %s, want {Version:2 IsRepack:true}", describeQuality(q))
 	}
 }
 
