@@ -1,7 +1,9 @@
 package arrapi_test
 
 import (
+	"bytes"
 	"encoding/json"
+	"strings"
 	"testing"
 
 	"github.com/cplieger/arrapi/v2"
@@ -43,6 +45,8 @@ func FuzzHistoryRecord_UnmarshalJSON(f *testing.F) {
 		`{"eventType":-1}`,
 		`{"eventType":null}`,
 		`{"eventType":"","data":{"importedPath":"/media/x.mkv"}}`,
+		`{"eventType":"\"quoted\\u0041"}`,
+		`{"eventType":1,"EVENTTYPE":"someFutureEvent"}`,
 		`{}`,
 	} {
 		f.Add([]byte(seed))
@@ -61,13 +65,52 @@ func FuzzHistoryRecord_UnmarshalJSON(f *testing.F) {
 		if rec.EventType != 0 && rec.RawEventType != "" {
 			t.Errorf("RawEventType %q set for modeled eventType %d, want empty", rec.RawEventType, int(rec.EventType))
 		}
-		// The raw token is stored with its surrounding JSON quotes stripped.
-		if n := len(rec.RawEventType); n > 0 && (rec.RawEventType[0] == '"' || rec.RawEventType[n-1] == '"') {
-			t.Errorf("RawEventType %q retains a surrounding JSON quote", rec.RawEventType)
+		if rec.EventType == 0 {
+			if want := wantRawEventType(t, data); rec.RawEventType != want {
+				t.Errorf("RawEventType = %q, want %q", rec.RawEventType, want)
+			}
 		}
 		if rec.EventType.String() == "" {
 			t.Errorf("EventType(%d).String() returned empty", int(rec.EventType))
 		}
 		_ = rec.ImportedPath() // must not panic on an absent/nil data map
 	})
+}
+
+// wantRawEventType derives RawEventType for an unknown event from the input
+// alone. The token is the value of the last top-level key matching eventType
+// case-insensitively, which is the one the struct decoder assigns. A string
+// token yields its decoded text; null yields "", the same as an absent key.
+func wantRawEventType(t *testing.T, data []byte) string {
+	t.Helper()
+	dec := json.NewDecoder(bytes.NewReader(data))
+	if open, err := dec.Token(); err != nil || open != json.Delim('{') {
+		return "" // a top-level null decodes to the zero record
+	}
+	var tok json.RawMessage
+	for dec.More() {
+		key, err := dec.Token()
+		if err != nil {
+			t.Fatalf("Token() on accepted input %q: %v", data, err)
+		}
+		var v json.RawMessage
+		if err := dec.Decode(&v); err != nil {
+			t.Fatalf("Decode() on accepted input %q: %v", data, err)
+		}
+		if k, _ := key.(string); strings.EqualFold(k, "eventType") {
+			tok = v
+		}
+	}
+	switch {
+	case tok == nil || string(tok) == "null":
+		return ""
+	case tok[0] == '"':
+		var s string
+		if err := json.Unmarshal(tok, &s); err != nil {
+			t.Fatalf("json.Unmarshal(%s) into string: %v", tok, err)
+		}
+		return s
+	default:
+		return string(tok)
+	}
 }
