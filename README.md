@@ -95,7 +95,7 @@ func main() {
 - `Series(ctx) ([]Series, error)`: every series in the library
 - `SeriesByID(ctx, seriesID int) (Series, error)`: a single series by ID (`IsNotFound` reports a missing ID)
 - `Episodes(ctx, seriesID int) ([]Episode, error)`: episodes for a series, including episode-file details
-- `EpisodeFiles(ctx, seriesID int) ([]EpisodeFile, error)`: the series' episode files from the dedicated episodefile endpoint; only the episodes with a file on disk, without the fileless rows `Episodes` includes (a smaller payload on a long airing series). Each file carries its `SeriesID` and `SeasonNumber`
+- `EpisodeFiles(ctx, seriesID int) ([]EpisodeFile, error)`: the series' episode files from the dedicated episodefile endpoint; only the episodes with a file on disk, without the fileless rows `Episodes` includes (a smaller payload on a long airing series). Each file carries its `SeriesID` and `SeasonNumber`, and its `Quality.Revision` (see below)
 - `EpisodeByID(ctx, episodeID int) (Episode, error)`: a single episode by ID (`IsNotFound` reports a missing ID)
 - `RescanSeries(ctx, seriesID int) (Command, error)`: rescan the series' folder for new or changed files; returns the queued command
 - `RefreshSeries(ctx, seriesID int) (Command, error)`: refresh series metadata and rescan; returns the queued command
@@ -131,6 +131,10 @@ func main() {
 - `TagIDs(tags []Tag, labels ...string) map[int]struct{}`: resolve label names to their IDs (case-insensitive, whitespace-trimmed)
 - `UnmatchedLabels(tags []Tag, labels ...string) []string`: the labels (verbatim) that match no tag, for flagging a misconfigured name
 - `HasAnyTag(itemTags []int, ids map[int]struct{}) bool`: does an item carry any of those tag IDs
+
+### File revisions
+
+`EpisodeFile` and `MovieFile` carry `Quality *QualityModel`, which holds the `Revision` the arr recorded when it imported the file: `Version` (1 for an original release, raised by a `v2`-style token, a PROPER or a REPACK) and `IsRepack`. The arr records the value at import, so it survives a later rename that drops the token from the file name. `Quality` is nil when the payload carries no quality object, and `Quality.Revision` is nil when the quality carries no revision. The quality definition itself and the arr's separate REAL counter are not modeled.
 
 ### Web deep-links
 

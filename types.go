@@ -68,15 +68,16 @@ type Episode struct {
 // EpisodeFiles caller needs no episode rows to attribute a file to a
 // season.
 type EpisodeFile struct {
-	MediaInfo    *MediaInfo `json:"mediaInfo"`
-	RelativePath string     `json:"relativePath"`
-	Path         string     `json:"path"`
-	SceneName    string     `json:"sceneName"`
-	ReleaseGroup string     `json:"releaseGroup"`
-	ID           int        `json:"id"`
-	SeriesID     int        `json:"seriesId"`
-	SeasonNumber int        `json:"seasonNumber"`
-	Size         int64      `json:"size"`
+	MediaInfo    *MediaInfo    `json:"mediaInfo"`
+	Quality      *QualityModel `json:"quality"`
+	RelativePath string        `json:"relativePath"`
+	Path         string        `json:"path"`
+	SceneName    string        `json:"sceneName"`
+	ReleaseGroup string        `json:"releaseGroup"`
+	ID           int           `json:"id"`
+	SeriesID     int           `json:"seriesId"`
+	SeasonNumber int           `json:"seasonNumber"`
+	Size         int64         `json:"size"`
 }
 
 // Movie is a Radarr movie.
@@ -103,13 +104,31 @@ type Movie struct {
 
 // MovieFile holds file details for a Radarr movie.
 type MovieFile struct {
-	MediaInfo    *MediaInfo `json:"mediaInfo"`
-	RelativePath string     `json:"relativePath"`
-	Path         string     `json:"path"`
-	SceneName    string     `json:"sceneName"`
-	ReleaseGroup string     `json:"releaseGroup"`
-	ID           int        `json:"id"`
-	Size         int64      `json:"size"`
+	MediaInfo    *MediaInfo    `json:"mediaInfo"`
+	Quality      *QualityModel `json:"quality"`
+	RelativePath string        `json:"relativePath"`
+	Path         string        `json:"path"`
+	SceneName    string        `json:"sceneName"`
+	ReleaseGroup string        `json:"releaseGroup"`
+	ID           int           `json:"id"`
+	Size         int64         `json:"size"`
+}
+
+// QualityModel is the quality an arr recorded for a file at import. Only the
+// revision is modeled; the quality definition itself is out of scope. Revision
+// is nil when the payload carries none.
+type QualityModel struct {
+	Revision *Revision `json:"revision"`
+}
+
+// Revision is the release revision an arr recorded for a file at import, in the
+// arr's own numbering: Version is 1 for an original release, and a v2 token, a
+// PROPER or a REPACK each raise it (a REPACK also sets IsRepack). The arr keeps
+// the value it recorded at import, so it survives a later rename that drops the
+// token from the file name. The arr's separate REAL counter is not modeled.
+type Revision struct {
+	Version  int  `json:"version"`
+	IsRepack bool `json:"isRepack"`
 }
 
 // MediaInfo holds media-analysis details for an episode or movie file.

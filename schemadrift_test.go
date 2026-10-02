@@ -409,6 +409,8 @@ func TestUpstreamSchemaDrift(t *testing.T) {
 		{local: arrapi.EpisodeFile{}, eachOf: []specRef{{"sonarr", "EpisodeFileResource"}}},
 		{local: arrapi.Movie{}, eachOf: []specRef{{"radarr", "MovieResource"}}},
 		{local: arrapi.MovieFile{}, eachOf: []specRef{{"radarr", "MovieFileResource"}}},
+		{local: arrapi.QualityModel{}, eachOf: []specRef{{"sonarr", "QualityModel"}, {"radarr", "QualityModel"}}},
+		{local: arrapi.Revision{}, eachOf: []specRef{{"sonarr", "Revision"}, {"radarr", "Revision"}}},
 		{local: arrapi.MediaInfo{}, eachOf: []specRef{{"sonarr", "MediaInfoResource"}, {"radarr", "MediaInfoResource"}}},
 		{local: arrapi.AlternateTitle{}, eachOf: []specRef{{"sonarr", "AlternateTitleResource"}, {"radarr", "AlternativeTitleResource"}}},
 		{local: arrapi.Language{}, eachOf: []specRef{{"sonarr", "Language"}, {"radarr", "Language"}}},
