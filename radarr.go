@@ -13,8 +13,8 @@ type Radarr struct {
 
 // NewRadarr returns a Radarr client for the given base URL (e.g.
 // "http://radarr:7878") and API key. It returns an error if the URL is not an
-// absolute http(s) URL or the key is empty. The key is an [httpx.Secret] for
-// the reason [NewSonarr] gives.
+// absolute http(s) URL or the key is empty. The key is an [APIKey] for the
+// reason [NewSonarr] gives.
 func NewRadarr(baseURL string, apiKey APIKey, opts ...Option) (*Radarr, error) {
 	c, err := newClient(baseURL, apiKey, opts...)
 	if err != nil {

@@ -2,22 +2,27 @@
 
 [![Go Reference](https://pkg.go.dev/badge/github.com/cplieger/arrapi/v2.svg)](https://pkg.go.dev/github.com/cplieger/arrapi/v2) [![Go version](https://img.shields.io/github/go-mod/go-version/cplieger/arrapi)](https://github.com/cplieger/arrapi/blob/main/go.mod) [![Mutation](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/cplieger/arrapi/badges/mutation.json)](https://github.com/cplieger/arrapi/issues?q=label%3Agremlins-tracker)
 
-> Typed, resilient Go clients for the Sonarr and Radarr v3 APIs
+arrapi gives your Go code typed clients for the Sonarr and Radarr v3 APIs. They read a media library with its history and tags, queue rescans and retry brief failures.
 
-A standalone Go library that wraps the [Sonarr](https://sonarr.tv) and [Radarr](https://radarr.video) v3 HTTP APIs behind two small, type-safe clients. Requests are authenticated, size-bounded, and retried on transient failures with jittered exponential backoff (via [`cplieger/httpx`](https://github.com/cplieger/httpx)). The only runtime dependencies are `httpx` and [`cplieger/runesafe`](https://github.com/cplieger/runesafe) (log-safe error bodies). The DTOs are curated field subsets of the arr resources. A test-only schema-drift guard pins every carried field, its wire type, and every request path against the official Sonarr and Radarr OpenAPI documents (fetched live from upstream, with a repo-hosted last-known-good fallback): when an upstream release renames, removes, or re-types a field, or moves an endpoint, the next test run fails instead of the change silently corrupting decodes.
+It replaces the `net/http` calls, response types and retry loop you would otherwise write around a Sonarr or Radarr instance. It depends on [httpx](https://github.com/cplieger/httpx) for retries and [runesafe](https://github.com/cplieger/runesafe) for log-safe error text, both from the same author. It needs Go 1.27.1 or later and is licensed under Apache-2.0.
 
-## Design
+## Why use it
 
-Two constructors return two concrete types, so an operation can only be called against the service that supports it:
+arrapi is built for Go tools that read, filter and rescan a Sonarr or Radarr library.
 
-- `NewSonarr(...)` returns a `*Sonarr` with `Series`, `Episodes`, and `EpisodeFiles`.
-- `NewRadarr(...)` returns a `*Radarr` with `Movies`.
+- Sonarr and Radarr get separate client types, so calling `Movies` on a Sonarr client is a compile error, not a 404.
+- Reads retry a 429, any 5xx and transient network errors with jittered backoff, honoring `Retry-After` up to 60 seconds.
+- The default client refuses a redirect to another host or from `https` to `http`, so the API key goes only to the host you set.
+- Error bodies come capped at 64 KiB with the API key redacted, ready to log.
+- Tests check every decoded field and request path against the OpenAPI documents in the Sonarr and Radarr repositories.
 
-Both embed a shared core exposing the endpoints common to either service (`Tags`, `SystemStatus`, `Ping`, `Close`). A wrong call (`Movies` against a Sonarr instance) is a compile error instead of a runtime 404.
+Consider [golift/starr](https://github.com/golift/starr) if you need to add, edit or delete media, reach Lidarr, Prowlarr or Readarr, or handle webhooks and custom scripts. Consider [devopsarr/sonarr-go](https://github.com/devopsarr/sonarr-go) or [radarr-go](https://github.com/devopsarr/radarr-go) if you want a generated client for every endpoint.
 
 ## Install
 
-`go get github.com/cplieger/arrapi/v2@latest`
+```sh
+go get github.com/cplieger/arrapi/v2@latest
+```
 
 ## Usage
 
@@ -41,18 +46,18 @@ func main() {
 	}
 	defer sonarr.Close()
 
-	// Verify connectivity + credentials up front (fails fast on a bad key).
+	// Check the connection and the API key up front.
 	if err := sonarr.Ping(ctx); err != nil {
 		log.Fatalf("sonarr unreachable: %v", err)
 	}
 
-	// Fetch the whole series library in one batched, retried request.
+	// Fetch the whole series library in one retried request.
 	series, err := sonarr.Series(ctx)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	// Tag filtering: keep series tagged "anime", drop those tagged "skip".
+	// Keep series tagged "anime", drop those tagged "skip".
 	tags, err := sonarr.Tags(ctx)
 	if err != nil {
 		log.Fatal(err)
@@ -65,7 +70,7 @@ func main() {
 		}
 	}
 
-	// Radarr is a separate typed client; options tune retry/timeout.
+	// Radarr has its own client type. Options tune retries and timeouts.
 	radarr, err := arrapi.NewRadarr("http://radarr:7878", "your-api-key", arrapi.WithMaxAttempts(5))
 	if err != nil {
 		log.Fatal(err)
@@ -80,118 +85,51 @@ func main() {
 }
 ```
 
+The package examples on pkg.go.dev show the same flow and tag filtering.
+
 ## API
 
-### Constructors
+- `NewSonarr` and `NewRadarr` take a base URL, an `APIKey` and options, and reject a malformed URL or an empty key.
+- `*Sonarr` adds `Series`, `SeriesByID`, `Episodes`, `EpisodeFiles`, `EpisodeByID`, `RescanSeries` and `RefreshSeries`.
+- `*Radarr` adds `Movies`, `MovieByID`, `RescanMovie` and `RefreshMovie`.
+- Both clients share `Tags`, `ResolveTagIDs`, `QualityProfiles`, `RootFolders`, `SystemStatus`, `History`, `HistorySince`, `CommandByID`, `Ping` and `Close`.
+- `TagIDs`, `UnmatchedLabels` and `HasAnyTag` filter by tag label, and `Series.WebURL` and `Movie.WebURL` link to an item's page in the web UI.
+- The options are `WithHTTPClient`, `WithMaxAttempts`, `WithBaseDelay`, `WithTimeout` and `WithLogger`. A client you pass with `WithHTTPClient` keeps its own redirect policy. Set its `CheckRedirect` as [Request behavior](docs/request-behavior.md#redirects-and-headers) shows, so the API key stays on your host.
+- A non-2xx response is a `*StatusError`, an oversized body a `*ResponseTooLargeError`, and `IsNotFound` and `IsRateLimited` test for a 404 and a 429.
 
-- `NewSonarr(baseURL string, apiKey APIKey, opts ...Option) (*Sonarr, error)`: the key is typed apart from the URL so an adjacent pair of string variables cannot be transposed; an untyped literal still converts
-- `NewRadarr(baseURL string, apiKey APIKey, opts ...Option) (*Radarr, error)`
-- `APIKey`: an arr instance's API key. arrapi's own type rather than `httpx.Secret`, so building a client needs no httpx import and an httpx major bump does not move these signatures. httpx stays an internal dependency, used for error redaction.
+The full reference is on [pkg.go.dev](https://pkg.go.dev/github.com/cplieger/arrapi/v2). [Data types and helpers](docs/data-model.md) covers history events, file revisions, tag matching and web links.
 
-`baseURL` must be an absolute `http(s)` URL with a host and no query or fragment (a path is allowed, for reverse-proxy sub-paths); `apiKey` must be non-empty. Both are validated at construction.
+## Retries and timeouts
 
-### Sonarr
+- When your context has a deadline, that deadline covers every attempt and every wait between them. arrapi sets no shorter limit of its own.
+- When your context has no deadline, `WithTimeout` (default 120s) limits each attempt, body decode included. `WithMaxAttempts` (default 3) sets how many attempts run.
+- Backoff starts at `WithBaseDelay` (default 1s) and doubles with jitter.
+- A `WithTimeout` or context-deadline expiry ends the call and is not retried.
+- A 4xx other than 429 and a transport error that is not transient fail at once.
+- `Ping` checks the connection and the API key with a 5-second timeout and no retry.
+- Rescan and refresh commands are sent once and never retried.
+- arrapi logs one Debug record per retry, one Debug record when a retried call succeeds and one Warn record when the retries run out, labeled `arrapi`. They go to `slog.Default()` unless you pass `WithLogger`, and arrapi logs nothing else.
+- One client is safe for concurrent use. It starts no goroutines, and each call makes its own request and returns a slice no other call shares.
 
-- `Series(ctx) ([]Series, error)`: every series in the library
-- `SeriesByID(ctx, seriesID int) (Series, error)`: a single series by ID (`IsNotFound` reports a missing ID)
-- `Episodes(ctx, seriesID int) ([]Episode, error)`: episodes for a series, including episode-file details
-- `EpisodeFiles(ctx, seriesID int) ([]EpisodeFile, error)`: the series' episode files from the dedicated episodefile endpoint; only the episodes with a file on disk, without the fileless rows `Episodes` includes (a smaller payload on a long airing series). Each file carries its `SeriesID` and `SeasonNumber`, and its `Quality.Revision` (see below)
-- `EpisodeByID(ctx, episodeID int) (Episode, error)`: a single episode by ID (`IsNotFound` reports a missing ID)
-- `RescanSeries(ctx, seriesID int) (Command, error)`: rescan the series' folder for new or changed files; returns the queued command
-- `RefreshSeries(ctx, seriesID int) (Command, error)`: refresh series metadata and rescan; returns the queued command
+[Request behavior](docs/request-behavior.md) has the full rules for retries, redirects, size limits and errors.
 
-### Radarr
+## Unsupported by design
 
-- `Movies(ctx) ([]Movie, error)`: every movie in the library
-- `MovieByID(ctx, movieID int) (Movie, error)`: a single movie by ID (`IsNotFound` reports a missing ID)
-- `RescanMovie(ctx, movieID int) (Command, error)`: rescan the movie's folder for new or changed files; returns the queued command
-- `RefreshMovie(ctx, movieID int) (Command, error)`: refresh movie metadata and rescan; returns the queued command
+arrapi reads a library, checks the connection and queues rescans and refreshes. It leaves out:
 
-### Shared (both clients)
+- Adding, editing or deleting media.
+- Quality-profile items, cutoffs and custom formats. `QualityProfile` carries the name and ID only.
+- Indexer, download-client and notification settings.
+- The queue, calendar, disk-space, health and wanted endpoints.
 
-- `Tags(ctx) ([]Tag, error)`: all tags defined on the instance
-- `ResolveTagIDs(ctx, labels ...string) (ids map[int]struct{}, unmatched []string, err error)`: fetch tags and resolve labels to IDs in one call; returns the matched IDs and the labels that matched no tag (no labels = no request)
-- `QualityProfiles(ctx) ([]QualityProfile, error)`: configured quality profiles
-- `RootFolders(ctx) ([]RootFolder, error)`: configured root folders
-- `SystemStatus(ctx) (SystemStatus, error)`: version and app name
-- `HistorySince(ctx, since time.Time, eventTypes ...EventType) ([]HistoryRecord, error)`: history events on or after `since`, newest first; pass one or more `EventType`s to filter (client-side), or none for all
-- `History(ctx, opts HistoryOptions) (HistoryPage, error)`: one page of history (newest first), bounded by page size for backfills and large scans
-- `CommandByID(ctx, id int) (Command, error)`: the state of a queued command, to poll a rescan or refresh to completion
-- `Ping(ctx) error`: connectivity + credential check with a short timeout (no retry)
-- `Close()`: release idle connections; safe to call more than once
+## Documentation
 
-### History types
-
-`HistorySince` returns `[]HistoryRecord` (`Date`, `EventType`, `SourceTitle`, `SeriesID`/`EpisodeID` for Sonarr or `MovieID` for Radarr, plus a `Data` map). `HistoryRecord.ImportedPath()` pulls the imported file path from a download-import event. `EventType` decodes both Sonarr's integer and Radarr's string encodings; the exported constants are `EventGrabbed`, `EventFolderImported`, `EventDownloadImported`, `EventDownloadFailed`, `EventFileDeleted`, `EventFileRenamed`, and `EventDownloadIgnored`. It implements `fmt.Stringer` for logs, and an unrecognized upstream event decodes to `0` with its raw name preserved in `HistoryRecord.RawEventType`. Event filtering is client-side: the arr `eventType` query parameter is numbered per service (Sonarr and Radarr disagree on the integers), so a server-side filter is not portable.
-
-`History` returns a `HistoryPage` (`Records`, `Page`, `PageSize`, `TotalRecords`) for bounded paging; `HistoryOptions` sets `Page` and `PageSize`.
-
-### Tag helpers (pure)
-
-- `TagIDs(tags []Tag, labels ...string) map[int]struct{}`: resolve label names to their IDs (case-insensitive, whitespace-trimmed)
-- `UnmatchedLabels(tags []Tag, labels ...string) []string`: the labels (verbatim) that match no tag, for flagging a misconfigured name
-- `HasAnyTag(itemTags []int, ids map[int]struct{}) bool`: does an item carry any of those tag IDs
-
-### File revisions
-
-`EpisodeFile` and `MovieFile` carry `Quality *QualityModel`, which holds the `Revision` the arr recorded when it imported the file: `Version` (1 for an original release, raised by a `v2`-style token, a PROPER or a REPACK) and `IsRepack`. The arr records the value at import, so it survives a later rename that drops the token from the file name. `Quality` is nil when the payload carries no quality object, and `Quality.Revision` is nil when the quality carries no revision. The quality definition itself and the arr's separate REAL counter are not modeled.
-
-### Web deep-links
-
-DTO methods that build a link to the item's page in the arr web UI:
-
-- `(*Series).WebURL(baseURL string) string` → `{baseURL}/series/{titleSlug}` (Sonarr)
-- `(*Movie).WebURL(baseURL string) string` → `{baseURL}/movie/{tmdbID}` (Radarr keys its web UI by the TMDB id)
-
-Each returns `""` when `baseURL` or the required field (the Sonarr title slug / Radarr TMDB id) is empty, so a caller reads `""` as "no link". The Sonarr title slug is percent-escaped and confined to a single path segment; a `.`/`..` or slash-bearing slug can't break out into the path, query, or fragment, so a community-editable slug is safe to interpolate.
-
-### Options
-
-| Option               | Description                                                                           |
-| -------------------- | ------------------------------------------------------------------------------------- |
-| `WithHTTPClient(c)`  | Use a caller-owned `*http.Client` (share a pool, pin a CA, inject a test client)      |
-| `WithMaxAttempts(n)` | Total attempts including the first, for a transient failure. Clamped to ≥1. Default 3 |
-| `WithBaseDelay(d)`   | Base delay for the exponential backoff between retries. Default 1s                    |
-| `WithTimeout(d)`     | Per-request timeout applied when the caller's context has no deadline. Default 120s   |
-| `WithLogger(l)`      | `*slog.Logger` for the retry diagnostics. Default `slog.Default()`                    |
-
-### Errors
-
-Non-2xx responses surface as `*StatusError` (fields `Code`, `Path`, `Body`, and `RetryAfter`, the capped `Retry-After` hint on a `429`). It implements `httpx.Transient` (a `429` or any `5xx` is retryable, any other `4xx` permanent) and `httpx.RetryAfterHint` (the capped `Retry-After` replaces the jittered backoff before the next retry). `IsNotFound(err)` and `IsRateLimited(err)` report whether an error is (or wraps) a `*StatusError` with a `404` or `429`. A response body that exceeds the size cap surfaces as `*ResponseTooLargeError` rather than being silently truncated.
-
-The captured `Body` is made log-safe at capture (via [`cplieger/runesafe`](https://github.com/cplieger/runesafe)): the request API key is redacted, the body is capped at 64 KiB (a capture cut by the cap ends in a `...` marker), and terminal-escape and bidi-control runes are replaced with spaces. The field is safe to log as-is; no consumer-side escaping needed.
-
-## Resilience
-
-- Retries `429`, any `5xx`, and transient transport errors (timeouts, connection resets, DNS failures) with jittered exponential backoff (via `httpx.Do`), honoring the server's `Retry-After` hint (capped) on a `429`. `4xx` (non-429) and non-transient transport errors fail immediately.
-- Retry diagnostics are emitted through `slog` (a `Debug` line per retry, a `Warn` when retries are exhausted, tagged `arrapi`). Pass `WithLogger` to route them into your own logger; without it they go to `slog.Default()`. The library logs nothing else and owns no logger of its own.
-- Every request carries the `X-Api-Key` header and a `User-Agent`.
-- Redirects are followed only within the same host, so the `X-Api-Key` never reaches another origin. A same-host `http`->`https` upgrade is followed; an `https`->`http` downgrade is refused so the key never rides a cleartext hop. The policy matches on host only, not port, so a same-host redirect to a different port is followed. A caller-supplied client via `WithHTTPClient` owns its own redirect policy.
-- Response bodies are size-capped before decoding (64 MB for list endpoints, 1 MB for single objects); an over-cap body is rejected as `*ResponseTooLargeError` rather than truncated.
-- Clients own no long-lived goroutines and hold no locks a caller can observe; a single client is safe for concurrent use.
-
-## Timeouts and retries
-
-arrapi bounds every request by context and retries only transient failures:
-
-- A caller-supplied context deadline is the authoritative total budget across all attempts and backoffs. It is honored as-is; arrapi imposes no separate client-level ceiling on top of it.
-- `WithTimeout` (default 120s) is a per-attempt budget spanning the body decode, applied only when the caller's context carries no deadline of its own. The total is then bounded by the attempt count (`WithMaxAttempts`, default 3).
-- A timeout or deadline expiry is terminal, not a retryable condition: once the budget is exhausted the call stops rather than retrying. Mutations (rescan/refresh commands) are single-attempt and never retried.
-
-## Unsupported by Design
-
-Deliberate non-goals, not TODOs:
-
-| Not included                                    | Rationale                                                                                                                                                                          |
-| ----------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Adding / editing / deleting media               | This is a read + connectivity + rescan client, not a full library-management client. Use [golift/starr](https://github.com/golift/starr) or the devopsarr `*-go` clients for CRUD. |
-| Quality-profile item / cutoff detail            | `QualityProfile` models identity (name + ID); the nested quality-item and custom-format tree is out of scope.                                                                      |
-| Indexer / download-client / notification config | Management-plane surface with no consumer need.                                                                                                                                    |
+- [Request behavior](docs/request-behavior.md) is for callers who tune retries and timeouts, bring their own HTTP client or log errors.
+- [Data types and helpers](docs/data-model.md) is for callers who read history, file revisions, tags, commands or web links.
 
 ## Contributing
 
-Issues and PRs are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md) for the
-conventions and how to run the checks locally.
+Issues and pull requests are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md) for the design rules and the test suite.
 
 ## Disclaimer
 

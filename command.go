@@ -18,8 +18,9 @@ const (
 )
 
 // Command is a Sonarr/Radarr command resource. The endpoint queues the command
-// and returns it with an ID and a Status ("queued", "started", "completed", or
-// "failed"); poll CommandByID to follow it to completion.
+// and returns it with an ID and a Status (the upstream CommandStatus: "queued",
+// "started", "completed", "failed", "aborted", "cancelled" or "orphaned"); poll
+// CommandByID to follow it to completion.
 type Command struct {
 	Name   string `json:"name"`
 	Status string `json:"status"`
