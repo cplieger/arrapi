@@ -64,17 +64,10 @@ func WithTimeout(d time.Duration) Option {
 }
 
 // WithLogger sets the logger for the retry diagnostics arrapi emits while it
-// supervises a request over time: one Debug record per retry and one Warn
-// record when the attempts are exhausted, each labeled "arrapi". A nil logger
-// is ignored.
-//
-// Without this option those records go to slog.Default(), which is the right
-// default but not a choice the consumer got to make: a library that retries on
-// the caller's behalf is narrating work the caller owns, so the caller should
-// be able to say where that narration lands — into its own request-scoped
-// logger, into a handler that drops Debug, or into a discard handler for a
-// test. arrapi returns typed errors and logs nothing else; this governs the
-// retry diagnostics only.
+// supervises a request over time: one Debug record per retry, one Debug record
+// when a retried call succeeds, and one Warn record when the attempts are
+// exhausted, each labeled "arrapi". A nil logger is ignored. Default:
+// slog.Default(). arrapi logs nothing else.
 func WithLogger(l *slog.Logger) Option {
 	return func(cfg *config) {
 		if l != nil {
