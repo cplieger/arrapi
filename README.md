@@ -129,7 +129,7 @@ arrapi reads a library, checks the connection and queues rescans and refreshes. 
 
 ## Contributing
 
-Issues and pull requests are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md) for the design rules and the test suite.
+Issues and pull requests are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## Disclaimer
 
