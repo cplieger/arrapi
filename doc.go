@@ -1,24 +1,8 @@
-// Package arrapi provides typed, resilient clients for the Sonarr and
-// Radarr v3 HTTP APIs. It covers read access, connectivity checks, and the
-// rescan/refresh commands.
-//
-// Two constructors return two concrete client types, so an operation can only
-// be called against the instance that supports it: NewSonarr returns a *Sonarr
-// (Series, Episodes, EpisodeFiles, RescanSeries, RefreshSeries) and
-// NewRadarr returns a *Radarr (Movies, RescanMovie, RefreshMovie). Both
-// embed a shared core that exposes the endpoints common to either service
-// (Tags, SystemStatus, Ping, Close).
-//
-// Every request is authenticated with the instance's X-Api-Key, bounded by a
-// per-request timeout, and retried on transient failures (HTTP 429, any 5xx,
-// and transient transport errors) with jittered exponential backoff via
-// github.com/cplieger/httpx/v5. Non-2xx responses surface as a *StatusError, which
-// reports whether it was transient and lets callers detect a 404 with
-// IsNotFound. Its captured Body is made log-safe at capture: the API key is
-// redacted, and terminal-escape, C1, and bidi control runes are neutralized
-// via github.com/cplieger/runesafe.
-//
-// Response bodies are size-bounded before decoding to guard against oversized
-// or malicious payloads. The clients own no goroutines and hold no locks; a
-// single client is safe for concurrent use.
+// Package arrapi provides typed, resilient clients for the Sonarr and Radarr
+// v3 HTTP APIs. NewSonarr and NewRadarr return distinct client types, so an
+// operation can only be called on the service that supports it. Every request
+// carries the instance's API key, is bounded by a per-request timeout and a
+// response-size cap, and is retried with jittered backoff on transient
+// failures; a non-2xx response is a *StatusError whose Body is log-safe. A
+// client owns no goroutines and is safe for concurrent use.
 package arrapi

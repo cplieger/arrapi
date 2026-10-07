@@ -32,7 +32,7 @@ The value is the one recorded at import, so it survives a later rename that drop
 
 ## Episode files
 
-`Episodes` returns every episode of a series, with the file details of each episode that has one. `EpisodeFiles` returns only the files on disk, from Sonarr's episode-file endpoint, which is a smaller payload on a long airing series. Each `EpisodeFile` carries its `SeriesID` and `SeasonNumber`, so no episode list is needed to place it in a season.
+`Episodes` returns every episode of a series, with the file details of each episode that has one. `SeasonEpisodes` returns the same for one season, and season 0 holds the specials. A file that spans several episodes appears on each of them. `EpisodeFiles` returns only the files on disk, from Sonarr's episode-file endpoint, which is a smaller payload on a long airing series. Each `EpisodeFile` carries its `SeriesID` and `SeasonNumber`, so no episode list is needed to place it in a season.
 
 ## Tags
 

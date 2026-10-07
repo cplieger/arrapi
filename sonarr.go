@@ -38,6 +38,18 @@ func (s *Sonarr) Episodes(ctx context.Context, seriesID int) ([]Episode, error) 
 	return s.fetchAll[Episode](ctx, path)
 }
 
+// SeasonNumber is a Sonarr season number; 0 is the series' specials. It is a
+// distinct type so a season cannot be passed where a series ID is expected.
+type SeasonNumber int
+
+// SeasonEpisodes returns the episodes of one season of the given series,
+// with the same embedded file details as Episodes. A file spanning several
+// episodes is embedded on each of them.
+func (s *Sonarr) SeasonEpisodes(ctx context.Context, seriesID int, season SeasonNumber) ([]Episode, error) {
+	path := fmt.Sprintf("%s/episode?seriesId=%d&seasonNumber=%d&includeEpisodeFile=true", apiPrefix, seriesID, season)
+	return s.fetchAll[Episode](ctx, path)
+}
+
 // EpisodeFiles returns the episode files for the given series, from the
 // dedicated episodefile endpoint. It yields exactly the episodes that have a
 // file on disk — the same file details Episodes embeds, without the
