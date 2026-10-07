@@ -504,6 +504,10 @@ func TestUpstreamEndpointDrift(t *testing.T) {
 			svcs: []string{"sonarr"}, method: http.MethodGet, path: "/api/v3/episode",
 			query: []string{"seriesId", "includeEpisodeFile"},
 		},
+		{
+			svcs: []string{"sonarr"}, method: http.MethodGet, path: "/api/v3/episode",
+			query: []string{"seriesId", "seasonNumber", "includeEpisodeFile"},
+		},
 		{svcs: []string{"sonarr"}, method: http.MethodGet, path: "/api/v3/episode/{id}"},
 		{
 			svcs: []string{"sonarr"}, method: http.MethodGet, path: "/api/v3/episodefile",

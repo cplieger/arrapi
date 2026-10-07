@@ -90,7 +90,7 @@ The package examples on pkg.go.dev show the same flow and tag filtering.
 ## API
 
 - `NewSonarr` and `NewRadarr` take a base URL, an `APIKey` and options, and reject a malformed URL or an empty key.
-- `*Sonarr` adds `Series`, `SeriesByID`, `Episodes`, `EpisodeFiles`, `EpisodeByID`, `RescanSeries` and `RefreshSeries`.
+- `*Sonarr` adds `Series`, `SeriesByID`, `Episodes`, `SeasonEpisodes`, `EpisodeFiles`, `EpisodeByID`, `RescanSeries` and `RefreshSeries`.
 - `*Radarr` adds `Movies`, `MovieByID`, `RescanMovie` and `RefreshMovie`.
 - Both clients share `Tags`, `ResolveTagIDs`, `QualityProfiles`, `RootFolders`, `SystemStatus`, `History`, `HistorySince`, `CommandByID`, `Ping` and `Close`.
 - `TagIDs`, `UnmatchedLabels` and `HasAnyTag` filter by tag label, and `Series.WebURL` and `Movie.WebURL` link to an item's page in the web UI.

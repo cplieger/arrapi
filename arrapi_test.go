@@ -134,6 +134,52 @@ func TestGetEpisodes_pathIncludesSeriesAndFileFlag(t *testing.T) {
 	}
 }
 
+func TestSeasonEpisodes_filtersBySeasonAndDecodesFiles(t *testing.T) {
+	rs := newServer(t, http.StatusOK, `[
+	  {"id":20,"seriesId":7,"seasonNumber":0,"episodeNumber":5,"hasFile":true,
+	   "episodeFile":{"id":50,"seasonNumber":0,"releaseGroup":"MTBB","quality":{"revision":{"version":2,"isRepack":false}}}},
+	  {"id":21,"seriesId":7,"seasonNumber":0,"episodeNumber":6,"hasFile":true,
+	   "episodeFile":{"id":50,"seasonNumber":0,"releaseGroup":"MTBB","quality":{"revision":{"version":2,"isRepack":false}}}},
+	  {"id":22,"seriesId":7,"seasonNumber":0,"episodeNumber":7,"hasFile":false}]`)
+	s := fastSonarr(t, rs.srv.URL)
+
+	eps, err := s.SeasonEpisodes(t.Context(), 7, 0)
+	if err != nil {
+		t.Fatalf("SeasonEpisodes(7, 0): %v", err)
+	}
+	if got := deref(rs.lastPath.Load()); got != "/api/v3/episode?seriesId=7&seasonNumber=0&includeEpisodeFile=true" {
+		t.Errorf("SeasonEpisodes(7, 0) request path = %q, want seriesId=7&seasonNumber=0&includeEpisodeFile=true", got)
+	}
+	if len(eps) != 3 {
+		t.Fatalf("SeasonEpisodes(7, 0) returned %d episodes, want 3", len(eps))
+	}
+	for i, wantNum := range []int{5, 6} {
+		ep := eps[i]
+		if ep.EpisodeNumber != wantNum || ep.EpisodeFile == nil || ep.EpisodeFile.ID != 50 {
+			t.Errorf("eps[%d] = number %d file %+v, want number %d sharing file 50", i, ep.EpisodeNumber, ep.EpisodeFile, wantNum)
+			continue
+		}
+		if ep.EpisodeFile.ReleaseGroup != "MTBB" || ep.EpisodeFile.Quality == nil || ep.EpisodeFile.Quality.Revision == nil || ep.EpisodeFile.Quality.Revision.Version != 2 {
+			t.Errorf("eps[%d].EpisodeFile = %+v, want group MTBB revision 2", i, ep.EpisodeFile)
+		}
+	}
+	if eps[2].HasFile || eps[2].EpisodeFile != nil {
+		t.Errorf("eps[2] = hasFile %v file %+v, want an episode without a file", eps[2].HasFile, eps[2].EpisodeFile)
+	}
+}
+
+func TestSeasonEpisodes_interpolatesTheSeason(t *testing.T) {
+	rs := newServer(t, http.StatusOK, `[]`)
+	s := fastSonarr(t, rs.srv.URL)
+
+	if _, err := s.SeasonEpisodes(t.Context(), 12, 3); err != nil {
+		t.Fatalf("SeasonEpisodes(12, 3): %v", err)
+	}
+	if got := deref(rs.lastPath.Load()); got != "/api/v3/episode?seriesId=12&seasonNumber=3&includeEpisodeFile=true" {
+		t.Errorf("SeasonEpisodes(12, 3) request path = %q, want seriesId=12&seasonNumber=3&includeEpisodeFile=true", got)
+	}
+}
+
 func TestGetEpisodeFiles_success(t *testing.T) {
 	rs := newServer(t, http.StatusOK, `[{"id":99,"seriesId":7,"seasonNumber":1,"relativePath":"Season 01/S01E01.mkv",
 	   "sceneName":"Show.S01E01.1080p","releaseGroup":"CRUCiBLE","size":734003200,
