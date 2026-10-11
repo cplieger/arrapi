@@ -4,7 +4,7 @@
 
 arrapi gives your Go code typed clients for the Sonarr and Radarr v3 APIs. They read a media library with its history and tags, queue rescans and retry brief failures.
 
-It replaces the `net/http` calls, response types and retry loop you would otherwise write around a Sonarr or Radarr instance. It depends on [httpx](https://github.com/cplieger/httpx) for retries and [runesafe](https://github.com/cplieger/runesafe) for log-safe error text, both from the same author. It needs Go 1.27.1 or later and is licensed under Apache-2.0.
+It replaces the `net/http` calls, response types and retry loop you would otherwise write around a Sonarr or Radarr instance. It depends on [httpx](https://github.com/cplieger/httpx) for retries and [runesafe](https://github.com/cplieger/runesafe) for log-safe error text, both from the same author. It needs Go 1.27.2 or later and is licensed under Apache-2.0.
 
 ## Why use it
 

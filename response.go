@@ -9,7 +9,7 @@ import (
 	"strings"
 
 	"github.com/cplieger/httpx/v5"
-	"github.com/cplieger/runesafe/v2"
+	"github.com/cplieger/runesafe/v3"
 )
 
 // avgItemSize is a rough per-item JSON size used only to seed slice capacity;
