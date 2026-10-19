@@ -1,182 +1,35 @@
 package arrapi
 
-// Series is a Sonarr series.
-type Series struct {
-	Statistics       *SeriesStatistics `json:"statistics"`
-	OriginalLanguage *Language         `json:"originalLanguage"`
-	Title            string            `json:"title"`
-	SortTitle        string            `json:"sortTitle"`
-	TitleSlug        string            `json:"titleSlug"`
-	ImdbID           string            `json:"imdbId"`
-	FirstAired       string            `json:"firstAired"`
-	Path             string            `json:"path"`
-	RootFolderPath   string            `json:"rootFolderPath"`
-	Status           string            `json:"status"`
-	Seasons          []Season          `json:"seasons"`
-	AlternateTitles  []AlternateTitle  `json:"alternateTitles"`
-	Tags             []int             `json:"tags"`
-	ID               int               `json:"id"`
-	TvdbID           int               `json:"tvdbId"`
-	TmdbID           int               `json:"tmdbId"`
-	Year             int               `json:"year"`
-	QualityProfileID int               `json:"qualityProfileId"`
-	Monitored        bool              `json:"monitored"`
-}
+// APIKey is a server's API key, sent as X-Api-Key.
+type APIKey string
 
-// Season is per-season metadata on a Sonarr series.
-type Season struct {
-	Statistics   *SeasonStatistics `json:"statistics"`
-	SeasonNumber int               `json:"seasonNumber"`
-	Monitored    bool              `json:"monitored"`
-}
+// API is the wire generation a client reads.
+type API string
 
-// SeasonStatistics holds per-season episode counts.
-type SeasonStatistics struct {
-	EpisodeFileCount  int `json:"episodeFileCount"`
-	EpisodeCount      int `json:"episodeCount"`
-	TotalEpisodeCount int `json:"totalEpisodeCount"`
-}
+// The generations arrapi reads.
+const (
+	APIv3 API = "v3" // Sonarr v4 (API v3) and Radarr (API v3)
+	APIv5 API = "v5" // Sonarr v5 (API v5)
+)
 
-// SeriesStatistics holds series-level episode counts.
-type SeriesStatistics struct {
-	SeasonCount       int `json:"seasonCount"`
-	EpisodeFileCount  int `json:"episodeFileCount"`
-	EpisodeCount      int `json:"episodeCount"`
-	TotalEpisodeCount int `json:"totalEpisodeCount"`
-}
-
-// Episode is a Sonarr episode.
-type Episode struct {
-	EpisodeFile           *EpisodeFile `json:"episodeFile"`
-	Title                 string       `json:"title"`
-	AirDate               string       `json:"airDate"`
-	ID                    int          `json:"id"`
-	SeriesID              int          `json:"seriesId"`
-	SeasonNumber          int          `json:"seasonNumber"`
-	EpisodeNumber         int          `json:"episodeNumber"`
-	AbsoluteEpisodeNumber int          `json:"absoluteEpisodeNumber"`
-	SceneSeasonNumber     int          `json:"sceneSeasonNumber"`
-	SceneEpisodeNumber    int          `json:"sceneEpisodeNumber"`
-	HasFile               bool         `json:"hasFile"`
-	Monitored             bool         `json:"monitored"`
-}
-
-// EpisodeFile holds file details for a Sonarr episode. It decodes from two
-// places carrying the same wire shape: the episodeFile object Episodes
-// embeds per episode, and the items EpisodeFiles lists directly. SeriesID
-// and SeasonNumber identify the file's place in the library on its own, so a
-// EpisodeFiles caller needs no episode rows to attribute a file to a
-// season.
-type EpisodeFile struct {
-	MediaInfo    *MediaInfo    `json:"mediaInfo"`
-	Quality      *QualityModel `json:"quality"`
-	RelativePath string        `json:"relativePath"`
-	Path         string        `json:"path"`
-	SceneName    string        `json:"sceneName"`
-	ReleaseGroup string        `json:"releaseGroup"`
-	ID           int           `json:"id"`
-	SeriesID     int           `json:"seriesId"`
-	SeasonNumber int           `json:"seasonNumber"`
-	Size         int64         `json:"size"`
-}
-
-// Movie is a Radarr movie.
-type Movie struct {
-	MovieFile        *MovieFile       `json:"movieFile"`
-	OriginalLanguage *Language        `json:"originalLanguage"`
-	Title            string           `json:"title"`
-	SortTitle        string           `json:"sortTitle"`
-	ImdbID           string           `json:"imdbId"`
-	InCinemas        string           `json:"inCinemas"`
-	DigitalRelease   string           `json:"digitalRelease"`
-	Path             string           `json:"path"`
-	RootFolderPath   string           `json:"rootFolderPath"`
-	Status           string           `json:"status"`
-	AlternateTitles  []AlternateTitle `json:"alternateTitles"`
-	Tags             []int            `json:"tags"`
-	ID               int              `json:"id"`
-	TmdbID           int              `json:"tmdbId"`
-	Year             int              `json:"year"`
-	QualityProfileID int              `json:"qualityProfileId"`
-	HasFile          bool             `json:"hasFile"`
-	Monitored        bool             `json:"monitored"`
-}
-
-// MovieFile holds file details for a Radarr movie.
-type MovieFile struct {
-	MediaInfo    *MediaInfo    `json:"mediaInfo"`
-	Quality      *QualityModel `json:"quality"`
-	RelativePath string        `json:"relativePath"`
-	Path         string        `json:"path"`
-	SceneName    string        `json:"sceneName"`
-	ReleaseGroup string        `json:"releaseGroup"`
-	ID           int           `json:"id"`
-	Size         int64         `json:"size"`
-}
-
-// QualityModel is the quality an arr recorded for a file at import. Only the
-// revision is modeled; the quality definition itself is out of scope. Revision
-// is nil when the payload carries none.
-type QualityModel struct {
-	Revision *Revision `json:"revision"`
-}
-
-// Revision is the release revision an arr recorded for a file at import, in the
-// arr's own numbering: Version is 1 for an original release, and a v2 token, a
-// PROPER or a REPACK each raise it (a REPACK also sets IsRepack). The arr keeps
-// the value it recorded at import, so it survives a later rename that drops the
-// token from the file name. The arr's separate REAL counter is not modeled.
-type Revision struct {
-	Version  int  `json:"version"`
-	IsRepack bool `json:"isRepack"`
-}
-
-// MediaInfo holds media-analysis details for an episode or movie file.
-type MediaInfo struct {
-	AudioLanguages string `json:"audioLanguages"`
-	Subtitles      string `json:"subtitles"`
-	VideoCodec     string `json:"videoCodec"`
-	AudioCodec     string `json:"audioCodec"`
-}
-
-// AlternateTitle is an alternate title for a series or movie.
-type AlternateTitle struct {
-	Title string `json:"title"`
-}
-
-// Language is a Sonarr/Radarr language reference, such as a series' or movie's
-// original language. Only the identity fields (name + id) are modeled; the arr
-// resource carries no further language detail this client needs.
+// Language is a language as the server names it.
 type Language struct {
-	Name string `json:"name"`
-	ID   int    `json:"id"`
+	Name string // "English", "Japanese": the server's name, not an ISO code
+	ID   int
 }
 
-// Tag is a Sonarr or Radarr tag.
-type Tag struct {
-	Label string `json:"label"`
-	ID    int    `json:"id"`
+// Revision is the release revision the server recorded at import: Version 1 is an
+// original release; a v2 token, PROPER or REPACK raises it.
+type Revision struct {
+	Version  int
+	IsRepack bool
 }
 
-// SystemStatus is the subset of a Sonarr/Radarr system-status response used for
-// connectivity checks and version reporting.
-type SystemStatus struct {
-	Version      string `json:"version"`
-	AppName      string `json:"appName"`
-	InstanceName string `json:"instanceName"`
-}
-
-// QualityProfile is a Sonarr or Radarr quality profile. Only the identity
-// fields are modeled; the profile's item/cutoff detail is out of scope.
-type QualityProfile struct {
-	Name string `json:"name"`
-	ID   int    `json:"id"`
-}
-
-// RootFolder is a configured root folder on a Sonarr or Radarr instance.
-type RootFolder struct {
-	Path       string `json:"path"`
-	ID         int    `json:"id"`
-	FreeSpace  int64  `json:"freeSpace"`
-	Accessible bool   `json:"accessible"`
+// MediaInfo is the server's media analysis of a file.
+type MediaInfo struct {
+	VideoCodec string
+	// AudioLanguages lists the language of every tagged audio track in track order,
+	// trimmed and lowercased, duplicates kept; a track tagged "" or "und" is omitted
+	// on every server, so an index is not a track index.
+	AudioLanguages []string
 }

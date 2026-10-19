@@ -1,4 +1,4 @@
-module github.com/cplieger/arrapi/v2
+module github.com/cplieger/arrapi/v3
 
 go 1.27.2
 

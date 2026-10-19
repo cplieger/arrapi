@@ -1,8 +1,6 @@
-// Package arrapi provides typed, resilient clients for the Sonarr and Radarr
-// v3 HTTP APIs. NewSonarr and NewRadarr return distinct client types, so an
-// operation can only be called on the service that supports it. Every request
-// carries the instance's API key, is bounded by a per-request timeout and a
-// response-size cap, and is retried with jittered backoff on transient
-// failures; a non-2xx response is a *StatusError whose Body is log-safe. A
-// client owns no goroutines and is safe for concurrent use.
+// Package arrapi holds the vocabulary the sonarr and radarr packages share: the API
+// key and generation types, the error types every call can return, tags, languages,
+// revisions and media info. The clients live in those packages and read three server
+// shapes: Sonarr v4 (API v3), Sonarr v5 (API v5) and Radarr (API v3). A Sonarr 5
+// reachable only over /api/v3 is refused with an *UnsupportedAPIError, never read.
 package arrapi

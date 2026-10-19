@@ -1,0 +1,187 @@
+[
+  {
+    "alternateTitles": [
+      {
+        "arrapiUnknownField": 1,
+        "title": "Suzumiya Haruhi no Yuuutsu"
+      },
+      {
+        "arrapiUnknownField": 1,
+        "title": "Die Melancholie der Haruhi Suzumiya"
+      }
+    ],
+    "aniListIds": [
+      849,
+      4382,
+      7311
+    ],
+    "arrapiUnknownField": 1,
+    "id": 7,
+    "imdbId": "tt0816407",
+    "language": {
+      "arrapiUnknownField": 1,
+      "id": 1,
+      "name": "English"
+    },
+    "originalLanguage": {
+      "arrapiUnknownField": 1,
+      "id": 8,
+      "name": "Japanese"
+    },
+    "originalTitle": "涼宮ハルヒの憂鬱",
+    "seasonType": "alternate",
+    "seasonTypes": [
+      {
+        "arrapiUnknownField": 1,
+        "name": "Aired Order",
+        "type": "official"
+      },
+      {
+        "arrapiUnknownField": 1,
+        "name": "DVD Order",
+        "type": "dvd"
+      },
+      {
+        "arrapiUnknownField": 1,
+        "name": "2009 Series",
+        "type": "alternate"
+      }
+    ],
+    "seasons": [
+      {
+        "arrapiUnknownField": 1,
+        "seasonNumber": 1,
+        "title": "The Melancholy of Haruhi Suzumiya (2009)"
+      }
+    ],
+    "statistics": {
+      "arrapiUnknownField": 1,
+      "episodeFileCount": 1
+    },
+    "tags": [],
+    "title": "The Melancholy of Haruhi Suzumiya",
+    "titleSlug": "the-melancholy-of-haruhi-suzumiya",
+    "tmdbId": 42511,
+    "translations": [
+      {
+        "arrapiUnknownField": 1,
+        "language": {
+          "arrapiUnknownField": 1,
+          "id": 4,
+          "name": "German"
+        },
+        "title": "Die Melancholie der Haruhi Suzumiya"
+      },
+      {
+        "arrapiUnknownField": 1,
+        "language": {
+          "arrapiUnknownField": 1,
+          "id": 1,
+          "name": "English"
+        },
+        "title": "The Melancholy of Haruhi Suzumiya"
+      },
+      {
+        "arrapiUnknownField": 1,
+        "language": {
+          "arrapiUnknownField": 1,
+          "id": 2,
+          "name": "French"
+        },
+        "title": "La Mélancolie de Haruhi Suzumiya"
+      },
+      {
+        "arrapiUnknownField": 1,
+        "language": {
+          "arrapiUnknownField": 1,
+          "id": 5,
+          "name": "Italian"
+        },
+        "title": "La malinconia di Haruhi Suzumiya"
+      },
+      {
+        "arrapiUnknownField": 1,
+        "language": {
+          "arrapiUnknownField": 1,
+          "id": 8,
+          "name": "Japanese"
+        },
+        "title": "涼宮ハルヒの憂鬱"
+      },
+      {
+        "arrapiUnknownField": 1,
+        "language": {
+          "arrapiUnknownField": 1,
+          "id": 21,
+          "name": "Korean"
+        },
+        "title": "스즈미야 하루히의 우울"
+      },
+      {
+        "arrapiUnknownField": 1,
+        "language": {
+          "arrapiUnknownField": 1,
+          "id": 18,
+          "name": "Portuguese"
+        },
+        "title": "Suzumiya Haruhi no Yuuutsu"
+      },
+      {
+        "arrapiUnknownField": 1,
+        "language": {
+          "arrapiUnknownField": 1,
+          "id": 11,
+          "name": "Russian"
+        },
+        "title": "Меланхолия Харухи Судзумии"
+      },
+      {
+        "arrapiUnknownField": 1,
+        "language": {
+          "arrapiUnknownField": 1,
+          "id": 3,
+          "name": "Spanish"
+        },
+        "title": "La Melancolía de Haruhi Suzumiya"
+      },
+      {
+        "arrapiUnknownField": 1,
+        "language": {
+          "arrapiUnknownField": 1,
+          "id": 10,
+          "name": "Chinese"
+        },
+        "title": "凉宫春日的忧郁"
+      },
+      {
+        "arrapiUnknownField": 1,
+        "language": {
+          "arrapiUnknownField": 1,
+          "id": 10,
+          "name": "Chinese"
+        },
+        "title": "涼宮春日的憂鬱"
+      },
+      {
+        "arrapiUnknownField": 1,
+        "language": {
+          "arrapiUnknownField": 1,
+          "id": 10,
+          "name": "Chinese"
+        },
+        "title": "涼宮春日的憂鬱"
+      },
+      {
+        "arrapiUnknownField": 1,
+        "language": {
+          "arrapiUnknownField": 1,
+          "id": 18,
+          "name": "Portuguese"
+        },
+        "title": "The Melancholy of Haruhi Suzumiya"
+      }
+    ],
+    "tvdbId": 79414,
+    "year": 2009
+  }
+]
