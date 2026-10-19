@@ -1,0 +1,68 @@
+{
+  "alternateTitles": [
+    {
+      "arrapiUnknownField": 1,
+      "title": "Code Geass: Lelouch of the Rebellion R2"
+    },
+    {
+      "arrapiUnknownField": 1,
+      "title": "Code Geass: Lelouch of the Rebellion"
+    },
+    {
+      "arrapiUnknownField": 1,
+      "title": "コードギアス 反逆のルルーシュ"
+    },
+    {
+      "arrapiUnknownField": 1,
+      "title": "コードギアス 反逆のルルーシュ R2"
+    },
+    {
+      "arrapiUnknownField": 1,
+      "title": "Code Geass"
+    },
+    {
+      "arrapiUnknownField": 1,
+      "title": "Code Geass R2"
+    },
+    {
+      "arrapiUnknownField": 1,
+      "title": "Code Geass S1"
+    },
+    {
+      "arrapiUnknownField": 1,
+      "title": "Code Geass S2"
+    }
+  ],
+  "arrapiUnknownField": 1,
+  "id": 1,
+  "imdbId": "tt0994314",
+  "originalLanguage": {
+    "arrapiUnknownField": 1,
+    "id": 8,
+    "name": "Japanese"
+  },
+  "seasons": [
+    {
+      "arrapiUnknownField": 1,
+      "seasonNumber": 0
+    },
+    {
+      "arrapiUnknownField": 1,
+      "seasonNumber": 1
+    },
+    {
+      "arrapiUnknownField": 1,
+      "seasonNumber": 2
+    }
+  ],
+  "statistics": {
+    "arrapiUnknownField": 1,
+    "episodeFileCount": 51
+  },
+  "tags": [],
+  "title": "Code Geass: Lelouch of the Rebellion",
+  "titleSlug": "code-geass-lelouch-of-the-rebellion",
+  "tmdbId": 31724,
+  "tvdbId": 79525,
+  "year": 2006
+}

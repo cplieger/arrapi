@@ -1,0 +1,204 @@
+[
+  {
+    "alternateTitles": [],
+    "aniListIds": [],
+    "arrapiUnknownField": 1,
+    "id": 9,
+    "imdbId": "tt8336340",
+    "language": {
+      "arrapiUnknownField": 1,
+      "id": 1,
+      "name": "English"
+    },
+    "originalLanguage": {
+      "arrapiUnknownField": 1,
+      "id": 1,
+      "name": "English"
+    },
+    "originalTitle": "Star Wars Resistance",
+    "seasonType": "alternate",
+    "seasonTypes": [
+      {
+        "arrapiUnknownField": 1,
+        "name": "Aired Order",
+        "type": "official"
+      },
+      {
+        "arrapiUnknownField": 1,
+        "name": "DVD Order",
+        "type": "dvd"
+      },
+      {
+        "arrapiUnknownField": 1,
+        "name": "Disney+ Order",
+        "type": "alternate"
+      }
+    ],
+    "seasons": [
+      {
+        "arrapiUnknownField": 1,
+        "seasonNumber": 1
+      },
+      {
+        "arrapiUnknownField": 1,
+        "seasonNumber": 2
+      }
+    ],
+    "statistics": {
+      "arrapiUnknownField": 1,
+      "episodeFileCount": 1
+    },
+    "tags": [],
+    "title": "Star Wars Resistance",
+    "titleSlug": "star-wars-resistance",
+    "tmdbId": 79093,
+    "translations": [
+      {
+        "arrapiUnknownField": 1,
+        "language": {
+          "arrapiUnknownField": 1,
+          "id": 4,
+          "name": "German"
+        },
+        "title": "Star Wars: Resistance"
+      },
+      {
+        "arrapiUnknownField": 1,
+        "language": {
+          "arrapiUnknownField": 1,
+          "id": 1,
+          "name": "English"
+        },
+        "title": "Star Wars Resistance"
+      },
+      {
+        "arrapiUnknownField": 1,
+        "language": {
+          "arrapiUnknownField": 1,
+          "id": 2,
+          "name": "French"
+        },
+        "title": "Star Wars : Resistance"
+      },
+      {
+        "arrapiUnknownField": 1,
+        "language": {
+          "arrapiUnknownField": 1,
+          "id": 23,
+          "name": "Hebrew"
+        },
+        "title": "מלחמת הכוכבים: מחתרת"
+      },
+      {
+        "arrapiUnknownField": 1,
+        "language": {
+          "arrapiUnknownField": 1,
+          "id": 22,
+          "name": "Hungarian"
+        },
+        "title": "Star Wars: Ellenállás"
+      },
+      {
+        "arrapiUnknownField": 1,
+        "language": {
+          "arrapiUnknownField": 1,
+          "id": 5,
+          "name": "Italian"
+        },
+        "title": "Star Wars Resistance"
+      },
+      {
+        "arrapiUnknownField": 1,
+        "language": {
+          "arrapiUnknownField": 1,
+          "id": 7,
+          "name": "Dutch"
+        },
+        "title": "Star Wars - Het Verzet"
+      },
+      {
+        "arrapiUnknownField": 1,
+        "language": {
+          "arrapiUnknownField": 1,
+          "id": 12,
+          "name": "Polish"
+        },
+        "title": "Gwiezdne Wojny: Ruch Oporu"
+      },
+      {
+        "arrapiUnknownField": 1,
+        "language": {
+          "arrapiUnknownField": 1,
+          "id": 18,
+          "name": "Portuguese"
+        },
+        "title": "Star Wars: A Resistência"
+      },
+      {
+        "arrapiUnknownField": 1,
+        "language": {
+          "arrapiUnknownField": 1,
+          "id": 11,
+          "name": "Russian"
+        },
+        "title": "Звёздные войны: Сопротивление"
+      },
+      {
+        "arrapiUnknownField": 1,
+        "language": {
+          "arrapiUnknownField": 1,
+          "id": 3,
+          "name": "Spanish"
+        },
+        "title": "Star Wars: La Resistencia"
+      },
+      {
+        "arrapiUnknownField": 1,
+        "language": {
+          "arrapiUnknownField": 1,
+          "id": 14,
+          "name": "Swedish"
+        },
+        "title": "Star Wars: Motståndsrörelsen"
+      },
+      {
+        "arrapiUnknownField": 1,
+        "language": {
+          "arrapiUnknownField": 1,
+          "id": 21,
+          "name": "Korean"
+        },
+        "title": "스타워즈 저항군"
+      },
+      {
+        "arrapiUnknownField": 1,
+        "language": {
+          "arrapiUnknownField": 1,
+          "id": 18,
+          "name": "Portuguese"
+        },
+        "title": "Star Wars: A Resistência"
+      },
+      {
+        "arrapiUnknownField": 1,
+        "language": {
+          "arrapiUnknownField": 1,
+          "id": 26,
+          "name": "Arabic"
+        },
+        "title": "حرب النجوم: المقاومة"
+      },
+      {
+        "arrapiUnknownField": 1,
+        "language": {
+          "arrapiUnknownField": 1,
+          "id": 10,
+          "name": "Chinese"
+        },
+        "title": "星球大战：抵抗组织"
+      }
+    ],
+    "tvdbId": 351575,
+    "year": 2018
+  }
+]

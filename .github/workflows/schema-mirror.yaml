@@ -1,15 +1,21 @@
-# Repo-local workflow (not synced from cplieger/ci — arrapi is the only repo
+# Repo-local workflow (not synced from cplieger/ci; arrapi is the only repo
 # with a schema-drift guard). Maintains the machine-managed `schema-mirror`
-# branch: last-known-good copies of the official Sonarr/Radarr v3 OpenAPI
-# documents that schemadrift_test.go falls back to when its live upstream HEAD
+# branch: last-known-good copies of the three OpenAPI documents arrapi's
+# drift tests read (internal/specdrift), used only when their live upstream
 # fetch fails (a raw.githubusercontent outage, an upstream file move, a
 # deleted repo). Unlike the squashed `badges` branch, this branch keeps real
-# history — one commit per upstream contract change — so its log doubles as a
+# history, one commit per upstream contract change, so its log doubles as a
 # changelog of upstream API evolution, useful when a drift test fails for real.
 #
-# The drift guard still fetches upstream HEAD first on every run, so the
-# mirror adds no detection latency; it only removes the hard network gate.
-# Nothing lands on main: no bump PRs, no releases, nothing Renovate-tracked.
+# Each document is read from a named branch, never HEAD: Sonarr's default
+# branch is develop, whose Sonarr.Api.V3 is Sonarr 5's deprecated API v3
+# view, while arrapi reads Sonarr v4 (API v3) from v4-develop. The `mirror`
+# lines below must match the drift tests' contracts field for field
+# (TestMirrorWorkflowMirrorsContract in sonarr/ and radarr/ checks it).
+#
+# The drift tests still fetch upstream first on every run, so the mirror adds
+# no detection latency; it only removes the hard network gate. Nothing lands
+# on main: no bump PRs, no releases, nothing Renovate-tracked.
 name: Schema mirror
 
 on:
@@ -31,40 +37,37 @@ jobs:
     permissions:
       contents: write # push refreshed documents to the schema-mirror branch
     steps:
-      # No checkout: the job needs nothing from the working tree. HEAD is
-      # resolved to a commit first (git ls-remote) and the documents are
-      # fetched BY COMMIT — tool-catalog's content-addressing convention — so
-      # the fetch can't race a moving HEAD and each mirror commit records the
-      # exact upstream commits it mirrors. The fetch mirrors
-      # schemadrift_test.go's bounds (16 MB cap, bounded attempts) and its
-      # emptiness validation, plus a JSON-shape check so an HTML error page
-      # or a stub document can never poison the mirror.
+      # No checkout: the job needs nothing from the working tree. Each branch
+      # is resolved to a commit first (git ls-remote) and its document is
+      # fetched BY COMMIT, tool-catalog's content-addressing convention, so
+      # the fetch can't race a moving branch and each mirror commit records
+      # the exact upstream commits it mirrors. The fetch mirrors the drift
+      # tests' bounds (16 MB cap, bounded attempts) and their emptiness
+      # validation, plus a JSON-shape check so an HTML error page or a stub
+      # document can never poison the mirror.
       - name: Fetch and validate upstream documents
         run: |
           set -euo pipefail
           mkdir -p docs
-          resolve() { # $1 = owner/repo -> prints the default-branch HEAD commit
-            sha=$(git ls-remote "https://github.com/$1.git" HEAD | cut -f1)
+          : >docs/commits
+          mirror() { # $1 = mirror file, $2 = owner/repo, $3 = branch, $4 = path in repo
+            sha=$(git ls-remote "https://github.com/$2.git" "refs/heads/$3" | cut -f1)
             if ! printf '%s' "$sha" | grep -Eq '^[0-9a-f]{40}$'; then
-              echo "::error::could not resolve $1 HEAD to a commit (got: ${sha})" >&2
+              echo "::error::could not resolve $2 $3 to a commit (got: ${sha})" >&2
               exit 1
             fi
-            printf '%s' "$sha"
-          }
-          fetch() { # $1 = service, $2 = owner/repo, $3 = commit, $4 = path in repo
             curl --fail --silent --show-error --location \
               --retry 3 --retry-delay 2 --max-time 60 --max-filesize 16777216 \
               --user-agent 'arrapi-schema-mirror (+https://github.com/cplieger/arrapi)' \
-              --output "docs/$1-openapi.json" "https://raw.githubusercontent.com/$2/$3/$4"
+              --output "docs/$1" "https://raw.githubusercontent.com/$2/${sha}/$4"
             jq -e '(.paths | length > 0) and (.components.schemas | length > 0)' \
-              "docs/$1-openapi.json" >/dev/null \
-              || { echo "::error::$1 document has no paths/schemas — upstream moved or emptied it"; exit 1; }
+              "docs/$1" >/dev/null \
+              || { echo "::error::$1 has no paths/schemas; upstream moved or emptied it"; exit 1; }
+            printf '%s %s@%s\n' "$1" "$3" "${sha:0:12}" >>docs/commits
           }
-          SONARR_SHA=$(resolve Sonarr/Sonarr)
-          RADARR_SHA=$(resolve Radarr/Radarr)
-          fetch sonarr Sonarr/Sonarr "$SONARR_SHA" 'src/Sonarr.Api.V3/openapi.json'
-          fetch radarr Radarr/Radarr "$RADARR_SHA" 'src/Radarr.Api.V3/openapi.json'
-          { echo "SONARR_SHA=${SONARR_SHA}"; echo "RADARR_SHA=${RADARR_SHA}"; } >>"$GITHUB_ENV"
+          mirror sonarr-v4-api-v3-openapi.json Sonarr/Sonarr v4-develop src/Sonarr.Api.V3/openapi.json
+          mirror sonarr-v5-api-v5-openapi.json Sonarr/Sonarr develop src/Sonarr.Api.V5/openapi.json
+          mirror radarr-api-v3-openapi.json Radarr/Radarr develop src/Radarr.Api.V3/openapi.json
 
       - name: Push to schema-mirror on change
         env:
@@ -80,7 +83,7 @@ jobs:
           git -C "$work" config user.name 'github-actions[bot]'
           git -C "$work" config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           # Continue existing history when the branch exists; bootstrap an
-          # orphan on first run. A shallow parent is fine to push on top of —
+          # orphan on first run. A shallow parent is fine to push on top of:
           # the remote already has the history.
           if git -C "$work" fetch -q --depth 1 "$URL" schema-mirror 2>/dev/null; then
             git -C "$work" checkout -q -B schema-mirror FETCH_HEAD
@@ -88,25 +91,31 @@ jobs:
             git -C "$work" checkout -q --orphan schema-mirror
           fi
 
-          changed=''
-          for svc in sonarr radarr; do
-            if ! cmp -s "docs/${svc}-openapi.json" "${work}/${svc}-openapi.json" 2>/dev/null; then
-              cp "docs/${svc}-openapi.json" "${work}/"
-              changed="${changed}${changed:+, }${svc}"
+          changed='' files=(README.md) commits=''
+          while read -r file commit; do
+            files+=("$file")
+            commits="${commits}${commits:+ }${commit}"
+            if ! cmp -s "docs/${file}" "${work}/${file}" 2>/dev/null; then
+              cp "docs/${file}" "${work}/"
+              changed="${changed}${changed:+, }${file%-openapi.json}"
             fi
-          done
-          if [ ! -f "${work}/README.md" ]; then
-            printf '%s\n' \
-              '# schema-mirror' \
-              '' \
-              'Machine-managed last-known-good copies of the official Sonarr and Radarr v3' \
-              'OpenAPI documents, refreshed daily by the Schema mirror workflow' \
-              '(.github/workflows/schema-mirror.yaml on main). The schema-drift tests fall' \
-              'back to these when their live upstream HEAD fetch fails. One commit per' \
-              'upstream contract change: the log of this branch is a changelog of upstream' \
-              'API evolution, and each commit message records the exact upstream commits' \
-              'it mirrors. Do not edit by hand.' \
-              >"${work}/README.md"
+          done <docs/commits
+          printf '%s\n' \
+            '# schema-mirror' \
+            '' \
+            "Machine-managed last-known-good copies of the OpenAPI documents arrapi's" \
+            'drift tests read: Sonarr v4 (API v3) from Sonarr v4-develop, Sonarr v5' \
+            '(API v5) from Sonarr develop, and Radarr (API v3) from Radarr develop.' \
+            'The Schema mirror workflow (.github/workflows/schema-mirror.yaml on main)' \
+            'refreshes them daily, and the drift tests fall back to them when their' \
+            'live upstream fetch fails. One commit per upstream contract change: the' \
+            'log of this branch is a changelog of upstream API evolution, and each' \
+            'commit message records the exact upstream commits it mirrors. The files' \
+            'sonarr-openapi.json and radarr-openapi.json, if present, are no longer' \
+            'read or refreshed. Do not edit by hand.' \
+            >docs/README.md
+          if ! cmp -s docs/README.md "${work}/README.md" 2>/dev/null; then
+            cp docs/README.md "${work}/README.md"
             changed="${changed}${changed:+, }readme"
           fi
           if [ -z "$changed" ]; then
@@ -114,9 +123,9 @@ jobs:
             exit 0
           fi
 
-          git -C "$work" add -A
-          git -C "$work" commit -qm "chore: refresh openapi mirror (${changed}; sonarr@${SONARR_SHA:0:12} radarr@${RADARR_SHA:0:12})"
-          # Plain push (never force — history is the point). Retry the
+          git -C "$work" add -- "${files[@]}"
+          git -C "$work" commit -qm "chore: refresh openapi mirror (${changed}; ${commits})"
+          # Plain push (never force; history is the point). Retry the
           # transient server-side push failures publish-badge.sh documents.
           attempt=1
           until git -C "$work" push -q "$URL" HEAD:schema-mirror; do

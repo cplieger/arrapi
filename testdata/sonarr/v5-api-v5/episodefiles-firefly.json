@@ -1,0 +1,380 @@
+[
+  {
+    "arrapiUnknownField": 1,
+    "id": 52,
+    "mediaInfo": {
+      "arrapiUnknownField": 1,
+      "audioStreams": [
+        {
+          "arrapiUnknownField": 1,
+          "language": "eng"
+        }
+      ],
+      "videoCodec": "h264"
+    },
+    "path": "/tv/folder-2/Season 01/episode-file-52.mkv",
+    "quality": {
+      "arrapiUnknownField": 1,
+      "revision": {
+        "arrapiUnknownField": 1,
+        "isRepack": false,
+        "version": 1
+      }
+    },
+    "relativePath": "Season 01/episode-file-52.mkv",
+    "releaseGroup": "group-2",
+    "seasonNumber": 1,
+    "size": 1064000000
+  },
+  {
+    "arrapiUnknownField": 1,
+    "id": 53,
+    "mediaInfo": {
+      "arrapiUnknownField": 1,
+      "audioStreams": [
+        {
+          "arrapiUnknownField": 1,
+          "language": "eng"
+        }
+      ],
+      "videoCodec": "h264"
+    },
+    "path": "/tv/folder-2/Season 01/episode-file-53.mkv",
+    "quality": {
+      "arrapiUnknownField": 1,
+      "revision": {
+        "arrapiUnknownField": 1,
+        "isRepack": false,
+        "version": 1
+      }
+    },
+    "relativePath": "Season 01/episode-file-53.mkv",
+    "releaseGroup": "group-2",
+    "seasonNumber": 1,
+    "size": 1037000000
+  },
+  {
+    "arrapiUnknownField": 1,
+    "id": 54,
+    "mediaInfo": {
+      "arrapiUnknownField": 1,
+      "audioStreams": [
+        {
+          "arrapiUnknownField": 1,
+          "language": "eng"
+        }
+      ],
+      "videoCodec": "h264"
+    },
+    "path": "/tv/folder-2/Season 01/episode-file-54.mkv",
+    "quality": {
+      "arrapiUnknownField": 1,
+      "revision": {
+        "arrapiUnknownField": 1,
+        "isRepack": false,
+        "version": 1
+      }
+    },
+    "relativePath": "Season 01/episode-file-54.mkv",
+    "releaseGroup": "group-2",
+    "seasonNumber": 1,
+    "size": 1038000000
+  },
+  {
+    "arrapiUnknownField": 1,
+    "id": 55,
+    "mediaInfo": {
+      "arrapiUnknownField": 1,
+      "audioStreams": [
+        {
+          "arrapiUnknownField": 1,
+          "language": "eng"
+        }
+      ],
+      "videoCodec": "h264"
+    },
+    "path": "/tv/folder-2/Season 01/episode-file-55.mkv",
+    "quality": {
+      "arrapiUnknownField": 1,
+      "revision": {
+        "arrapiUnknownField": 1,
+        "isRepack": false,
+        "version": 1
+      }
+    },
+    "relativePath": "Season 01/episode-file-55.mkv",
+    "releaseGroup": "group-2",
+    "seasonNumber": 1,
+    "size": 1041000000
+  },
+  {
+    "arrapiUnknownField": 1,
+    "id": 56,
+    "mediaInfo": {
+      "arrapiUnknownField": 1,
+      "audioStreams": [
+        {
+          "arrapiUnknownField": 1,
+          "language": "eng"
+        }
+      ],
+      "videoCodec": "h264"
+    },
+    "path": "/tv/folder-2/Season 01/episode-file-56.mkv",
+    "quality": {
+      "arrapiUnknownField": 1,
+      "revision": {
+        "arrapiUnknownField": 1,
+        "isRepack": false,
+        "version": 1
+      }
+    },
+    "relativePath": "Season 01/episode-file-56.mkv",
+    "releaseGroup": "group-2",
+    "seasonNumber": 1,
+    "size": 1048000000
+  },
+  {
+    "arrapiUnknownField": 1,
+    "id": 57,
+    "mediaInfo": {
+      "arrapiUnknownField": 1,
+      "audioStreams": [
+        {
+          "arrapiUnknownField": 1,
+          "language": "eng"
+        }
+      ],
+      "videoCodec": "h264"
+    },
+    "path": "/tv/folder-2/Season 01/episode-file-57.mkv",
+    "quality": {
+      "arrapiUnknownField": 1,
+      "revision": {
+        "arrapiUnknownField": 1,
+        "isRepack": false,
+        "version": 1
+      }
+    },
+    "relativePath": "Season 01/episode-file-57.mkv",
+    "releaseGroup": "group-2",
+    "seasonNumber": 1,
+    "size": 1045000000
+  },
+  {
+    "arrapiUnknownField": 1,
+    "id": 58,
+    "mediaInfo": {
+      "arrapiUnknownField": 1,
+      "audioStreams": [
+        {
+          "arrapiUnknownField": 1,
+          "language": "eng"
+        }
+      ],
+      "videoCodec": "h264"
+    },
+    "path": "/tv/folder-2/Season 01/episode-file-58.mkv",
+    "quality": {
+      "arrapiUnknownField": 1,
+      "revision": {
+        "arrapiUnknownField": 1,
+        "isRepack": false,
+        "version": 1
+      }
+    },
+    "relativePath": "Season 01/episode-file-58.mkv",
+    "releaseGroup": "group-2",
+    "seasonNumber": 1,
+    "size": 1047000000
+  },
+  {
+    "arrapiUnknownField": 1,
+    "id": 59,
+    "mediaInfo": {
+      "arrapiUnknownField": 1,
+      "audioStreams": [
+        {
+          "arrapiUnknownField": 1,
+          "language": "eng"
+        }
+      ],
+      "videoCodec": "h264"
+    },
+    "path": "/tv/folder-2/Season 01/episode-file-59.mkv",
+    "quality": {
+      "arrapiUnknownField": 1,
+      "revision": {
+        "arrapiUnknownField": 1,
+        "isRepack": false,
+        "version": 1
+      }
+    },
+    "relativePath": "Season 01/episode-file-59.mkv",
+    "releaseGroup": "group-2",
+    "seasonNumber": 1,
+    "size": 1051000000
+  },
+  {
+    "arrapiUnknownField": 1,
+    "id": 60,
+    "mediaInfo": {
+      "arrapiUnknownField": 1,
+      "audioStreams": [
+        {
+          "arrapiUnknownField": 1,
+          "language": "eng"
+        }
+      ],
+      "videoCodec": "h264"
+    },
+    "path": "/tv/folder-2/Season 01/episode-file-60.mkv",
+    "quality": {
+      "arrapiUnknownField": 1,
+      "revision": {
+        "arrapiUnknownField": 1,
+        "isRepack": false,
+        "version": 1
+      }
+    },
+    "relativePath": "Season 01/episode-file-60.mkv",
+    "releaseGroup": "group-2",
+    "seasonNumber": 1,
+    "size": 1043000000
+  },
+  {
+    "arrapiUnknownField": 1,
+    "id": 61,
+    "mediaInfo": {
+      "arrapiUnknownField": 1,
+      "audioStreams": [
+        {
+          "arrapiUnknownField": 1,
+          "language": "eng"
+        }
+      ],
+      "videoCodec": "h264"
+    },
+    "path": "/tv/folder-2/Season 01/episode-file-61.mkv",
+    "quality": {
+      "arrapiUnknownField": 1,
+      "revision": {
+        "arrapiUnknownField": 1,
+        "isRepack": false,
+        "version": 1
+      }
+    },
+    "relativePath": "Season 01/episode-file-61.mkv",
+    "releaseGroup": "group-2",
+    "seasonNumber": 1,
+    "size": 1039000000
+  },
+  {
+    "arrapiUnknownField": 1,
+    "id": 62,
+    "mediaInfo": {
+      "arrapiUnknownField": 1,
+      "audioStreams": [
+        {
+          "arrapiUnknownField": 1,
+          "language": "eng"
+        }
+      ],
+      "videoCodec": "h264"
+    },
+    "path": "/tv/folder-2/Season 01/episode-file-62.mkv",
+    "quality": {
+      "arrapiUnknownField": 1,
+      "revision": {
+        "arrapiUnknownField": 1,
+        "isRepack": false,
+        "version": 1
+      }
+    },
+    "relativePath": "Season 01/episode-file-62.mkv",
+    "releaseGroup": "group-2",
+    "seasonNumber": 1,
+    "size": 1050000000
+  },
+  {
+    "arrapiUnknownField": 1,
+    "id": 63,
+    "mediaInfo": {
+      "arrapiUnknownField": 1,
+      "audioStreams": [
+        {
+          "arrapiUnknownField": 1,
+          "language": "eng"
+        }
+      ],
+      "videoCodec": "h264"
+    },
+    "path": "/tv/folder-2/Season 01/episode-file-63.mkv",
+    "quality": {
+      "arrapiUnknownField": 1,
+      "revision": {
+        "arrapiUnknownField": 1,
+        "isRepack": false,
+        "version": 1
+      }
+    },
+    "relativePath": "Season 01/episode-file-63.mkv",
+    "releaseGroup": "group-2",
+    "seasonNumber": 1,
+    "size": 1046000000
+  },
+  {
+    "arrapiUnknownField": 1,
+    "id": 64,
+    "mediaInfo": {
+      "arrapiUnknownField": 1,
+      "audioStreams": [
+        {
+          "arrapiUnknownField": 1,
+          "language": "eng"
+        }
+      ],
+      "videoCodec": "h264"
+    },
+    "path": "/tv/folder-2/Season 01/episode-file-64.mkv",
+    "quality": {
+      "arrapiUnknownField": 1,
+      "revision": {
+        "arrapiUnknownField": 1,
+        "isRepack": false,
+        "version": 1
+      }
+    },
+    "relativePath": "Season 01/episode-file-64.mkv",
+    "releaseGroup": "group-2",
+    "seasonNumber": 1,
+    "size": 1049000000
+  },
+  {
+    "arrapiUnknownField": 1,
+    "id": 65,
+    "mediaInfo": {
+      "arrapiUnknownField": 1,
+      "audioStreams": [
+        {
+          "arrapiUnknownField": 1,
+          "language": "eng"
+        }
+      ],
+      "videoCodec": "h264"
+    },
+    "path": "/tv/folder-2/Season 01/episode-file-65.mkv",
+    "quality": {
+      "arrapiUnknownField": 1,
+      "revision": {
+        "arrapiUnknownField": 1,
+        "isRepack": false,
+        "version": 1
+      }
+    },
+    "relativePath": "Season 01/episode-file-65.mkv",
+    "releaseGroup": "group-2",
+    "seasonNumber": 1,
+    "size": 1044000000
+  }
+]

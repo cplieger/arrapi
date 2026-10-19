@@ -1,0 +1,1819 @@
+[
+  {
+    "arrapiUnknownField": 1,
+    "id": 1,
+    "mediaInfo": {
+      "arrapiUnknownField": 1,
+      "audioStreams": [
+        {
+          "arrapiUnknownField": 1,
+          "language": "jpn"
+        },
+        {
+          "arrapiUnknownField": 1,
+          "language": "jpn"
+        },
+        {
+          "arrapiUnknownField": 1,
+          "language": "eng"
+        }
+      ],
+      "videoCodec": "x265"
+    },
+    "path": "/tv/folder-1/Season 01/episode-file-1.mkv",
+    "quality": {
+      "arrapiUnknownField": 1,
+      "revision": {
+        "arrapiUnknownField": 1,
+        "isRepack": false,
+        "version": 1
+      }
+    },
+    "relativePath": "Season 01/episode-file-1.mkv",
+    "releaseGroup": "group-3",
+    "seasonNumber": 1,
+    "size": 1023000000
+  },
+  {
+    "arrapiUnknownField": 1,
+    "id": 2,
+    "mediaInfo": {
+      "arrapiUnknownField": 1,
+      "audioStreams": [
+        {
+          "arrapiUnknownField": 1,
+          "language": "jpn"
+        },
+        {
+          "arrapiUnknownField": 1,
+          "language": "jpn"
+        },
+        {
+          "arrapiUnknownField": 1,
+          "language": "eng"
+        }
+      ],
+      "videoCodec": "x265"
+    },
+    "path": "/tv/folder-1/Season 01/episode-file-2.mkv",
+    "quality": {
+      "arrapiUnknownField": 1,
+      "revision": {
+        "arrapiUnknownField": 1,
+        "isRepack": false,
+        "version": 1
+      }
+    },
+    "relativePath": "Season 01/episode-file-2.mkv",
+    "releaseGroup": "group-3",
+    "seasonNumber": 1,
+    "size": 1024000000
+  },
+  {
+    "arrapiUnknownField": 1,
+    "id": 3,
+    "mediaInfo": {
+      "arrapiUnknownField": 1,
+      "audioStreams": [
+        {
+          "arrapiUnknownField": 1,
+          "language": "jpn"
+        },
+        {
+          "arrapiUnknownField": 1,
+          "language": "jpn"
+        },
+        {
+          "arrapiUnknownField": 1,
+          "language": "eng"
+        }
+      ],
+      "videoCodec": "x265"
+    },
+    "path": "/tv/folder-1/Season 01/episode-file-3.mkv",
+    "quality": {
+      "arrapiUnknownField": 1,
+      "revision": {
+        "arrapiUnknownField": 1,
+        "isRepack": false,
+        "version": 1
+      }
+    },
+    "relativePath": "Season 01/episode-file-3.mkv",
+    "releaseGroup": "group-3",
+    "seasonNumber": 1,
+    "size": 1014000000
+  },
+  {
+    "arrapiUnknownField": 1,
+    "id": 4,
+    "mediaInfo": {
+      "arrapiUnknownField": 1,
+      "audioStreams": [
+        {
+          "arrapiUnknownField": 1,
+          "language": "jpn"
+        },
+        {
+          "arrapiUnknownField": 1,
+          "language": "jpn"
+        },
+        {
+          "arrapiUnknownField": 1,
+          "language": "eng"
+        }
+      ],
+      "videoCodec": "x265"
+    },
+    "path": "/tv/folder-1/Season 01/episode-file-4.mkv",
+    "quality": {
+      "arrapiUnknownField": 1,
+      "revision": {
+        "arrapiUnknownField": 1,
+        "isRepack": false,
+        "version": 1
+      }
+    },
+    "relativePath": "Season 01/episode-file-4.mkv",
+    "releaseGroup": "group-3",
+    "seasonNumber": 1,
+    "size": 1018000000
+  },
+  {
+    "arrapiUnknownField": 1,
+    "id": 5,
+    "mediaInfo": {
+      "arrapiUnknownField": 1,
+      "audioStreams": [
+        {
+          "arrapiUnknownField": 1,
+          "language": "jpn"
+        },
+        {
+          "arrapiUnknownField": 1,
+          "language": "jpn"
+        },
+        {
+          "arrapiUnknownField": 1,
+          "language": "eng"
+        }
+      ],
+      "videoCodec": "x265"
+    },
+    "path": "/tv/folder-1/Season 01/episode-file-5.mkv",
+    "quality": {
+      "arrapiUnknownField": 1,
+      "revision": {
+        "arrapiUnknownField": 1,
+        "isRepack": false,
+        "version": 1
+      }
+    },
+    "relativePath": "Season 01/episode-file-5.mkv",
+    "releaseGroup": "group-3",
+    "seasonNumber": 1,
+    "size": 1003000000
+  },
+  {
+    "arrapiUnknownField": 1,
+    "id": 6,
+    "mediaInfo": {
+      "arrapiUnknownField": 1,
+      "audioStreams": [
+        {
+          "arrapiUnknownField": 1,
+          "language": "jpn"
+        },
+        {
+          "arrapiUnknownField": 1,
+          "language": "jpn"
+        },
+        {
+          "arrapiUnknownField": 1,
+          "language": "eng"
+        }
+      ],
+      "videoCodec": "x265"
+    },
+    "path": "/tv/folder-1/Season 01/episode-file-6.mkv",
+    "quality": {
+      "arrapiUnknownField": 1,
+      "revision": {
+        "arrapiUnknownField": 1,
+        "isRepack": false,
+        "version": 1
+      }
+    },
+    "relativePath": "Season 01/episode-file-6.mkv",
+    "releaseGroup": "group-3",
+    "seasonNumber": 1,
+    "size": 1012000000
+  },
+  {
+    "arrapiUnknownField": 1,
+    "id": 7,
+    "mediaInfo": {
+      "arrapiUnknownField": 1,
+      "audioStreams": [
+        {
+          "arrapiUnknownField": 1,
+          "language": "jpn"
+        },
+        {
+          "arrapiUnknownField": 1,
+          "language": "jpn"
+        },
+        {
+          "arrapiUnknownField": 1,
+          "language": "eng"
+        }
+      ],
+      "videoCodec": "x265"
+    },
+    "path": "/tv/folder-1/Season 01/episode-file-7.mkv",
+    "quality": {
+      "arrapiUnknownField": 1,
+      "revision": {
+        "arrapiUnknownField": 1,
+        "isRepack": false,
+        "version": 1
+      }
+    },
+    "relativePath": "Season 01/episode-file-7.mkv",
+    "releaseGroup": "group-3",
+    "seasonNumber": 1,
+    "size": 1016000000
+  },
+  {
+    "arrapiUnknownField": 1,
+    "id": 8,
+    "mediaInfo": {
+      "arrapiUnknownField": 1,
+      "audioStreams": [
+        {
+          "arrapiUnknownField": 1,
+          "language": "jpn"
+        },
+        {
+          "arrapiUnknownField": 1,
+          "language": "jpn"
+        },
+        {
+          "arrapiUnknownField": 1,
+          "language": "eng"
+        }
+      ],
+      "videoCodec": "x265"
+    },
+    "path": "/tv/folder-1/Season 01/episode-file-8.mkv",
+    "quality": {
+      "arrapiUnknownField": 1,
+      "revision": {
+        "arrapiUnknownField": 1,
+        "isRepack": false,
+        "version": 1
+      }
+    },
+    "relativePath": "Season 01/episode-file-8.mkv",
+    "releaseGroup": "group-3",
+    "seasonNumber": 1,
+    "size": 1011000000
+  },
+  {
+    "arrapiUnknownField": 1,
+    "id": 9,
+    "mediaInfo": {
+      "arrapiUnknownField": 1,
+      "audioStreams": [
+        {
+          "arrapiUnknownField": 1,
+          "language": "jpn"
+        },
+        {
+          "arrapiUnknownField": 1,
+          "language": "jpn"
+        },
+        {
+          "arrapiUnknownField": 1,
+          "language": "eng"
+        }
+      ],
+      "videoCodec": "x265"
+    },
+    "path": "/tv/folder-1/Season 01/episode-file-9.mkv",
+    "quality": {
+      "arrapiUnknownField": 1,
+      "revision": {
+        "arrapiUnknownField": 1,
+        "isRepack": false,
+        "version": 1
+      }
+    },
+    "relativePath": "Season 01/episode-file-9.mkv",
+    "releaseGroup": "group-3",
+    "seasonNumber": 1,
+    "size": 1005000000
+  },
+  {
+    "arrapiUnknownField": 1,
+    "id": 10,
+    "mediaInfo": {
+      "arrapiUnknownField": 1,
+      "audioStreams": [
+        {
+          "arrapiUnknownField": 1,
+          "language": "jpn"
+        },
+        {
+          "arrapiUnknownField": 1,
+          "language": "jpn"
+        },
+        {
+          "arrapiUnknownField": 1,
+          "language": "eng"
+        }
+      ],
+      "videoCodec": "x265"
+    },
+    "path": "/tv/folder-1/Season 01/episode-file-10.mkv",
+    "quality": {
+      "arrapiUnknownField": 1,
+      "revision": {
+        "arrapiUnknownField": 1,
+        "isRepack": false,
+        "version": 1
+      }
+    },
+    "relativePath": "Season 01/episode-file-10.mkv",
+    "releaseGroup": "group-3",
+    "seasonNumber": 1,
+    "size": 1022000000
+  },
+  {
+    "arrapiUnknownField": 1,
+    "id": 11,
+    "mediaInfo": {
+      "arrapiUnknownField": 1,
+      "audioStreams": [
+        {
+          "arrapiUnknownField": 1,
+          "language": "jpn"
+        },
+        {
+          "arrapiUnknownField": 1,
+          "language": "jpn"
+        },
+        {
+          "arrapiUnknownField": 1,
+          "language": "eng"
+        }
+      ],
+      "videoCodec": "x265"
+    },
+    "path": "/tv/folder-1/Season 01/episode-file-11.mkv",
+    "quality": {
+      "arrapiUnknownField": 1,
+      "revision": {
+        "arrapiUnknownField": 1,
+        "isRepack": false,
+        "version": 1
+      }
+    },
+    "relativePath": "Season 01/episode-file-11.mkv",
+    "releaseGroup": "group-3",
+    "seasonNumber": 1,
+    "size": 1021000000
+  },
+  {
+    "arrapiUnknownField": 1,
+    "id": 12,
+    "mediaInfo": {
+      "arrapiUnknownField": 1,
+      "audioStreams": [
+        {
+          "arrapiUnknownField": 1,
+          "language": "jpn"
+        },
+        {
+          "arrapiUnknownField": 1,
+          "language": "jpn"
+        },
+        {
+          "arrapiUnknownField": 1,
+          "language": "eng"
+        }
+      ],
+      "videoCodec": "x265"
+    },
+    "path": "/tv/folder-1/Season 01/episode-file-12.mkv",
+    "quality": {
+      "arrapiUnknownField": 1,
+      "revision": {
+        "arrapiUnknownField": 1,
+        "isRepack": false,
+        "version": 1
+      }
+    },
+    "relativePath": "Season 01/episode-file-12.mkv",
+    "releaseGroup": "group-3",
+    "seasonNumber": 1,
+    "size": 1008000000
+  },
+  {
+    "arrapiUnknownField": 1,
+    "id": 13,
+    "mediaInfo": {
+      "arrapiUnknownField": 1,
+      "audioStreams": [
+        {
+          "arrapiUnknownField": 1,
+          "language": "jpn"
+        },
+        {
+          "arrapiUnknownField": 1,
+          "language": "jpn"
+        },
+        {
+          "arrapiUnknownField": 1,
+          "language": "eng"
+        }
+      ],
+      "videoCodec": "x265"
+    },
+    "path": "/tv/folder-1/Season 01/episode-file-13.mkv",
+    "quality": {
+      "arrapiUnknownField": 1,
+      "revision": {
+        "arrapiUnknownField": 1,
+        "isRepack": false,
+        "version": 1
+      }
+    },
+    "relativePath": "Season 01/episode-file-13.mkv",
+    "releaseGroup": "group-3",
+    "seasonNumber": 1,
+    "size": 1006000000
+  },
+  {
+    "arrapiUnknownField": 1,
+    "id": 14,
+    "mediaInfo": {
+      "arrapiUnknownField": 1,
+      "audioStreams": [
+        {
+          "arrapiUnknownField": 1,
+          "language": "jpn"
+        },
+        {
+          "arrapiUnknownField": 1,
+          "language": "jpn"
+        },
+        {
+          "arrapiUnknownField": 1,
+          "language": "eng"
+        }
+      ],
+      "videoCodec": "x265"
+    },
+    "path": "/tv/folder-1/Season 01/episode-file-14.mkv",
+    "quality": {
+      "arrapiUnknownField": 1,
+      "revision": {
+        "arrapiUnknownField": 1,
+        "isRepack": false,
+        "version": 1
+      }
+    },
+    "relativePath": "Season 01/episode-file-14.mkv",
+    "releaseGroup": "group-3",
+    "seasonNumber": 1,
+    "size": 1002000000
+  },
+  {
+    "arrapiUnknownField": 1,
+    "id": 15,
+    "mediaInfo": {
+      "arrapiUnknownField": 1,
+      "audioStreams": [
+        {
+          "arrapiUnknownField": 1,
+          "language": "jpn"
+        },
+        {
+          "arrapiUnknownField": 1,
+          "language": "jpn"
+        },
+        {
+          "arrapiUnknownField": 1,
+          "language": "eng"
+        }
+      ],
+      "videoCodec": "x265"
+    },
+    "path": "/tv/folder-1/Season 01/episode-file-15.mkv",
+    "quality": {
+      "arrapiUnknownField": 1,
+      "revision": {
+        "arrapiUnknownField": 1,
+        "isRepack": false,
+        "version": 1
+      }
+    },
+    "relativePath": "Season 01/episode-file-15.mkv",
+    "releaseGroup": "group-3",
+    "seasonNumber": 1,
+    "size": 1001000000
+  },
+  {
+    "arrapiUnknownField": 1,
+    "id": 16,
+    "mediaInfo": {
+      "arrapiUnknownField": 1,
+      "audioStreams": [
+        {
+          "arrapiUnknownField": 1,
+          "language": "jpn"
+        },
+        {
+          "arrapiUnknownField": 1,
+          "language": "jpn"
+        },
+        {
+          "arrapiUnknownField": 1,
+          "language": "eng"
+        }
+      ],
+      "videoCodec": "x265"
+    },
+    "path": "/tv/folder-1/Season 01/episode-file-16.mkv",
+    "quality": {
+      "arrapiUnknownField": 1,
+      "revision": {
+        "arrapiUnknownField": 1,
+        "isRepack": false,
+        "version": 1
+      }
+    },
+    "relativePath": "Season 01/episode-file-16.mkv",
+    "releaseGroup": "group-3",
+    "seasonNumber": 1,
+    "size": 1009000000
+  },
+  {
+    "arrapiUnknownField": 1,
+    "id": 17,
+    "mediaInfo": {
+      "arrapiUnknownField": 1,
+      "audioStreams": [
+        {
+          "arrapiUnknownField": 1,
+          "language": "jpn"
+        },
+        {
+          "arrapiUnknownField": 1,
+          "language": "jpn"
+        },
+        {
+          "arrapiUnknownField": 1,
+          "language": "eng"
+        }
+      ],
+      "videoCodec": "x265"
+    },
+    "path": "/tv/folder-1/Season 01/episode-file-17.mkv",
+    "quality": {
+      "arrapiUnknownField": 1,
+      "revision": {
+        "arrapiUnknownField": 1,
+        "isRepack": false,
+        "version": 1
+      }
+    },
+    "relativePath": "Season 01/episode-file-17.mkv",
+    "releaseGroup": "group-3",
+    "seasonNumber": 1,
+    "size": 1015000000
+  },
+  {
+    "arrapiUnknownField": 1,
+    "id": 18,
+    "mediaInfo": {
+      "arrapiUnknownField": 1,
+      "audioStreams": [
+        {
+          "arrapiUnknownField": 1,
+          "language": "jpn"
+        },
+        {
+          "arrapiUnknownField": 1,
+          "language": "jpn"
+        },
+        {
+          "arrapiUnknownField": 1,
+          "language": "eng"
+        }
+      ],
+      "videoCodec": "x265"
+    },
+    "path": "/tv/folder-1/Season 01/episode-file-18.mkv",
+    "quality": {
+      "arrapiUnknownField": 1,
+      "revision": {
+        "arrapiUnknownField": 1,
+        "isRepack": false,
+        "version": 1
+      }
+    },
+    "relativePath": "Season 01/episode-file-18.mkv",
+    "releaseGroup": "group-3",
+    "seasonNumber": 1,
+    "size": 1010000000
+  },
+  {
+    "arrapiUnknownField": 1,
+    "id": 19,
+    "mediaInfo": {
+      "arrapiUnknownField": 1,
+      "audioStreams": [
+        {
+          "arrapiUnknownField": 1,
+          "language": "jpn"
+        },
+        {
+          "arrapiUnknownField": 1,
+          "language": "jpn"
+        },
+        {
+          "arrapiUnknownField": 1,
+          "language": "eng"
+        }
+      ],
+      "videoCodec": "x265"
+    },
+    "path": "/tv/folder-1/Season 01/episode-file-19.mkv",
+    "quality": {
+      "arrapiUnknownField": 1,
+      "revision": {
+        "arrapiUnknownField": 1,
+        "isRepack": false,
+        "version": 1
+      }
+    },
+    "relativePath": "Season 01/episode-file-19.mkv",
+    "releaseGroup": "group-3",
+    "seasonNumber": 1,
+    "size": 1013000000
+  },
+  {
+    "arrapiUnknownField": 1,
+    "id": 20,
+    "mediaInfo": {
+      "arrapiUnknownField": 1,
+      "audioStreams": [
+        {
+          "arrapiUnknownField": 1,
+          "language": "jpn"
+        },
+        {
+          "arrapiUnknownField": 1,
+          "language": "jpn"
+        },
+        {
+          "arrapiUnknownField": 1,
+          "language": "eng"
+        }
+      ],
+      "videoCodec": "x265"
+    },
+    "path": "/tv/folder-1/Season 01/episode-file-20.mkv",
+    "quality": {
+      "arrapiUnknownField": 1,
+      "revision": {
+        "arrapiUnknownField": 1,
+        "isRepack": false,
+        "version": 1
+      }
+    },
+    "relativePath": "Season 01/episode-file-20.mkv",
+    "releaseGroup": "group-3",
+    "seasonNumber": 1,
+    "size": 1019000000
+  },
+  {
+    "arrapiUnknownField": 1,
+    "id": 21,
+    "mediaInfo": {
+      "arrapiUnknownField": 1,
+      "audioStreams": [
+        {
+          "arrapiUnknownField": 1,
+          "language": "jpn"
+        },
+        {
+          "arrapiUnknownField": 1,
+          "language": "jpn"
+        },
+        {
+          "arrapiUnknownField": 1,
+          "language": "eng"
+        }
+      ],
+      "videoCodec": "x265"
+    },
+    "path": "/tv/folder-1/Season 01/episode-file-21.mkv",
+    "quality": {
+      "arrapiUnknownField": 1,
+      "revision": {
+        "arrapiUnknownField": 1,
+        "isRepack": false,
+        "version": 1
+      }
+    },
+    "relativePath": "Season 01/episode-file-21.mkv",
+    "releaseGroup": "group-3",
+    "seasonNumber": 1,
+    "size": 1004000000
+  },
+  {
+    "arrapiUnknownField": 1,
+    "id": 22,
+    "mediaInfo": {
+      "arrapiUnknownField": 1,
+      "audioStreams": [
+        {
+          "arrapiUnknownField": 1,
+          "language": "jpn"
+        },
+        {
+          "arrapiUnknownField": 1,
+          "language": "jpn"
+        },
+        {
+          "arrapiUnknownField": 1,
+          "language": "eng"
+        }
+      ],
+      "videoCodec": "x265"
+    },
+    "path": "/tv/folder-1/Season 01/episode-file-22.mkv",
+    "quality": {
+      "arrapiUnknownField": 1,
+      "revision": {
+        "arrapiUnknownField": 1,
+        "isRepack": false,
+        "version": 1
+      }
+    },
+    "relativePath": "Season 01/episode-file-22.mkv",
+    "releaseGroup": "group-3",
+    "seasonNumber": 1,
+    "size": 1007000000
+  },
+  {
+    "arrapiUnknownField": 1,
+    "id": 23,
+    "mediaInfo": {
+      "arrapiUnknownField": 1,
+      "audioStreams": [
+        {
+          "arrapiUnknownField": 1,
+          "language": "jpn"
+        },
+        {
+          "arrapiUnknownField": 1,
+          "language": "jpn"
+        },
+        {
+          "arrapiUnknownField": 1,
+          "language": "eng"
+        }
+      ],
+      "videoCodec": "x265"
+    },
+    "path": "/tv/folder-1/Season 01/episode-file-23.mkv",
+    "quality": {
+      "arrapiUnknownField": 1,
+      "revision": {
+        "arrapiUnknownField": 1,
+        "isRepack": false,
+        "version": 1
+      }
+    },
+    "relativePath": "Season 01/episode-file-23.mkv",
+    "releaseGroup": "group-3",
+    "seasonNumber": 1,
+    "size": 1017000000
+  },
+  {
+    "arrapiUnknownField": 1,
+    "id": 24,
+    "mediaInfo": {
+      "arrapiUnknownField": 1,
+      "audioStreams": [
+        {
+          "arrapiUnknownField": 1,
+          "language": "jpn"
+        },
+        {
+          "arrapiUnknownField": 1,
+          "language": "jpn"
+        },
+        {
+          "arrapiUnknownField": 1,
+          "language": "eng"
+        }
+      ],
+      "videoCodec": "x265"
+    },
+    "path": "/tv/folder-1/Season 01/episode-file-24.mkv",
+    "quality": {
+      "arrapiUnknownField": 1,
+      "revision": {
+        "arrapiUnknownField": 1,
+        "isRepack": false,
+        "version": 1
+      }
+    },
+    "relativePath": "Season 01/episode-file-24.mkv",
+    "releaseGroup": "group-3",
+    "seasonNumber": 1,
+    "size": 1020000000
+  },
+  {
+    "arrapiUnknownField": 1,
+    "id": 25,
+    "mediaInfo": {
+      "arrapiUnknownField": 1,
+      "audioStreams": [
+        {
+          "arrapiUnknownField": 1,
+          "language": "jpn"
+        },
+        {
+          "arrapiUnknownField": 1,
+          "language": "jpn"
+        },
+        {
+          "arrapiUnknownField": 1,
+          "language": "eng"
+        }
+      ],
+      "videoCodec": "x265"
+    },
+    "path": "/tv/folder-1/Season 01/episode-file-25.mkv",
+    "quality": {
+      "arrapiUnknownField": 1,
+      "revision": {
+        "arrapiUnknownField": 1,
+        "isRepack": false,
+        "version": 1
+      }
+    },
+    "relativePath": "Season 01/episode-file-25.mkv",
+    "releaseGroup": "group-3",
+    "seasonNumber": 1,
+    "size": 1025000000
+  },
+  {
+    "arrapiUnknownField": 1,
+    "id": 26,
+    "mediaInfo": {
+      "arrapiUnknownField": 1,
+      "audioStreams": [
+        {
+          "arrapiUnknownField": 1,
+          "language": "eng"
+        },
+        {
+          "arrapiUnknownField": 1,
+          "language": "jpn"
+        },
+        {
+          "arrapiUnknownField": 1,
+          "language": "jpn"
+        },
+        {
+          "arrapiUnknownField": 1,
+          "language": "jpn"
+        }
+      ],
+      "videoCodec": "x264"
+    },
+    "path": "/tv/folder-1/Season 02/episode-file-26.mkv",
+    "quality": {
+      "arrapiUnknownField": 1,
+      "revision": {
+        "arrapiUnknownField": 1,
+        "isRepack": false,
+        "version": 1
+      }
+    },
+    "relativePath": "Season 02/episode-file-26.mkv",
+    "releaseGroup": "group-4",
+    "seasonNumber": 2,
+    "size": 1042000000
+  },
+  {
+    "arrapiUnknownField": 1,
+    "id": 27,
+    "mediaInfo": {
+      "arrapiUnknownField": 1,
+      "audioStreams": [
+        {
+          "arrapiUnknownField": 1,
+          "language": "eng"
+        },
+        {
+          "arrapiUnknownField": 1,
+          "language": "jpn"
+        },
+        {
+          "arrapiUnknownField": 1,
+          "language": "jpn"
+        }
+      ],
+      "videoCodec": "x264"
+    },
+    "path": "/tv/folder-1/Season 02/episode-file-27.mkv",
+    "quality": {
+      "arrapiUnknownField": 1,
+      "revision": {
+        "arrapiUnknownField": 1,
+        "isRepack": false,
+        "version": 1
+      }
+    },
+    "relativePath": "Season 02/episode-file-27.mkv",
+    "releaseGroup": "group-4",
+    "seasonNumber": 2,
+    "size": 1032000000
+  },
+  {
+    "arrapiUnknownField": 1,
+    "id": 28,
+    "mediaInfo": {
+      "arrapiUnknownField": 1,
+      "audioStreams": [
+        {
+          "arrapiUnknownField": 1,
+          "language": "eng"
+        },
+        {
+          "arrapiUnknownField": 1,
+          "language": "jpn"
+        },
+        {
+          "arrapiUnknownField": 1,
+          "language": "jpn"
+        }
+      ],
+      "videoCodec": "x264"
+    },
+    "path": "/tv/folder-1/Season 02/episode-file-28.mkv",
+    "quality": {
+      "arrapiUnknownField": 1,
+      "revision": {
+        "arrapiUnknownField": 1,
+        "isRepack": false,
+        "version": 1
+      }
+    },
+    "relativePath": "Season 02/episode-file-28.mkv",
+    "releaseGroup": "group-4",
+    "seasonNumber": 2,
+    "size": 1026000000
+  },
+  {
+    "arrapiUnknownField": 1,
+    "id": 29,
+    "mediaInfo": {
+      "arrapiUnknownField": 1,
+      "audioStreams": [
+        {
+          "arrapiUnknownField": 1,
+          "language": "eng"
+        },
+        {
+          "arrapiUnknownField": 1,
+          "language": "jpn"
+        },
+        {
+          "arrapiUnknownField": 1,
+          "language": "jpn"
+        },
+        {
+          "arrapiUnknownField": 1,
+          "language": "jpn"
+        }
+      ],
+      "videoCodec": "x264"
+    },
+    "path": "/tv/folder-1/Season 02/episode-file-29.mkv",
+    "quality": {
+      "arrapiUnknownField": 1,
+      "revision": {
+        "arrapiUnknownField": 1,
+        "isRepack": false,
+        "version": 1
+      }
+    },
+    "relativePath": "Season 02/episode-file-29.mkv",
+    "releaseGroup": "group-4",
+    "seasonNumber": 2,
+    "size": 1035000000
+  },
+  {
+    "arrapiUnknownField": 1,
+    "id": 30,
+    "mediaInfo": {
+      "arrapiUnknownField": 1,
+      "audioStreams": [
+        {
+          "arrapiUnknownField": 1,
+          "language": "eng"
+        },
+        {
+          "arrapiUnknownField": 1,
+          "language": "jpn"
+        },
+        {
+          "arrapiUnknownField": 1,
+          "language": "jpn"
+        }
+      ],
+      "videoCodec": "x264"
+    },
+    "path": "/tv/folder-1/Season 02/episode-file-30.mkv",
+    "quality": {
+      "arrapiUnknownField": 1,
+      "revision": {
+        "arrapiUnknownField": 1,
+        "isRepack": false,
+        "version": 1
+      }
+    },
+    "relativePath": "Season 02/episode-file-30.mkv",
+    "releaseGroup": "group-4",
+    "seasonNumber": 2,
+    "size": 1029000000
+  },
+  {
+    "arrapiUnknownField": 1,
+    "id": 31,
+    "mediaInfo": {
+      "arrapiUnknownField": 1,
+      "audioStreams": [
+        {
+          "arrapiUnknownField": 1,
+          "language": "eng"
+        },
+        {
+          "arrapiUnknownField": 1,
+          "language": "jpn"
+        },
+        {
+          "arrapiUnknownField": 1,
+          "language": "jpn"
+        },
+        {
+          "arrapiUnknownField": 1,
+          "language": "jpn"
+        }
+      ],
+      "videoCodec": "x264"
+    },
+    "path": "/tv/folder-1/Season 02/episode-file-31.mkv",
+    "quality": {
+      "arrapiUnknownField": 1,
+      "revision": {
+        "arrapiUnknownField": 1,
+        "isRepack": false,
+        "version": 1
+      }
+    },
+    "relativePath": "Season 02/episode-file-31.mkv",
+    "releaseGroup": "group-4",
+    "seasonNumber": 2,
+    "size": 1059000000
+  },
+  {
+    "arrapiUnknownField": 1,
+    "id": 32,
+    "mediaInfo": {
+      "arrapiUnknownField": 1,
+      "audioStreams": [
+        {
+          "arrapiUnknownField": 1,
+          "language": "eng"
+        },
+        {
+          "arrapiUnknownField": 1,
+          "language": "jpn"
+        },
+        {
+          "arrapiUnknownField": 1,
+          "language": "jpn"
+        }
+      ],
+      "videoCodec": "x264"
+    },
+    "path": "/tv/folder-1/Season 02/episode-file-32.mkv",
+    "quality": {
+      "arrapiUnknownField": 1,
+      "revision": {
+        "arrapiUnknownField": 1,
+        "isRepack": false,
+        "version": 1
+      }
+    },
+    "relativePath": "Season 02/episode-file-32.mkv",
+    "releaseGroup": "group-4",
+    "seasonNumber": 2,
+    "size": 1027000000
+  },
+  {
+    "arrapiUnknownField": 1,
+    "id": 33,
+    "mediaInfo": {
+      "arrapiUnknownField": 1,
+      "audioStreams": [
+        {
+          "arrapiUnknownField": 1,
+          "language": "eng"
+        },
+        {
+          "arrapiUnknownField": 1,
+          "language": "jpn"
+        },
+        {
+          "arrapiUnknownField": 1,
+          "language": "jpn"
+        },
+        {
+          "arrapiUnknownField": 1,
+          "language": "jpn"
+        }
+      ],
+      "videoCodec": "x264"
+    },
+    "path": "/tv/folder-1/Season 02/episode-file-33.mkv",
+    "quality": {
+      "arrapiUnknownField": 1,
+      "revision": {
+        "arrapiUnknownField": 1,
+        "isRepack": false,
+        "version": 1
+      }
+    },
+    "relativePath": "Season 02/episode-file-33.mkv",
+    "releaseGroup": "group-4",
+    "seasonNumber": 2,
+    "size": 1033000000
+  },
+  {
+    "arrapiUnknownField": 1,
+    "id": 34,
+    "mediaInfo": {
+      "arrapiUnknownField": 1,
+      "audioStreams": [
+        {
+          "arrapiUnknownField": 1,
+          "language": "eng"
+        },
+        {
+          "arrapiUnknownField": 1,
+          "language": "jpn"
+        },
+        {
+          "arrapiUnknownField": 1,
+          "language": "jpn"
+        }
+      ],
+      "videoCodec": "x264"
+    },
+    "path": "/tv/folder-1/Season 02/episode-file-34.mkv",
+    "quality": {
+      "arrapiUnknownField": 1,
+      "revision": {
+        "arrapiUnknownField": 1,
+        "isRepack": false,
+        "version": 1
+      }
+    },
+    "relativePath": "Season 02/episode-file-34.mkv",
+    "releaseGroup": "group-4",
+    "seasonNumber": 2,
+    "size": 1028000000
+  },
+  {
+    "arrapiUnknownField": 1,
+    "id": 35,
+    "mediaInfo": {
+      "arrapiUnknownField": 1,
+      "audioStreams": [
+        {
+          "arrapiUnknownField": 1,
+          "language": "eng"
+        },
+        {
+          "arrapiUnknownField": 1,
+          "language": "jpn"
+        },
+        {
+          "arrapiUnknownField": 1,
+          "language": "jpn"
+        }
+      ],
+      "videoCodec": "x264"
+    },
+    "path": "/tv/folder-1/Season 02/episode-file-35.mkv",
+    "quality": {
+      "arrapiUnknownField": 1,
+      "revision": {
+        "arrapiUnknownField": 1,
+        "isRepack": false,
+        "version": 1
+      }
+    },
+    "relativePath": "Season 02/episode-file-35.mkv",
+    "releaseGroup": "group-4",
+    "seasonNumber": 2,
+    "size": 1055000000
+  },
+  {
+    "arrapiUnknownField": 1,
+    "id": 36,
+    "mediaInfo": {
+      "arrapiUnknownField": 1,
+      "audioStreams": [
+        {
+          "arrapiUnknownField": 1,
+          "language": "eng"
+        },
+        {
+          "arrapiUnknownField": 1,
+          "language": "jpn"
+        },
+        {
+          "arrapiUnknownField": 1,
+          "language": "jpn"
+        }
+      ],
+      "videoCodec": "x264"
+    },
+    "path": "/tv/folder-1/Season 02/episode-file-36.mkv",
+    "quality": {
+      "arrapiUnknownField": 1,
+      "revision": {
+        "arrapiUnknownField": 1,
+        "isRepack": false,
+        "version": 1
+      }
+    },
+    "relativePath": "Season 02/episode-file-36.mkv",
+    "releaseGroup": "group-4",
+    "seasonNumber": 2,
+    "size": 1052000000
+  },
+  {
+    "arrapiUnknownField": 1,
+    "id": 37,
+    "mediaInfo": {
+      "arrapiUnknownField": 1,
+      "audioStreams": [
+        {
+          "arrapiUnknownField": 1,
+          "language": "eng"
+        },
+        {
+          "arrapiUnknownField": 1,
+          "language": "jpn"
+        },
+        {
+          "arrapiUnknownField": 1,
+          "language": "jpn"
+        },
+        {
+          "arrapiUnknownField": 1,
+          "language": "jpn"
+        }
+      ],
+      "videoCodec": "x264"
+    },
+    "path": "/tv/folder-1/Season 02/episode-file-37.mkv",
+    "quality": {
+      "arrapiUnknownField": 1,
+      "revision": {
+        "arrapiUnknownField": 1,
+        "isRepack": false,
+        "version": 1
+      }
+    },
+    "relativePath": "Season 02/episode-file-37.mkv",
+    "releaseGroup": "group-4",
+    "seasonNumber": 2,
+    "size": 1034000000
+  },
+  {
+    "arrapiUnknownField": 1,
+    "id": 38,
+    "mediaInfo": {
+      "arrapiUnknownField": 1,
+      "audioStreams": [
+        {
+          "arrapiUnknownField": 1,
+          "language": "eng"
+        },
+        {
+          "arrapiUnknownField": 1,
+          "language": "jpn"
+        },
+        {
+          "arrapiUnknownField": 1,
+          "language": "jpn"
+        }
+      ],
+      "videoCodec": "x264"
+    },
+    "path": "/tv/folder-1/Season 02/episode-file-38.mkv",
+    "quality": {
+      "arrapiUnknownField": 1,
+      "revision": {
+        "arrapiUnknownField": 1,
+        "isRepack": false,
+        "version": 1
+      }
+    },
+    "relativePath": "Season 02/episode-file-38.mkv",
+    "releaseGroup": "group-4",
+    "seasonNumber": 2,
+    "size": 1030000000
+  },
+  {
+    "arrapiUnknownField": 1,
+    "id": 39,
+    "mediaInfo": {
+      "arrapiUnknownField": 1,
+      "audioStreams": [
+        {
+          "arrapiUnknownField": 1,
+          "language": "eng"
+        },
+        {
+          "arrapiUnknownField": 1,
+          "language": "jpn"
+        },
+        {
+          "arrapiUnknownField": 1,
+          "language": "jpn"
+        }
+      ],
+      "videoCodec": "x264"
+    },
+    "path": "/tv/folder-1/Season 02/episode-file-39.mkv",
+    "quality": {
+      "arrapiUnknownField": 1,
+      "revision": {
+        "arrapiUnknownField": 1,
+        "isRepack": false,
+        "version": 1
+      }
+    },
+    "relativePath": "Season 02/episode-file-39.mkv",
+    "releaseGroup": "group-4",
+    "seasonNumber": 2,
+    "size": 1040000000
+  },
+  {
+    "arrapiUnknownField": 1,
+    "id": 40,
+    "mediaInfo": {
+      "arrapiUnknownField": 1,
+      "audioStreams": [
+        {
+          "arrapiUnknownField": 1,
+          "language": "eng"
+        },
+        {
+          "arrapiUnknownField": 1,
+          "language": "jpn"
+        },
+        {
+          "arrapiUnknownField": 1,
+          "language": "jpn"
+        },
+        {
+          "arrapiUnknownField": 1,
+          "language": "jpn"
+        }
+      ],
+      "videoCodec": "x264"
+    },
+    "path": "/tv/folder-1/Season 02/episode-file-40.mkv",
+    "quality": {
+      "arrapiUnknownField": 1,
+      "revision": {
+        "arrapiUnknownField": 1,
+        "isRepack": false,
+        "version": 1
+      }
+    },
+    "relativePath": "Season 02/episode-file-40.mkv",
+    "releaseGroup": "group-4",
+    "seasonNumber": 2,
+    "size": 1058000000
+  },
+  {
+    "arrapiUnknownField": 1,
+    "id": 41,
+    "mediaInfo": {
+      "arrapiUnknownField": 1,
+      "audioStreams": [
+        {
+          "arrapiUnknownField": 1,
+          "language": "eng"
+        },
+        {
+          "arrapiUnknownField": 1,
+          "language": "jpn"
+        },
+        {
+          "arrapiUnknownField": 1,
+          "language": "jpn"
+        }
+      ],
+      "videoCodec": "x264"
+    },
+    "path": "/tv/folder-1/Season 02/episode-file-41.mkv",
+    "quality": {
+      "arrapiUnknownField": 1,
+      "revision": {
+        "arrapiUnknownField": 1,
+        "isRepack": false,
+        "version": 1
+      }
+    },
+    "relativePath": "Season 02/episode-file-41.mkv",
+    "releaseGroup": "group-4",
+    "seasonNumber": 2,
+    "size": 1031000000
+  },
+  {
+    "arrapiUnknownField": 1,
+    "id": 42,
+    "mediaInfo": {
+      "arrapiUnknownField": 1,
+      "audioStreams": [
+        {
+          "arrapiUnknownField": 1,
+          "language": "eng"
+        },
+        {
+          "arrapiUnknownField": 1,
+          "language": "jpn"
+        },
+        {
+          "arrapiUnknownField": 1,
+          "language": "jpn"
+        }
+      ],
+      "videoCodec": "x264"
+    },
+    "path": "/tv/folder-1/Season 02/episode-file-42.mkv",
+    "quality": {
+      "arrapiUnknownField": 1,
+      "revision": {
+        "arrapiUnknownField": 1,
+        "isRepack": false,
+        "version": 1
+      }
+    },
+    "relativePath": "Season 02/episode-file-42.mkv",
+    "releaseGroup": "group-4",
+    "seasonNumber": 2,
+    "size": 1056000000
+  },
+  {
+    "arrapiUnknownField": 1,
+    "id": 43,
+    "mediaInfo": {
+      "arrapiUnknownField": 1,
+      "audioStreams": [
+        {
+          "arrapiUnknownField": 1,
+          "language": "eng"
+        },
+        {
+          "arrapiUnknownField": 1,
+          "language": "jpn"
+        },
+        {
+          "arrapiUnknownField": 1,
+          "language": "jpn"
+        }
+      ],
+      "videoCodec": "x264"
+    },
+    "path": "/tv/folder-1/Season 02/episode-file-43.mkv",
+    "quality": {
+      "arrapiUnknownField": 1,
+      "revision": {
+        "arrapiUnknownField": 1,
+        "isRepack": false,
+        "version": 1
+      }
+    },
+    "relativePath": "Season 02/episode-file-43.mkv",
+    "releaseGroup": "group-4",
+    "seasonNumber": 2,
+    "size": 1061000000
+  },
+  {
+    "arrapiUnknownField": 1,
+    "id": 44,
+    "mediaInfo": {
+      "arrapiUnknownField": 1,
+      "audioStreams": [
+        {
+          "arrapiUnknownField": 1,
+          "language": "eng"
+        },
+        {
+          "arrapiUnknownField": 1,
+          "language": "jpn"
+        },
+        {
+          "arrapiUnknownField": 1,
+          "language": "jpn"
+        },
+        {
+          "arrapiUnknownField": 1,
+          "language": "jpn"
+        }
+      ],
+      "videoCodec": "x264"
+    },
+    "path": "/tv/folder-1/Season 02/episode-file-44.mkv",
+    "quality": {
+      "arrapiUnknownField": 1,
+      "revision": {
+        "arrapiUnknownField": 1,
+        "isRepack": false,
+        "version": 1
+      }
+    },
+    "relativePath": "Season 02/episode-file-44.mkv",
+    "releaseGroup": "group-4",
+    "seasonNumber": 2,
+    "size": 1036000000
+  },
+  {
+    "arrapiUnknownField": 1,
+    "id": 45,
+    "mediaInfo": {
+      "arrapiUnknownField": 1,
+      "audioStreams": [
+        {
+          "arrapiUnknownField": 1,
+          "language": "eng"
+        },
+        {
+          "arrapiUnknownField": 1,
+          "language": "jpn"
+        },
+        {
+          "arrapiUnknownField": 1,
+          "language": "jpn"
+        }
+      ],
+      "videoCodec": "x264"
+    },
+    "path": "/tv/folder-1/Season 02/episode-file-45.mkv",
+    "quality": {
+      "arrapiUnknownField": 1,
+      "revision": {
+        "arrapiUnknownField": 1,
+        "isRepack": false,
+        "version": 1
+      }
+    },
+    "relativePath": "Season 02/episode-file-45.mkv",
+    "releaseGroup": "group-4",
+    "seasonNumber": 2,
+    "size": 1054000000
+  },
+  {
+    "arrapiUnknownField": 1,
+    "id": 46,
+    "mediaInfo": {
+      "arrapiUnknownField": 1,
+      "audioStreams": [
+        {
+          "arrapiUnknownField": 1,
+          "language": "eng"
+        },
+        {
+          "arrapiUnknownField": 1,
+          "language": "jpn"
+        },
+        {
+          "arrapiUnknownField": 1,
+          "language": "jpn"
+        },
+        {
+          "arrapiUnknownField": 1,
+          "language": "jpn"
+        }
+      ],
+      "videoCodec": "x264"
+    },
+    "path": "/tv/folder-1/Season 02/episode-file-46.mkv",
+    "quality": {
+      "arrapiUnknownField": 1,
+      "revision": {
+        "arrapiUnknownField": 1,
+        "isRepack": false,
+        "version": 1
+      }
+    },
+    "relativePath": "Season 02/episode-file-46.mkv",
+    "releaseGroup": "group-4",
+    "seasonNumber": 2,
+    "size": 1062000000
+  },
+  {
+    "arrapiUnknownField": 1,
+    "id": 47,
+    "mediaInfo": {
+      "arrapiUnknownField": 1,
+      "audioStreams": [
+        {
+          "arrapiUnknownField": 1,
+          "language": "eng"
+        },
+        {
+          "arrapiUnknownField": 1,
+          "language": "jpn"
+        },
+        {
+          "arrapiUnknownField": 1,
+          "language": "jpn"
+        }
+      ],
+      "videoCodec": "x264"
+    },
+    "path": "/tv/folder-1/Season 02/episode-file-47.mkv",
+    "quality": {
+      "arrapiUnknownField": 1,
+      "revision": {
+        "arrapiUnknownField": 1,
+        "isRepack": false,
+        "version": 1
+      }
+    },
+    "relativePath": "Season 02/episode-file-47.mkv",
+    "releaseGroup": "group-4",
+    "seasonNumber": 2,
+    "size": 1053000000
+  },
+  {
+    "arrapiUnknownField": 1,
+    "id": 48,
+    "mediaInfo": {
+      "arrapiUnknownField": 1,
+      "audioStreams": [
+        {
+          "arrapiUnknownField": 1,
+          "language": "eng"
+        },
+        {
+          "arrapiUnknownField": 1,
+          "language": "jpn"
+        },
+        {
+          "arrapiUnknownField": 1,
+          "language": "jpn"
+        }
+      ],
+      "videoCodec": "x264"
+    },
+    "path": "/tv/folder-1/Season 02/episode-file-48.mkv",
+    "quality": {
+      "arrapiUnknownField": 1,
+      "revision": {
+        "arrapiUnknownField": 1,
+        "isRepack": false,
+        "version": 1
+      }
+    },
+    "relativePath": "Season 02/episode-file-48.mkv",
+    "releaseGroup": "group-4",
+    "seasonNumber": 2,
+    "size": 1057000000
+  },
+  {
+    "arrapiUnknownField": 1,
+    "id": 49,
+    "mediaInfo": {
+      "arrapiUnknownField": 1,
+      "audioStreams": [
+        {
+          "arrapiUnknownField": 1,
+          "language": "eng"
+        },
+        {
+          "arrapiUnknownField": 1,
+          "language": "jpn"
+        },
+        {
+          "arrapiUnknownField": 1,
+          "language": "jpn"
+        }
+      ],
+      "videoCodec": "x264"
+    },
+    "path": "/tv/folder-1/Season 02/episode-file-49.mkv",
+    "quality": {
+      "arrapiUnknownField": 1,
+      "revision": {
+        "arrapiUnknownField": 1,
+        "isRepack": false,
+        "version": 1
+      }
+    },
+    "relativePath": "Season 02/episode-file-49.mkv",
+    "releaseGroup": "group-4",
+    "seasonNumber": 2,
+    "size": 1060000000
+  },
+  {
+    "arrapiUnknownField": 1,
+    "id": 50,
+    "mediaInfo": {
+      "arrapiUnknownField": 1,
+      "audioStreams": [
+        {
+          "arrapiUnknownField": 1,
+          "language": "eng"
+        },
+        {
+          "arrapiUnknownField": 1,
+          "language": "jpn"
+        },
+        {
+          "arrapiUnknownField": 1,
+          "language": "jpn"
+        },
+        {
+          "arrapiUnknownField": 1,
+          "language": "jpn"
+        },
+        {
+          "arrapiUnknownField": 1,
+          "language": "jpn"
+        }
+      ],
+      "videoCodec": "x264"
+    },
+    "path": "/tv/folder-1/Season 02/episode-file-50.mkv",
+    "quality": {
+      "arrapiUnknownField": 1,
+      "revision": {
+        "arrapiUnknownField": 1,
+        "isRepack": false,
+        "version": 1
+      }
+    },
+    "relativePath": "Season 02/episode-file-50.mkv",
+    "releaseGroup": "group-4",
+    "seasonNumber": 2,
+    "size": 1063000000
+  },
+  {
+    "arrapiUnknownField": 1,
+    "id": 51,
+    "mediaInfo": {
+      "arrapiUnknownField": 1,
+      "audioStreams": [
+        {
+          "arrapiUnknownField": 1,
+          "language": "jpn"
+        }
+      ],
+      "videoCodec": "x264"
+    },
+    "path": "/tv/folder-1/Season 00/episode-file-51.mkv",
+    "quality": {
+      "arrapiUnknownField": 1,
+      "revision": {
+        "arrapiUnknownField": 1,
+        "isRepack": false,
+        "version": 1
+      }
+    },
+    "relativePath": "Season 00/episode-file-51.mkv",
+    "releaseGroup": "group-1",
+    "seasonNumber": 0,
+    "size": 1000000000
+  }
+]
