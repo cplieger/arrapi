@@ -1,0 +1,328 @@
+[
+  {
+    "alternateTitles": [
+      {
+        "arrapiUnknownField": 1,
+        "title": "The Office"
+      },
+      {
+        "arrapiUnknownField": 1,
+        "title": "The Office US"
+      }
+    ],
+    "aniListIds": [],
+    "arrapiUnknownField": 1,
+    "id": 8,
+    "imdbId": "tt0386676",
+    "language": {
+      "arrapiUnknownField": 1,
+      "id": 1,
+      "name": "English"
+    },
+    "originalLanguage": {
+      "arrapiUnknownField": 1,
+      "id": 1,
+      "name": "English"
+    },
+    "originalTitle": "The Office (US)",
+    "seasonType": "alttwo",
+    "seasonTypes": [
+      {
+        "arrapiUnknownField": 1,
+        "name": "Aired Order",
+        "type": "official"
+      },
+      {
+        "arrapiUnknownField": 1,
+        "name": "DVD Order",
+        "type": "dvd"
+      },
+      {
+        "arrapiUnknownField": 1,
+        "name": "Amazon Order",
+        "type": "alternate"
+      },
+      {
+        "arrapiUnknownField": 1,
+        "name": "Netflix Order",
+        "type": "regional"
+      },
+      {
+        "arrapiUnknownField": 1,
+        "name": "BluRay Order",
+        "type": "altdvd"
+      },
+      {
+        "arrapiUnknownField": 1,
+        "name": "Superfan Order",
+        "type": "alttwo"
+      }
+    ],
+    "seasons": [
+      {
+        "arrapiUnknownField": 1,
+        "seasonNumber": 1
+      },
+      {
+        "arrapiUnknownField": 1,
+        "seasonNumber": 2
+      },
+      {
+        "arrapiUnknownField": 1,
+        "seasonNumber": 3
+      },
+      {
+        "arrapiUnknownField": 1,
+        "seasonNumber": 4
+      },
+      {
+        "arrapiUnknownField": 1,
+        "seasonNumber": 5
+      },
+      {
+        "arrapiUnknownField": 1,
+        "seasonNumber": 6
+      },
+      {
+        "arrapiUnknownField": 1,
+        "seasonNumber": 7
+      },
+      {
+        "arrapiUnknownField": 1,
+        "seasonNumber": 8
+      },
+      {
+        "arrapiUnknownField": 1,
+        "seasonNumber": 9
+      }
+    ],
+    "statistics": {
+      "arrapiUnknownField": 1,
+      "episodeFileCount": 1
+    },
+    "tags": [],
+    "title": "The Office (US)",
+    "titleSlug": "the-office-us",
+    "tmdbId": 2316,
+    "translations": [
+      {
+        "arrapiUnknownField": 1,
+        "language": {
+          "arrapiUnknownField": 1,
+          "id": 25,
+          "name": "Czech"
+        },
+        "title": "Kancl (US)"
+      },
+      {
+        "arrapiUnknownField": 1,
+        "language": {
+          "arrapiUnknownField": 1,
+          "id": 6,
+          "name": "Danish"
+        },
+        "title": "The Office (US)"
+      },
+      {
+        "arrapiUnknownField": 1,
+        "language": {
+          "arrapiUnknownField": 1,
+          "id": 4,
+          "name": "German"
+        },
+        "title": "The Office (US)"
+      },
+      {
+        "arrapiUnknownField": 1,
+        "language": {
+          "arrapiUnknownField": 1,
+          "id": 1,
+          "name": "English"
+        },
+        "title": "The Office (US)"
+      },
+      {
+        "arrapiUnknownField": 1,
+        "language": {
+          "arrapiUnknownField": 1,
+          "id": 16,
+          "name": "Finnish"
+        },
+        "title": "Konttori (US)"
+      },
+      {
+        "arrapiUnknownField": 1,
+        "language": {
+          "arrapiUnknownField": 1,
+          "id": 2,
+          "name": "French"
+        },
+        "title": "The Office (US)"
+      },
+      {
+        "arrapiUnknownField": 1,
+        "language": {
+          "arrapiUnknownField": 1,
+          "id": 23,
+          "name": "Hebrew"
+        },
+        "title": "המשרד (US)"
+      },
+      {
+        "arrapiUnknownField": 1,
+        "language": {
+          "arrapiUnknownField": 1,
+          "id": 22,
+          "name": "Hungarian"
+        },
+        "title": "Office"
+      },
+      {
+        "arrapiUnknownField": 1,
+        "language": {
+          "arrapiUnknownField": 1,
+          "id": 5,
+          "name": "Italian"
+        },
+        "title": "The Office (US)"
+      },
+      {
+        "arrapiUnknownField": 1,
+        "language": {
+          "arrapiUnknownField": 1,
+          "id": 21,
+          "name": "Korean"
+        },
+        "title": "오피스 (US)"
+      },
+      {
+        "arrapiUnknownField": 1,
+        "language": {
+          "arrapiUnknownField": 1,
+          "id": 7,
+          "name": "Dutch"
+        },
+        "title": "The Office (US)"
+      },
+      {
+        "arrapiUnknownField": 1,
+        "language": {
+          "arrapiUnknownField": 1,
+          "id": 18,
+          "name": "Portuguese"
+        },
+        "title": "The Office (US)"
+      },
+      {
+        "arrapiUnknownField": 1,
+        "language": {
+          "arrapiUnknownField": 1,
+          "id": 11,
+          "name": "Russian"
+        },
+        "title": "Офис"
+      },
+      {
+        "arrapiUnknownField": 1,
+        "language": {
+          "arrapiUnknownField": 1,
+          "id": 3,
+          "name": "Spanish"
+        },
+        "title": "The Office (US)"
+      },
+      {
+        "arrapiUnknownField": 1,
+        "language": {
+          "arrapiUnknownField": 1,
+          "id": 14,
+          "name": "Swedish"
+        },
+        "title": "The Office (US)"
+      },
+      {
+        "arrapiUnknownField": 1,
+        "language": {
+          "arrapiUnknownField": 1,
+          "id": 17,
+          "name": "Turkish"
+        },
+        "title": "The Office (US)"
+      },
+      {
+        "arrapiUnknownField": 1,
+        "language": {
+          "arrapiUnknownField": 1,
+          "id": 10,
+          "name": "Chinese"
+        },
+        "title": "辦公室瘋雲"
+      },
+      {
+        "arrapiUnknownField": 1,
+        "language": {
+          "arrapiUnknownField": 1,
+          "id": 18,
+          "name": "Portuguese"
+        },
+        "title": "The Office (US)"
+      },
+      {
+        "arrapiUnknownField": 1,
+        "language": {
+          "arrapiUnknownField": 1,
+          "id": 12,
+          "name": "Polish"
+        },
+        "title": "Biuro"
+      },
+      {
+        "arrapiUnknownField": 1,
+        "language": {
+          "arrapiUnknownField": 1,
+          "id": 39,
+          "name": "Croatian"
+        },
+        "title": "U uredu"
+      },
+      {
+        "arrapiUnknownField": 1,
+        "language": {
+          "arrapiUnknownField": 1,
+          "id": 24,
+          "name": "Lithuanian"
+        },
+        "title": "The office"
+      },
+      {
+        "arrapiUnknownField": 1,
+        "language": {
+          "arrapiUnknownField": 1,
+          "id": 26,
+          "name": "Arabic"
+        },
+        "title": "المكتب (الأمريكي)"
+      },
+      {
+        "arrapiUnknownField": 1,
+        "language": {
+          "arrapiUnknownField": 1,
+          "id": 30,
+          "name": "Ukrainian"
+        },
+        "title": "Офіс"
+      },
+      {
+        "arrapiUnknownField": 1,
+        "language": {
+          "arrapiUnknownField": 1,
+          "id": 10,
+          "name": "Chinese"
+        },
+        "title": "辦公室瘋雲"
+      }
+    ],
+    "tvdbId": 73244,
+    "year": 2005
+  }
+]

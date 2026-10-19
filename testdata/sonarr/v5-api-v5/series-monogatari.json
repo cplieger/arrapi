@@ -1,0 +1,330 @@
+[
+  {
+    "alternateTitles": [
+      {
+        "arrapiUnknownField": 1,
+        "title": "Bakemonogatari"
+      },
+      {
+        "arrapiUnknownField": 1,
+        "title": "Nisemonogatari"
+      },
+      {
+        "arrapiUnknownField": 1,
+        "title": "Monogatari Series Second Season"
+      },
+      {
+        "arrapiUnknownField": 1,
+        "title": "Owarimonogatari"
+      },
+      {
+        "arrapiUnknownField": 1,
+        "title": "Owarimonogatari S2"
+      },
+      {
+        "arrapiUnknownField": 1,
+        "title": "Owarimonogatari Second Season"
+      },
+      {
+        "arrapiUnknownField": 1,
+        "title": "Monogatari Series - Off and Monster Season"
+      },
+      {
+        "arrapiUnknownField": 1,
+        "title": "Monogatari Series Off & Monster Season"
+      }
+    ],
+    "aniListIds": [
+      5081,
+      11597,
+      17074,
+      15689,
+      20593,
+      20918,
+      21262,
+      21520,
+      21745,
+      173533
+    ],
+    "arrapiUnknownField": 1,
+    "id": 5,
+    "imdbId": "tt1480925",
+    "language": {
+      "arrapiUnknownField": 1,
+      "id": 1,
+      "name": "English"
+    },
+    "originalLanguage": {
+      "arrapiUnknownField": 1,
+      "id": 8,
+      "name": "Japanese"
+    },
+    "originalTitle": "物語シリーズ",
+    "seasonType": "alternate",
+    "seasonTypes": [
+      {
+        "arrapiUnknownField": 1,
+        "name": "Aired Order",
+        "type": "official"
+      },
+      {
+        "arrapiUnknownField": 1,
+        "name": "DVD Order",
+        "type": "dvd"
+      },
+      {
+        "arrapiUnknownField": 1,
+        "name": "Book Order",
+        "type": "alternate"
+      }
+    ],
+    "seasons": [
+      {
+        "arrapiUnknownField": 1,
+        "seasonNumber": 1,
+        "title": "Bakemonogatari"
+      },
+      {
+        "arrapiUnknownField": 1,
+        "seasonNumber": 2,
+        "title": "Kizumonogatari"
+      },
+      {
+        "arrapiUnknownField": 1,
+        "seasonNumber": 3,
+        "title": "Nisemonogatari"
+      },
+      {
+        "arrapiUnknownField": 1,
+        "seasonNumber": 4,
+        "title": "Nekomonogatari Black"
+      },
+      {
+        "arrapiUnknownField": 1,
+        "seasonNumber": 5,
+        "title": "Nekomonogatari White"
+      },
+      {
+        "arrapiUnknownField": 1,
+        "seasonNumber": 6,
+        "title": "Kabukimonogatari"
+      },
+      {
+        "arrapiUnknownField": 1,
+        "seasonNumber": 7,
+        "title": "Hanamonogatari"
+      },
+      {
+        "arrapiUnknownField": 1,
+        "seasonNumber": 8,
+        "title": "Otorimonogatari"
+      },
+      {
+        "arrapiUnknownField": 1,
+        "seasonNumber": 9,
+        "title": "Onimonogatari"
+      },
+      {
+        "arrapiUnknownField": 1,
+        "seasonNumber": 10,
+        "title": "Koimonogatari"
+      },
+      {
+        "arrapiUnknownField": 1,
+        "seasonNumber": 11,
+        "title": "Tsukimonogatari"
+      },
+      {
+        "arrapiUnknownField": 1,
+        "seasonNumber": 12,
+        "title": "Koyomimonogatari"
+      },
+      {
+        "arrapiUnknownField": 1,
+        "seasonNumber": 13,
+        "title": "Owarimonogatari"
+      },
+      {
+        "arrapiUnknownField": 1,
+        "seasonNumber": 14,
+        "title": "Zoku Owarimonogatari"
+      },
+      {
+        "arrapiUnknownField": 1,
+        "seasonNumber": 15,
+        "title": "Orokamonogatari"
+      },
+      {
+        "arrapiUnknownField": 1,
+        "seasonNumber": 16,
+        "title": "Wazamonogatari"
+      },
+      {
+        "arrapiUnknownField": 1,
+        "seasonNumber": 17,
+        "title": "Nademonogatari"
+      },
+      {
+        "arrapiUnknownField": 1,
+        "seasonNumber": 18,
+        "title": "Shinobumonogatari"
+      }
+    ],
+    "statistics": {
+      "arrapiUnknownField": 1,
+      "episodeFileCount": 1
+    },
+    "tags": [],
+    "title": "Monogatari",
+    "titleSlug": "monogatari",
+    "tmdbId": 46195,
+    "translations": [
+      {
+        "arrapiUnknownField": 1,
+        "language": {
+          "arrapiUnknownField": 1,
+          "id": 4,
+          "name": "German"
+        },
+        "title": "Monogatari"
+      },
+      {
+        "arrapiUnknownField": 1,
+        "language": {
+          "arrapiUnknownField": 1,
+          "id": 1,
+          "name": "English"
+        },
+        "title": "Monogatari"
+      },
+      {
+        "arrapiUnknownField": 1,
+        "language": {
+          "arrapiUnknownField": 1,
+          "id": 2,
+          "name": "French"
+        },
+        "title": "Monogatari"
+      },
+      {
+        "arrapiUnknownField": 1,
+        "language": {
+          "arrapiUnknownField": 1,
+          "id": 23,
+          "name": "Hebrew"
+        },
+        "title": "בקמונוגטארי"
+      },
+      {
+        "arrapiUnknownField": 1,
+        "language": {
+          "arrapiUnknownField": 1,
+          "id": 5,
+          "name": "Italian"
+        },
+        "title": "Monogatari"
+      },
+      {
+        "arrapiUnknownField": 1,
+        "language": {
+          "arrapiUnknownField": 1,
+          "id": 8,
+          "name": "Japanese"
+        },
+        "title": "物語シリーズ"
+      },
+      {
+        "arrapiUnknownField": 1,
+        "language": {
+          "arrapiUnknownField": 1,
+          "id": 21,
+          "name": "Korean"
+        },
+        "title": "모노가타리"
+      },
+      {
+        "arrapiUnknownField": 1,
+        "language": {
+          "arrapiUnknownField": 1,
+          "id": 11,
+          "name": "Russian"
+        },
+        "title": "Истории"
+      },
+      {
+        "arrapiUnknownField": 1,
+        "language": {
+          "arrapiUnknownField": 1,
+          "id": 3,
+          "name": "Spanish"
+        },
+        "title": "Monogatari"
+      },
+      {
+        "arrapiUnknownField": 1,
+        "language": {
+          "arrapiUnknownField": 1,
+          "id": 10,
+          "name": "Chinese"
+        },
+        "title": "物语系列"
+      },
+      {
+        "arrapiUnknownField": 1,
+        "language": {
+          "arrapiUnknownField": 1,
+          "id": 10,
+          "name": "Chinese"
+        },
+        "title": "物語系列"
+      },
+      {
+        "arrapiUnknownField": 1,
+        "language": {
+          "arrapiUnknownField": 1,
+          "id": 30,
+          "name": "Ukrainian"
+        },
+        "title": "Історії"
+      },
+      {
+        "arrapiUnknownField": 1,
+        "language": {
+          "arrapiUnknownField": 1,
+          "id": 18,
+          "name": "Portuguese"
+        },
+        "title": "Monogatari"
+      },
+      {
+        "arrapiUnknownField": 1,
+        "language": {
+          "arrapiUnknownField": 1,
+          "id": 26,
+          "name": "Arabic"
+        },
+        "title": "مونوغاتاري"
+      },
+      {
+        "arrapiUnknownField": 1,
+        "language": {
+          "arrapiUnknownField": 1,
+          "id": 37,
+          "name": "Persian"
+        },
+        "title": "مونوگاتاری"
+      },
+      {
+        "arrapiUnknownField": 1,
+        "language": {
+          "arrapiUnknownField": 1,
+          "id": 13,
+          "name": "Vietnamese"
+        },
+        "title": "Những Câu Chuyện Huyền Bí"
+      }
+    ],
+    "tvdbId": 102261,
+    "year": 2009
+  }
+]

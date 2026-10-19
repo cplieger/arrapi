@@ -1,0 +1,3095 @@
+[
+  {
+    "absoluteEpisodeNumber": 1,
+    "airDate": "2006-10-05",
+    "arrapiUnknownField": 1,
+    "episodeFile": {
+      "arrapiUnknownField": 1,
+      "id": 1,
+      "mediaInfo": {
+        "arrapiUnknownField": 1,
+        "audioStreams": [
+          {
+            "arrapiUnknownField": 1,
+            "language": "jpn"
+          },
+          {
+            "arrapiUnknownField": 1,
+            "language": "jpn"
+          },
+          {
+            "arrapiUnknownField": 1,
+            "language": "eng"
+          }
+        ],
+        "videoCodec": "x265"
+      },
+      "path": "/tv/folder-1/Season 01/episode-file-1.mkv",
+      "quality": {
+        "arrapiUnknownField": 1,
+        "revision": {
+          "arrapiUnknownField": 1,
+          "isRepack": false,
+          "version": 1
+        }
+      },
+      "relativePath": "Season 01/episode-file-1.mkv",
+      "releaseGroup": "group-3",
+      "seasonNumber": 1,
+      "size": 1023000000
+    },
+    "episodeFileId": 1,
+    "episodeNumber": 1,
+    "hasFile": true,
+    "id": 1,
+    "seasonNumber": 1,
+    "seriesId": 1,
+    "title": "The Day a New Demon Was Born",
+    "tvdbId": 0
+  },
+  {
+    "absoluteEpisodeNumber": 2,
+    "airDate": "2006-10-12",
+    "arrapiUnknownField": 1,
+    "episodeFile": {
+      "arrapiUnknownField": 1,
+      "id": 2,
+      "mediaInfo": {
+        "arrapiUnknownField": 1,
+        "audioStreams": [
+          {
+            "arrapiUnknownField": 1,
+            "language": "jpn"
+          },
+          {
+            "arrapiUnknownField": 1,
+            "language": "jpn"
+          },
+          {
+            "arrapiUnknownField": 1,
+            "language": "eng"
+          }
+        ],
+        "videoCodec": "x265"
+      },
+      "path": "/tv/folder-1/Season 01/episode-file-2.mkv",
+      "quality": {
+        "arrapiUnknownField": 1,
+        "revision": {
+          "arrapiUnknownField": 1,
+          "isRepack": false,
+          "version": 1
+        }
+      },
+      "relativePath": "Season 01/episode-file-2.mkv",
+      "releaseGroup": "group-3",
+      "seasonNumber": 1,
+      "size": 1024000000
+    },
+    "episodeFileId": 2,
+    "episodeNumber": 2,
+    "hasFile": true,
+    "id": 2,
+    "seasonNumber": 1,
+    "seriesId": 1,
+    "title": "The White Knight Awakens",
+    "tvdbId": 0
+  },
+  {
+    "absoluteEpisodeNumber": 3,
+    "airDate": "2006-10-19",
+    "arrapiUnknownField": 1,
+    "episodeFile": {
+      "arrapiUnknownField": 1,
+      "id": 3,
+      "mediaInfo": {
+        "arrapiUnknownField": 1,
+        "audioStreams": [
+          {
+            "arrapiUnknownField": 1,
+            "language": "jpn"
+          },
+          {
+            "arrapiUnknownField": 1,
+            "language": "jpn"
+          },
+          {
+            "arrapiUnknownField": 1,
+            "language": "eng"
+          }
+        ],
+        "videoCodec": "x265"
+      },
+      "path": "/tv/folder-1/Season 01/episode-file-3.mkv",
+      "quality": {
+        "arrapiUnknownField": 1,
+        "revision": {
+          "arrapiUnknownField": 1,
+          "isRepack": false,
+          "version": 1
+        }
+      },
+      "relativePath": "Season 01/episode-file-3.mkv",
+      "releaseGroup": "group-3",
+      "seasonNumber": 1,
+      "size": 1014000000
+    },
+    "episodeFileId": 3,
+    "episodeNumber": 3,
+    "hasFile": true,
+    "id": 3,
+    "seasonNumber": 1,
+    "seriesId": 1,
+    "title": "The False Classmate",
+    "tvdbId": 0
+  },
+  {
+    "absoluteEpisodeNumber": 4,
+    "airDate": "2006-10-26",
+    "arrapiUnknownField": 1,
+    "episodeFile": {
+      "arrapiUnknownField": 1,
+      "id": 4,
+      "mediaInfo": {
+        "arrapiUnknownField": 1,
+        "audioStreams": [
+          {
+            "arrapiUnknownField": 1,
+            "language": "jpn"
+          },
+          {
+            "arrapiUnknownField": 1,
+            "language": "jpn"
+          },
+          {
+            "arrapiUnknownField": 1,
+            "language": "eng"
+          }
+        ],
+        "videoCodec": "x265"
+      },
+      "path": "/tv/folder-1/Season 01/episode-file-4.mkv",
+      "quality": {
+        "arrapiUnknownField": 1,
+        "revision": {
+          "arrapiUnknownField": 1,
+          "isRepack": false,
+          "version": 1
+        }
+      },
+      "relativePath": "Season 01/episode-file-4.mkv",
+      "releaseGroup": "group-3",
+      "seasonNumber": 1,
+      "size": 1018000000
+    },
+    "episodeFileId": 4,
+    "episodeNumber": 4,
+    "hasFile": true,
+    "id": 4,
+    "seasonNumber": 1,
+    "seriesId": 1,
+    "title": "His Name Is Zero",
+    "tvdbId": 0
+  },
+  {
+    "absoluteEpisodeNumber": 5,
+    "airDate": "2006-11-02",
+    "arrapiUnknownField": 1,
+    "episodeFile": {
+      "arrapiUnknownField": 1,
+      "id": 5,
+      "mediaInfo": {
+        "arrapiUnknownField": 1,
+        "audioStreams": [
+          {
+            "arrapiUnknownField": 1,
+            "language": "jpn"
+          },
+          {
+            "arrapiUnknownField": 1,
+            "language": "jpn"
+          },
+          {
+            "arrapiUnknownField": 1,
+            "language": "eng"
+          }
+        ],
+        "videoCodec": "x265"
+      },
+      "path": "/tv/folder-1/Season 01/episode-file-5.mkv",
+      "quality": {
+        "arrapiUnknownField": 1,
+        "revision": {
+          "arrapiUnknownField": 1,
+          "isRepack": false,
+          "version": 1
+        }
+      },
+      "relativePath": "Season 01/episode-file-5.mkv",
+      "releaseGroup": "group-3",
+      "seasonNumber": 1,
+      "size": 1003000000
+    },
+    "episodeFileId": 5,
+    "episodeNumber": 5,
+    "hasFile": true,
+    "id": 5,
+    "seasonNumber": 1,
+    "seriesId": 1,
+    "title": "The Princess and the Witch",
+    "tvdbId": 0
+  },
+  {
+    "absoluteEpisodeNumber": 6,
+    "airDate": "2006-11-09",
+    "arrapiUnknownField": 1,
+    "episodeFile": {
+      "arrapiUnknownField": 1,
+      "id": 6,
+      "mediaInfo": {
+        "arrapiUnknownField": 1,
+        "audioStreams": [
+          {
+            "arrapiUnknownField": 1,
+            "language": "jpn"
+          },
+          {
+            "arrapiUnknownField": 1,
+            "language": "jpn"
+          },
+          {
+            "arrapiUnknownField": 1,
+            "language": "eng"
+          }
+        ],
+        "videoCodec": "x265"
+      },
+      "path": "/tv/folder-1/Season 01/episode-file-6.mkv",
+      "quality": {
+        "arrapiUnknownField": 1,
+        "revision": {
+          "arrapiUnknownField": 1,
+          "isRepack": false,
+          "version": 1
+        }
+      },
+      "relativePath": "Season 01/episode-file-6.mkv",
+      "releaseGroup": "group-3",
+      "seasonNumber": 1,
+      "size": 1012000000
+    },
+    "episodeFileId": 6,
+    "episodeNumber": 6,
+    "hasFile": true,
+    "id": 6,
+    "seasonNumber": 1,
+    "seriesId": 1,
+    "title": "The Stolen Mask",
+    "tvdbId": 0
+  },
+  {
+    "absoluteEpisodeNumber": 7,
+    "airDate": "2006-11-16",
+    "arrapiUnknownField": 1,
+    "episodeFile": {
+      "arrapiUnknownField": 1,
+      "id": 7,
+      "mediaInfo": {
+        "arrapiUnknownField": 1,
+        "audioStreams": [
+          {
+            "arrapiUnknownField": 1,
+            "language": "jpn"
+          },
+          {
+            "arrapiUnknownField": 1,
+            "language": "jpn"
+          },
+          {
+            "arrapiUnknownField": 1,
+            "language": "eng"
+          }
+        ],
+        "videoCodec": "x265"
+      },
+      "path": "/tv/folder-1/Season 01/episode-file-7.mkv",
+      "quality": {
+        "arrapiUnknownField": 1,
+        "revision": {
+          "arrapiUnknownField": 1,
+          "isRepack": false,
+          "version": 1
+        }
+      },
+      "relativePath": "Season 01/episode-file-7.mkv",
+      "releaseGroup": "group-3",
+      "seasonNumber": 1,
+      "size": 1016000000
+    },
+    "episodeFileId": 7,
+    "episodeNumber": 7,
+    "hasFile": true,
+    "id": 7,
+    "seasonNumber": 1,
+    "seriesId": 1,
+    "title": "Attack Cornelia",
+    "tvdbId": 0
+  },
+  {
+    "absoluteEpisodeNumber": 8,
+    "airDate": "2006-11-23",
+    "arrapiUnknownField": 1,
+    "episodeFile": {
+      "arrapiUnknownField": 1,
+      "id": 8,
+      "mediaInfo": {
+        "arrapiUnknownField": 1,
+        "audioStreams": [
+          {
+            "arrapiUnknownField": 1,
+            "language": "jpn"
+          },
+          {
+            "arrapiUnknownField": 1,
+            "language": "jpn"
+          },
+          {
+            "arrapiUnknownField": 1,
+            "language": "eng"
+          }
+        ],
+        "videoCodec": "x265"
+      },
+      "path": "/tv/folder-1/Season 01/episode-file-8.mkv",
+      "quality": {
+        "arrapiUnknownField": 1,
+        "revision": {
+          "arrapiUnknownField": 1,
+          "isRepack": false,
+          "version": 1
+        }
+      },
+      "relativePath": "Season 01/episode-file-8.mkv",
+      "releaseGroup": "group-3",
+      "seasonNumber": 1,
+      "size": 1011000000
+    },
+    "episodeFileId": 8,
+    "episodeNumber": 8,
+    "hasFile": true,
+    "id": 8,
+    "seasonNumber": 1,
+    "seriesId": 1,
+    "title": "The Black Knights",
+    "tvdbId": 0
+  },
+  {
+    "absoluteEpisodeNumber": 10,
+    "airDate": "2006-12-07",
+    "arrapiUnknownField": 1,
+    "episodeFile": {
+      "arrapiUnknownField": 1,
+      "id": 9,
+      "mediaInfo": {
+        "arrapiUnknownField": 1,
+        "audioStreams": [
+          {
+            "arrapiUnknownField": 1,
+            "language": "jpn"
+          },
+          {
+            "arrapiUnknownField": 1,
+            "language": "jpn"
+          },
+          {
+            "arrapiUnknownField": 1,
+            "language": "eng"
+          }
+        ],
+        "videoCodec": "x265"
+      },
+      "path": "/tv/folder-1/Season 01/episode-file-9.mkv",
+      "quality": {
+        "arrapiUnknownField": 1,
+        "revision": {
+          "arrapiUnknownField": 1,
+          "isRepack": false,
+          "version": 1
+        }
+      },
+      "relativePath": "Season 01/episode-file-9.mkv",
+      "releaseGroup": "group-3",
+      "seasonNumber": 1,
+      "size": 1005000000
+    },
+    "episodeFileId": 9,
+    "episodeNumber": 9,
+    "hasFile": true,
+    "id": 9,
+    "seasonNumber": 1,
+    "seriesId": 1,
+    "title": "Refrain",
+    "tvdbId": 0
+  },
+  {
+    "absoluteEpisodeNumber": 11,
+    "airDate": "2006-12-14",
+    "arrapiUnknownField": 1,
+    "episodeFile": {
+      "arrapiUnknownField": 1,
+      "id": 10,
+      "mediaInfo": {
+        "arrapiUnknownField": 1,
+        "audioStreams": [
+          {
+            "arrapiUnknownField": 1,
+            "language": "jpn"
+          },
+          {
+            "arrapiUnknownField": 1,
+            "language": "jpn"
+          },
+          {
+            "arrapiUnknownField": 1,
+            "language": "eng"
+          }
+        ],
+        "videoCodec": "x265"
+      },
+      "path": "/tv/folder-1/Season 01/episode-file-10.mkv",
+      "quality": {
+        "arrapiUnknownField": 1,
+        "revision": {
+          "arrapiUnknownField": 1,
+          "isRepack": false,
+          "version": 1
+        }
+      },
+      "relativePath": "Season 01/episode-file-10.mkv",
+      "releaseGroup": "group-3",
+      "seasonNumber": 1,
+      "size": 1022000000
+    },
+    "episodeFileId": 10,
+    "episodeNumber": 10,
+    "hasFile": true,
+    "id": 10,
+    "seasonNumber": 1,
+    "seriesId": 1,
+    "title": "Guren Dances",
+    "tvdbId": 0
+  },
+  {
+    "absoluteEpisodeNumber": 12,
+    "airDate": "2006-12-21",
+    "arrapiUnknownField": 1,
+    "episodeFile": {
+      "arrapiUnknownField": 1,
+      "id": 11,
+      "mediaInfo": {
+        "arrapiUnknownField": 1,
+        "audioStreams": [
+          {
+            "arrapiUnknownField": 1,
+            "language": "jpn"
+          },
+          {
+            "arrapiUnknownField": 1,
+            "language": "jpn"
+          },
+          {
+            "arrapiUnknownField": 1,
+            "language": "eng"
+          }
+        ],
+        "videoCodec": "x265"
+      },
+      "path": "/tv/folder-1/Season 01/episode-file-11.mkv",
+      "quality": {
+        "arrapiUnknownField": 1,
+        "revision": {
+          "arrapiUnknownField": 1,
+          "isRepack": false,
+          "version": 1
+        }
+      },
+      "relativePath": "Season 01/episode-file-11.mkv",
+      "releaseGroup": "group-3",
+      "seasonNumber": 1,
+      "size": 1021000000
+    },
+    "episodeFileId": 11,
+    "episodeNumber": 11,
+    "hasFile": true,
+    "id": 11,
+    "seasonNumber": 1,
+    "seriesId": 1,
+    "title": "Battle for Narita",
+    "tvdbId": 0
+  },
+  {
+    "absoluteEpisodeNumber": 13,
+    "airDate": "2007-01-04",
+    "arrapiUnknownField": 1,
+    "episodeFile": {
+      "arrapiUnknownField": 1,
+      "id": 12,
+      "mediaInfo": {
+        "arrapiUnknownField": 1,
+        "audioStreams": [
+          {
+            "arrapiUnknownField": 1,
+            "language": "jpn"
+          },
+          {
+            "arrapiUnknownField": 1,
+            "language": "jpn"
+          },
+          {
+            "arrapiUnknownField": 1,
+            "language": "eng"
+          }
+        ],
+        "videoCodec": "x265"
+      },
+      "path": "/tv/folder-1/Season 01/episode-file-12.mkv",
+      "quality": {
+        "arrapiUnknownField": 1,
+        "revision": {
+          "arrapiUnknownField": 1,
+          "isRepack": false,
+          "version": 1
+        }
+      },
+      "relativePath": "Season 01/episode-file-12.mkv",
+      "releaseGroup": "group-3",
+      "seasonNumber": 1,
+      "size": 1008000000
+    },
+    "episodeFileId": 12,
+    "episodeNumber": 12,
+    "hasFile": true,
+    "id": 12,
+    "seasonNumber": 1,
+    "seriesId": 1,
+    "title": "The Messenger from Kyoto",
+    "tvdbId": 0
+  },
+  {
+    "absoluteEpisodeNumber": 14,
+    "airDate": "2007-01-11",
+    "arrapiUnknownField": 1,
+    "episodeFile": {
+      "arrapiUnknownField": 1,
+      "id": 13,
+      "mediaInfo": {
+        "arrapiUnknownField": 1,
+        "audioStreams": [
+          {
+            "arrapiUnknownField": 1,
+            "language": "jpn"
+          },
+          {
+            "arrapiUnknownField": 1,
+            "language": "jpn"
+          },
+          {
+            "arrapiUnknownField": 1,
+            "language": "eng"
+          }
+        ],
+        "videoCodec": "x265"
+      },
+      "path": "/tv/folder-1/Season 01/episode-file-13.mkv",
+      "quality": {
+        "arrapiUnknownField": 1,
+        "revision": {
+          "arrapiUnknownField": 1,
+          "isRepack": false,
+          "version": 1
+        }
+      },
+      "relativePath": "Season 01/episode-file-13.mkv",
+      "releaseGroup": "group-3",
+      "seasonNumber": 1,
+      "size": 1006000000
+    },
+    "episodeFileId": 13,
+    "episodeNumber": 13,
+    "hasFile": true,
+    "id": 13,
+    "seasonNumber": 1,
+    "seriesId": 1,
+    "title": "Shirley at Gunpoint",
+    "tvdbId": 0
+  },
+  {
+    "absoluteEpisodeNumber": 15,
+    "airDate": "2007-01-18",
+    "arrapiUnknownField": 1,
+    "episodeFile": {
+      "arrapiUnknownField": 1,
+      "id": 14,
+      "mediaInfo": {
+        "arrapiUnknownField": 1,
+        "audioStreams": [
+          {
+            "arrapiUnknownField": 1,
+            "language": "jpn"
+          },
+          {
+            "arrapiUnknownField": 1,
+            "language": "jpn"
+          },
+          {
+            "arrapiUnknownField": 1,
+            "language": "eng"
+          }
+        ],
+        "videoCodec": "x265"
+      },
+      "path": "/tv/folder-1/Season 01/episode-file-14.mkv",
+      "quality": {
+        "arrapiUnknownField": 1,
+        "revision": {
+          "arrapiUnknownField": 1,
+          "isRepack": false,
+          "version": 1
+        }
+      },
+      "relativePath": "Season 01/episode-file-14.mkv",
+      "releaseGroup": "group-3",
+      "seasonNumber": 1,
+      "size": 1002000000
+    },
+    "episodeFileId": 14,
+    "episodeNumber": 14,
+    "hasFile": true,
+    "id": 14,
+    "seasonNumber": 1,
+    "seriesId": 1,
+    "title": "Geass vs. Geass",
+    "tvdbId": 0
+  },
+  {
+    "absoluteEpisodeNumber": 16,
+    "airDate": "2007-01-25",
+    "arrapiUnknownField": 1,
+    "episodeFile": {
+      "arrapiUnknownField": 1,
+      "id": 15,
+      "mediaInfo": {
+        "arrapiUnknownField": 1,
+        "audioStreams": [
+          {
+            "arrapiUnknownField": 1,
+            "language": "jpn"
+          },
+          {
+            "arrapiUnknownField": 1,
+            "language": "jpn"
+          },
+          {
+            "arrapiUnknownField": 1,
+            "language": "eng"
+          }
+        ],
+        "videoCodec": "x265"
+      },
+      "path": "/tv/folder-1/Season 01/episode-file-15.mkv",
+      "quality": {
+        "arrapiUnknownField": 1,
+        "revision": {
+          "arrapiUnknownField": 1,
+          "isRepack": false,
+          "version": 1
+        }
+      },
+      "relativePath": "Season 01/episode-file-15.mkv",
+      "releaseGroup": "group-3",
+      "seasonNumber": 1,
+      "size": 1001000000
+    },
+    "episodeFileId": 15,
+    "episodeNumber": 15,
+    "hasFile": true,
+    "id": 15,
+    "seasonNumber": 1,
+    "seriesId": 1,
+    "title": "Cheering Mao",
+    "tvdbId": 0
+  },
+  {
+    "absoluteEpisodeNumber": 17,
+    "airDate": "2007-02-01",
+    "arrapiUnknownField": 1,
+    "episodeFile": {
+      "arrapiUnknownField": 1,
+      "id": 16,
+      "mediaInfo": {
+        "arrapiUnknownField": 1,
+        "audioStreams": [
+          {
+            "arrapiUnknownField": 1,
+            "language": "jpn"
+          },
+          {
+            "arrapiUnknownField": 1,
+            "language": "jpn"
+          },
+          {
+            "arrapiUnknownField": 1,
+            "language": "eng"
+          }
+        ],
+        "videoCodec": "x265"
+      },
+      "path": "/tv/folder-1/Season 01/episode-file-16.mkv",
+      "quality": {
+        "arrapiUnknownField": 1,
+        "revision": {
+          "arrapiUnknownField": 1,
+          "isRepack": false,
+          "version": 1
+        }
+      },
+      "relativePath": "Season 01/episode-file-16.mkv",
+      "releaseGroup": "group-3",
+      "seasonNumber": 1,
+      "size": 1009000000
+    },
+    "episodeFileId": 16,
+    "episodeNumber": 16,
+    "hasFile": true,
+    "id": 16,
+    "seasonNumber": 1,
+    "seriesId": 1,
+    "title": "Nunnally Held Hostage",
+    "tvdbId": 0
+  },
+  {
+    "absoluteEpisodeNumber": 18,
+    "airDate": "2007-02-08",
+    "arrapiUnknownField": 1,
+    "episodeFile": {
+      "arrapiUnknownField": 1,
+      "id": 17,
+      "mediaInfo": {
+        "arrapiUnknownField": 1,
+        "audioStreams": [
+          {
+            "arrapiUnknownField": 1,
+            "language": "jpn"
+          },
+          {
+            "arrapiUnknownField": 1,
+            "language": "jpn"
+          },
+          {
+            "arrapiUnknownField": 1,
+            "language": "eng"
+          }
+        ],
+        "videoCodec": "x265"
+      },
+      "path": "/tv/folder-1/Season 01/episode-file-17.mkv",
+      "quality": {
+        "arrapiUnknownField": 1,
+        "revision": {
+          "arrapiUnknownField": 1,
+          "isRepack": false,
+          "version": 1
+        }
+      },
+      "relativePath": "Season 01/episode-file-17.mkv",
+      "releaseGroup": "group-3",
+      "seasonNumber": 1,
+      "size": 1015000000
+    },
+    "episodeFileId": 17,
+    "episodeNumber": 17,
+    "hasFile": true,
+    "id": 17,
+    "seasonNumber": 1,
+    "seriesId": 1,
+    "title": "Knight",
+    "tvdbId": 0
+  },
+  {
+    "absoluteEpisodeNumber": 19,
+    "airDate": "2007-02-22",
+    "arrapiUnknownField": 1,
+    "episodeFile": {
+      "arrapiUnknownField": 1,
+      "id": 18,
+      "mediaInfo": {
+        "arrapiUnknownField": 1,
+        "audioStreams": [
+          {
+            "arrapiUnknownField": 1,
+            "language": "jpn"
+          },
+          {
+            "arrapiUnknownField": 1,
+            "language": "jpn"
+          },
+          {
+            "arrapiUnknownField": 1,
+            "language": "eng"
+          }
+        ],
+        "videoCodec": "x265"
+      },
+      "path": "/tv/folder-1/Season 01/episode-file-18.mkv",
+      "quality": {
+        "arrapiUnknownField": 1,
+        "revision": {
+          "arrapiUnknownField": 1,
+          "isRepack": false,
+          "version": 1
+        }
+      },
+      "relativePath": "Season 01/episode-file-18.mkv",
+      "releaseGroup": "group-3",
+      "seasonNumber": 1,
+      "size": 1010000000
+    },
+    "episodeFileId": 18,
+    "episodeNumber": 18,
+    "hasFile": true,
+    "id": 18,
+    "seasonNumber": 1,
+    "seriesId": 1,
+    "title": "I Order You, Suzaku Kururugi",
+    "tvdbId": 0
+  },
+  {
+    "absoluteEpisodeNumber": 20,
+    "airDate": "2007-03-01",
+    "arrapiUnknownField": 1,
+    "episodeFile": {
+      "arrapiUnknownField": 1,
+      "id": 19,
+      "mediaInfo": {
+        "arrapiUnknownField": 1,
+        "audioStreams": [
+          {
+            "arrapiUnknownField": 1,
+            "language": "jpn"
+          },
+          {
+            "arrapiUnknownField": 1,
+            "language": "jpn"
+          },
+          {
+            "arrapiUnknownField": 1,
+            "language": "eng"
+          }
+        ],
+        "videoCodec": "x265"
+      },
+      "path": "/tv/folder-1/Season 01/episode-file-19.mkv",
+      "quality": {
+        "arrapiUnknownField": 1,
+        "revision": {
+          "arrapiUnknownField": 1,
+          "isRepack": false,
+          "version": 1
+        }
+      },
+      "relativePath": "Season 01/episode-file-19.mkv",
+      "releaseGroup": "group-3",
+      "seasonNumber": 1,
+      "size": 1013000000
+    },
+    "episodeFileId": 19,
+    "episodeNumber": 19,
+    "hasFile": true,
+    "id": 19,
+    "seasonNumber": 1,
+    "seriesId": 1,
+    "title": "Island of the Gods",
+    "tvdbId": 0
+  },
+  {
+    "absoluteEpisodeNumber": 21,
+    "airDate": "2007-03-08",
+    "arrapiUnknownField": 1,
+    "episodeFile": {
+      "arrapiUnknownField": 1,
+      "id": 20,
+      "mediaInfo": {
+        "arrapiUnknownField": 1,
+        "audioStreams": [
+          {
+            "arrapiUnknownField": 1,
+            "language": "jpn"
+          },
+          {
+            "arrapiUnknownField": 1,
+            "language": "jpn"
+          },
+          {
+            "arrapiUnknownField": 1,
+            "language": "eng"
+          }
+        ],
+        "videoCodec": "x265"
+      },
+      "path": "/tv/folder-1/Season 01/episode-file-20.mkv",
+      "quality": {
+        "arrapiUnknownField": 1,
+        "revision": {
+          "arrapiUnknownField": 1,
+          "isRepack": false,
+          "version": 1
+        }
+      },
+      "relativePath": "Season 01/episode-file-20.mkv",
+      "releaseGroup": "group-3",
+      "seasonNumber": 1,
+      "size": 1019000000
+    },
+    "episodeFileId": 20,
+    "episodeNumber": 20,
+    "hasFile": true,
+    "id": 20,
+    "seasonNumber": 1,
+    "seriesId": 1,
+    "title": "The Battle for Kyushu",
+    "tvdbId": 0
+  },
+  {
+    "absoluteEpisodeNumber": 22,
+    "airDate": "2007-03-15",
+    "arrapiUnknownField": 1,
+    "episodeFile": {
+      "arrapiUnknownField": 1,
+      "id": 21,
+      "mediaInfo": {
+        "arrapiUnknownField": 1,
+        "audioStreams": [
+          {
+            "arrapiUnknownField": 1,
+            "language": "jpn"
+          },
+          {
+            "arrapiUnknownField": 1,
+            "language": "jpn"
+          },
+          {
+            "arrapiUnknownField": 1,
+            "language": "eng"
+          }
+        ],
+        "videoCodec": "x265"
+      },
+      "path": "/tv/folder-1/Season 01/episode-file-21.mkv",
+      "quality": {
+        "arrapiUnknownField": 1,
+        "revision": {
+          "arrapiUnknownField": 1,
+          "isRepack": false,
+          "version": 1
+        }
+      },
+      "relativePath": "Season 01/episode-file-21.mkv",
+      "releaseGroup": "group-3",
+      "seasonNumber": 1,
+      "size": 1004000000
+    },
+    "episodeFileId": 21,
+    "episodeNumber": 21,
+    "hasFile": true,
+    "id": 21,
+    "seasonNumber": 1,
+    "seriesId": 1,
+    "title": "The School Festival Declaration",
+    "tvdbId": 0
+  },
+  {
+    "absoluteEpisodeNumber": 23,
+    "airDate": "2007-03-22",
+    "arrapiUnknownField": 1,
+    "episodeFile": {
+      "arrapiUnknownField": 1,
+      "id": 22,
+      "mediaInfo": {
+        "arrapiUnknownField": 1,
+        "audioStreams": [
+          {
+            "arrapiUnknownField": 1,
+            "language": "jpn"
+          },
+          {
+            "arrapiUnknownField": 1,
+            "language": "jpn"
+          },
+          {
+            "arrapiUnknownField": 1,
+            "language": "eng"
+          }
+        ],
+        "videoCodec": "x265"
+      },
+      "path": "/tv/folder-1/Season 01/episode-file-22.mkv",
+      "quality": {
+        "arrapiUnknownField": 1,
+        "revision": {
+          "arrapiUnknownField": 1,
+          "isRepack": false,
+          "version": 1
+        }
+      },
+      "relativePath": "Season 01/episode-file-22.mkv",
+      "releaseGroup": "group-3",
+      "seasonNumber": 1,
+      "size": 1007000000
+    },
+    "episodeFileId": 22,
+    "episodeNumber": 22,
+    "hasFile": true,
+    "id": 22,
+    "seasonNumber": 1,
+    "seriesId": 1,
+    "title": "Bloodstained Euphy",
+    "tvdbId": 0
+  },
+  {
+    "absoluteEpisodeNumber": 24,
+    "airDate": "2007-03-29",
+    "arrapiUnknownField": 1,
+    "episodeFile": {
+      "arrapiUnknownField": 1,
+      "id": 23,
+      "mediaInfo": {
+        "arrapiUnknownField": 1,
+        "audioStreams": [
+          {
+            "arrapiUnknownField": 1,
+            "language": "jpn"
+          },
+          {
+            "arrapiUnknownField": 1,
+            "language": "jpn"
+          },
+          {
+            "arrapiUnknownField": 1,
+            "language": "eng"
+          }
+        ],
+        "videoCodec": "x265"
+      },
+      "path": "/tv/folder-1/Season 01/episode-file-23.mkv",
+      "quality": {
+        "arrapiUnknownField": 1,
+        "revision": {
+          "arrapiUnknownField": 1,
+          "isRepack": false,
+          "version": 1
+        }
+      },
+      "relativePath": "Season 01/episode-file-23.mkv",
+      "releaseGroup": "group-3",
+      "seasonNumber": 1,
+      "size": 1017000000
+    },
+    "episodeFileId": 23,
+    "episodeNumber": 23,
+    "hasFile": true,
+    "id": 23,
+    "seasonNumber": 1,
+    "seriesId": 1,
+    "title": "At Least with Sorrow",
+    "tvdbId": 0
+  },
+  {
+    "absoluteEpisodeNumber": 25,
+    "airDate": "2007-07-28",
+    "arrapiUnknownField": 1,
+    "episodeFile": {
+      "arrapiUnknownField": 1,
+      "id": 24,
+      "mediaInfo": {
+        "arrapiUnknownField": 1,
+        "audioStreams": [
+          {
+            "arrapiUnknownField": 1,
+            "language": "jpn"
+          },
+          {
+            "arrapiUnknownField": 1,
+            "language": "jpn"
+          },
+          {
+            "arrapiUnknownField": 1,
+            "language": "eng"
+          }
+        ],
+        "videoCodec": "x265"
+      },
+      "path": "/tv/folder-1/Season 01/episode-file-24.mkv",
+      "quality": {
+        "arrapiUnknownField": 1,
+        "revision": {
+          "arrapiUnknownField": 1,
+          "isRepack": false,
+          "version": 1
+        }
+      },
+      "relativePath": "Season 01/episode-file-24.mkv",
+      "releaseGroup": "group-3",
+      "seasonNumber": 1,
+      "size": 1020000000
+    },
+    "episodeFileId": 24,
+    "episodeNumber": 24,
+    "hasFile": true,
+    "id": 24,
+    "seasonNumber": 1,
+    "seriesId": 1,
+    "title": "The Collapsing Stage",
+    "tvdbId": 0
+  },
+  {
+    "absoluteEpisodeNumber": 26,
+    "airDate": "2007-07-28",
+    "arrapiUnknownField": 1,
+    "episodeFile": {
+      "arrapiUnknownField": 1,
+      "id": 25,
+      "mediaInfo": {
+        "arrapiUnknownField": 1,
+        "audioStreams": [
+          {
+            "arrapiUnknownField": 1,
+            "language": "jpn"
+          },
+          {
+            "arrapiUnknownField": 1,
+            "language": "jpn"
+          },
+          {
+            "arrapiUnknownField": 1,
+            "language": "eng"
+          }
+        ],
+        "videoCodec": "x265"
+      },
+      "path": "/tv/folder-1/Season 01/episode-file-25.mkv",
+      "quality": {
+        "arrapiUnknownField": 1,
+        "revision": {
+          "arrapiUnknownField": 1,
+          "isRepack": false,
+          "version": 1
+        }
+      },
+      "relativePath": "Season 01/episode-file-25.mkv",
+      "releaseGroup": "group-3",
+      "seasonNumber": 1,
+      "size": 1025000000
+    },
+    "episodeFileId": 25,
+    "episodeNumber": 25,
+    "hasFile": true,
+    "id": 25,
+    "seasonNumber": 1,
+    "seriesId": 1,
+    "title": "Zero",
+    "tvdbId": 0
+  },
+  {
+    "absoluteEpisodeNumber": 27,
+    "airDate": "2008-04-06",
+    "arrapiUnknownField": 1,
+    "episodeFile": {
+      "arrapiUnknownField": 1,
+      "id": 26,
+      "mediaInfo": {
+        "arrapiUnknownField": 1,
+        "audioStreams": [
+          {
+            "arrapiUnknownField": 1,
+            "language": "eng"
+          },
+          {
+            "arrapiUnknownField": 1,
+            "language": "jpn"
+          },
+          {
+            "arrapiUnknownField": 1,
+            "language": "jpn"
+          },
+          {
+            "arrapiUnknownField": 1,
+            "language": "jpn"
+          }
+        ],
+        "videoCodec": "x264"
+      },
+      "path": "/tv/folder-1/Season 02/episode-file-26.mkv",
+      "quality": {
+        "arrapiUnknownField": 1,
+        "revision": {
+          "arrapiUnknownField": 1,
+          "isRepack": false,
+          "version": 1
+        }
+      },
+      "relativePath": "Season 02/episode-file-26.mkv",
+      "releaseGroup": "group-4",
+      "seasonNumber": 2,
+      "size": 1042000000
+    },
+    "episodeFileId": 26,
+    "episodeNumber": 1,
+    "hasFile": true,
+    "id": 26,
+    "seasonNumber": 2,
+    "seriesId": 1,
+    "title": "The Day a Demon Awakens",
+    "tvdbId": 0
+  },
+  {
+    "absoluteEpisodeNumber": 28,
+    "airDate": "2008-04-13",
+    "arrapiUnknownField": 1,
+    "episodeFile": {
+      "arrapiUnknownField": 1,
+      "id": 27,
+      "mediaInfo": {
+        "arrapiUnknownField": 1,
+        "audioStreams": [
+          {
+            "arrapiUnknownField": 1,
+            "language": "eng"
+          },
+          {
+            "arrapiUnknownField": 1,
+            "language": "jpn"
+          },
+          {
+            "arrapiUnknownField": 1,
+            "language": "jpn"
+          }
+        ],
+        "videoCodec": "x264"
+      },
+      "path": "/tv/folder-1/Season 02/episode-file-27.mkv",
+      "quality": {
+        "arrapiUnknownField": 1,
+        "revision": {
+          "arrapiUnknownField": 1,
+          "isRepack": false,
+          "version": 1
+        }
+      },
+      "relativePath": "Season 02/episode-file-27.mkv",
+      "releaseGroup": "group-4",
+      "seasonNumber": 2,
+      "size": 1032000000
+    },
+    "episodeFileId": 27,
+    "episodeNumber": 2,
+    "hasFile": true,
+    "id": 27,
+    "seasonNumber": 2,
+    "seriesId": 1,
+    "title": "Plan for Independent Japan",
+    "tvdbId": 0
+  },
+  {
+    "absoluteEpisodeNumber": 29,
+    "airDate": "2008-04-20",
+    "arrapiUnknownField": 1,
+    "episodeFile": {
+      "arrapiUnknownField": 1,
+      "id": 28,
+      "mediaInfo": {
+        "arrapiUnknownField": 1,
+        "audioStreams": [
+          {
+            "arrapiUnknownField": 1,
+            "language": "eng"
+          },
+          {
+            "arrapiUnknownField": 1,
+            "language": "jpn"
+          },
+          {
+            "arrapiUnknownField": 1,
+            "language": "jpn"
+          }
+        ],
+        "videoCodec": "x264"
+      },
+      "path": "/tv/folder-1/Season 02/episode-file-28.mkv",
+      "quality": {
+        "arrapiUnknownField": 1,
+        "revision": {
+          "arrapiUnknownField": 1,
+          "isRepack": false,
+          "version": 1
+        }
+      },
+      "relativePath": "Season 02/episode-file-28.mkv",
+      "releaseGroup": "group-4",
+      "seasonNumber": 2,
+      "size": 1026000000
+    },
+    "episodeFileId": 28,
+    "episodeNumber": 3,
+    "hasFile": true,
+    "id": 28,
+    "seasonNumber": 2,
+    "seriesId": 1,
+    "title": "Imprisoned in Campus",
+    "tvdbId": 0
+  },
+  {
+    "absoluteEpisodeNumber": 30,
+    "airDate": "2008-04-27",
+    "arrapiUnknownField": 1,
+    "episodeFile": {
+      "arrapiUnknownField": 1,
+      "id": 29,
+      "mediaInfo": {
+        "arrapiUnknownField": 1,
+        "audioStreams": [
+          {
+            "arrapiUnknownField": 1,
+            "language": "eng"
+          },
+          {
+            "arrapiUnknownField": 1,
+            "language": "jpn"
+          },
+          {
+            "arrapiUnknownField": 1,
+            "language": "jpn"
+          },
+          {
+            "arrapiUnknownField": 1,
+            "language": "jpn"
+          }
+        ],
+        "videoCodec": "x264"
+      },
+      "path": "/tv/folder-1/Season 02/episode-file-29.mkv",
+      "quality": {
+        "arrapiUnknownField": 1,
+        "revision": {
+          "arrapiUnknownField": 1,
+          "isRepack": false,
+          "version": 1
+        }
+      },
+      "relativePath": "Season 02/episode-file-29.mkv",
+      "releaseGroup": "group-4",
+      "seasonNumber": 2,
+      "size": 1035000000
+    },
+    "episodeFileId": 29,
+    "episodeNumber": 4,
+    "hasFile": true,
+    "id": 29,
+    "seasonNumber": 2,
+    "seriesId": 1,
+    "title": "Counterattack at the Gallows",
+    "tvdbId": 0
+  },
+  {
+    "absoluteEpisodeNumber": 31,
+    "airDate": "2008-05-04",
+    "arrapiUnknownField": 1,
+    "episodeFile": {
+      "arrapiUnknownField": 1,
+      "id": 30,
+      "mediaInfo": {
+        "arrapiUnknownField": 1,
+        "audioStreams": [
+          {
+            "arrapiUnknownField": 1,
+            "language": "eng"
+          },
+          {
+            "arrapiUnknownField": 1,
+            "language": "jpn"
+          },
+          {
+            "arrapiUnknownField": 1,
+            "language": "jpn"
+          }
+        ],
+        "videoCodec": "x264"
+      },
+      "path": "/tv/folder-1/Season 02/episode-file-30.mkv",
+      "quality": {
+        "arrapiUnknownField": 1,
+        "revision": {
+          "arrapiUnknownField": 1,
+          "isRepack": false,
+          "version": 1
+        }
+      },
+      "relativePath": "Season 02/episode-file-30.mkv",
+      "releaseGroup": "group-4",
+      "seasonNumber": 2,
+      "size": 1029000000
+    },
+    "episodeFileId": 30,
+    "episodeNumber": 5,
+    "hasFile": true,
+    "id": 30,
+    "seasonNumber": 2,
+    "seriesId": 1,
+    "title": "Knights of the Round",
+    "tvdbId": 0
+  },
+  {
+    "absoluteEpisodeNumber": 32,
+    "airDate": "2008-05-11",
+    "arrapiUnknownField": 1,
+    "episodeFile": {
+      "arrapiUnknownField": 1,
+      "id": 31,
+      "mediaInfo": {
+        "arrapiUnknownField": 1,
+        "audioStreams": [
+          {
+            "arrapiUnknownField": 1,
+            "language": "eng"
+          },
+          {
+            "arrapiUnknownField": 1,
+            "language": "jpn"
+          },
+          {
+            "arrapiUnknownField": 1,
+            "language": "jpn"
+          },
+          {
+            "arrapiUnknownField": 1,
+            "language": "jpn"
+          }
+        ],
+        "videoCodec": "x264"
+      },
+      "path": "/tv/folder-1/Season 02/episode-file-31.mkv",
+      "quality": {
+        "arrapiUnknownField": 1,
+        "revision": {
+          "arrapiUnknownField": 1,
+          "isRepack": false,
+          "version": 1
+        }
+      },
+      "relativePath": "Season 02/episode-file-31.mkv",
+      "releaseGroup": "group-4",
+      "seasonNumber": 2,
+      "size": 1059000000
+    },
+    "episodeFileId": 31,
+    "episodeNumber": 6,
+    "hasFile": true,
+    "id": 31,
+    "seasonNumber": 2,
+    "seriesId": 1,
+    "title": "Surprise Attack Over the Pacific",
+    "tvdbId": 0
+  },
+  {
+    "absoluteEpisodeNumber": 33,
+    "airDate": "2008-05-18",
+    "arrapiUnknownField": 1,
+    "episodeFile": {
+      "arrapiUnknownField": 1,
+      "id": 32,
+      "mediaInfo": {
+        "arrapiUnknownField": 1,
+        "audioStreams": [
+          {
+            "arrapiUnknownField": 1,
+            "language": "eng"
+          },
+          {
+            "arrapiUnknownField": 1,
+            "language": "jpn"
+          },
+          {
+            "arrapiUnknownField": 1,
+            "language": "jpn"
+          }
+        ],
+        "videoCodec": "x264"
+      },
+      "path": "/tv/folder-1/Season 02/episode-file-32.mkv",
+      "quality": {
+        "arrapiUnknownField": 1,
+        "revision": {
+          "arrapiUnknownField": 1,
+          "isRepack": false,
+          "version": 1
+        }
+      },
+      "relativePath": "Season 02/episode-file-32.mkv",
+      "releaseGroup": "group-4",
+      "seasonNumber": 2,
+      "size": 1027000000
+    },
+    "episodeFileId": 32,
+    "episodeNumber": 7,
+    "hasFile": true,
+    "id": 32,
+    "seasonNumber": 2,
+    "seriesId": 1,
+    "title": "The Abandoned Mask",
+    "tvdbId": 0
+  },
+  {
+    "absoluteEpisodeNumber": 34,
+    "airDate": "2008-05-25",
+    "arrapiUnknownField": 1,
+    "episodeFile": {
+      "arrapiUnknownField": 1,
+      "id": 33,
+      "mediaInfo": {
+        "arrapiUnknownField": 1,
+        "audioStreams": [
+          {
+            "arrapiUnknownField": 1,
+            "language": "eng"
+          },
+          {
+            "arrapiUnknownField": 1,
+            "language": "jpn"
+          },
+          {
+            "arrapiUnknownField": 1,
+            "language": "jpn"
+          },
+          {
+            "arrapiUnknownField": 1,
+            "language": "jpn"
+          }
+        ],
+        "videoCodec": "x264"
+      },
+      "path": "/tv/folder-1/Season 02/episode-file-33.mkv",
+      "quality": {
+        "arrapiUnknownField": 1,
+        "revision": {
+          "arrapiUnknownField": 1,
+          "isRepack": false,
+          "version": 1
+        }
+      },
+      "relativePath": "Season 02/episode-file-33.mkv",
+      "releaseGroup": "group-4",
+      "seasonNumber": 2,
+      "size": 1033000000
+    },
+    "episodeFileId": 33,
+    "episodeNumber": 8,
+    "hasFile": true,
+    "id": 33,
+    "seasonNumber": 2,
+    "seriesId": 1,
+    "title": "One Million Miracles",
+    "tvdbId": 0
+  },
+  {
+    "absoluteEpisodeNumber": 35,
+    "airDate": "2008-06-08",
+    "arrapiUnknownField": 1,
+    "episodeFile": {
+      "arrapiUnknownField": 1,
+      "id": 34,
+      "mediaInfo": {
+        "arrapiUnknownField": 1,
+        "audioStreams": [
+          {
+            "arrapiUnknownField": 1,
+            "language": "eng"
+          },
+          {
+            "arrapiUnknownField": 1,
+            "language": "jpn"
+          },
+          {
+            "arrapiUnknownField": 1,
+            "language": "jpn"
+          }
+        ],
+        "videoCodec": "x264"
+      },
+      "path": "/tv/folder-1/Season 02/episode-file-34.mkv",
+      "quality": {
+        "arrapiUnknownField": 1,
+        "revision": {
+          "arrapiUnknownField": 1,
+          "isRepack": false,
+          "version": 1
+        }
+      },
+      "relativePath": "Season 02/episode-file-34.mkv",
+      "releaseGroup": "group-4",
+      "seasonNumber": 2,
+      "size": 1028000000
+    },
+    "episodeFileId": 34,
+    "episodeNumber": 9,
+    "hasFile": true,
+    "id": 34,
+    "seasonNumber": 2,
+    "seriesId": 1,
+    "title": "A Bride in the Vermillion Forbidden City",
+    "tvdbId": 0
+  },
+  {
+    "absoluteEpisodeNumber": 36,
+    "airDate": "2008-06-15",
+    "arrapiUnknownField": 1,
+    "episodeFile": {
+      "arrapiUnknownField": 1,
+      "id": 35,
+      "mediaInfo": {
+        "arrapiUnknownField": 1,
+        "audioStreams": [
+          {
+            "arrapiUnknownField": 1,
+            "language": "eng"
+          },
+          {
+            "arrapiUnknownField": 1,
+            "language": "jpn"
+          },
+          {
+            "arrapiUnknownField": 1,
+            "language": "jpn"
+          }
+        ],
+        "videoCodec": "x264"
+      },
+      "path": "/tv/folder-1/Season 02/episode-file-35.mkv",
+      "quality": {
+        "arrapiUnknownField": 1,
+        "revision": {
+          "arrapiUnknownField": 1,
+          "isRepack": false,
+          "version": 1
+        }
+      },
+      "relativePath": "Season 02/episode-file-35.mkv",
+      "releaseGroup": "group-4",
+      "seasonNumber": 2,
+      "size": 1055000000
+    },
+    "episodeFileId": 35,
+    "episodeNumber": 10,
+    "hasFile": true,
+    "id": 35,
+    "seasonNumber": 2,
+    "seriesId": 1,
+    "title": "When Shen Hu Wins Glory",
+    "tvdbId": 0
+  },
+  {
+    "absoluteEpisodeNumber": 37,
+    "airDate": "2008-06-22",
+    "arrapiUnknownField": 1,
+    "episodeFile": {
+      "arrapiUnknownField": 1,
+      "id": 36,
+      "mediaInfo": {
+        "arrapiUnknownField": 1,
+        "audioStreams": [
+          {
+            "arrapiUnknownField": 1,
+            "language": "eng"
+          },
+          {
+            "arrapiUnknownField": 1,
+            "language": "jpn"
+          },
+          {
+            "arrapiUnknownField": 1,
+            "language": "jpn"
+          }
+        ],
+        "videoCodec": "x264"
+      },
+      "path": "/tv/folder-1/Season 02/episode-file-36.mkv",
+      "quality": {
+        "arrapiUnknownField": 1,
+        "revision": {
+          "arrapiUnknownField": 1,
+          "isRepack": false,
+          "version": 1
+        }
+      },
+      "relativePath": "Season 02/episode-file-36.mkv",
+      "releaseGroup": "group-4",
+      "seasonNumber": 2,
+      "size": 1052000000
+    },
+    "episodeFileId": 36,
+    "episodeNumber": 11,
+    "hasFile": true,
+    "id": 36,
+    "seasonNumber": 2,
+    "seriesId": 1,
+    "title": "Power of Passion",
+    "tvdbId": 0
+  },
+  {
+    "absoluteEpisodeNumber": 38,
+    "airDate": "2008-06-29",
+    "arrapiUnknownField": 1,
+    "episodeFile": {
+      "arrapiUnknownField": 1,
+      "id": 37,
+      "mediaInfo": {
+        "arrapiUnknownField": 1,
+        "audioStreams": [
+          {
+            "arrapiUnknownField": 1,
+            "language": "eng"
+          },
+          {
+            "arrapiUnknownField": 1,
+            "language": "jpn"
+          },
+          {
+            "arrapiUnknownField": 1,
+            "language": "jpn"
+          },
+          {
+            "arrapiUnknownField": 1,
+            "language": "jpn"
+          }
+        ],
+        "videoCodec": "x264"
+      },
+      "path": "/tv/folder-1/Season 02/episode-file-37.mkv",
+      "quality": {
+        "arrapiUnknownField": 1,
+        "revision": {
+          "arrapiUnknownField": 1,
+          "isRepack": false,
+          "version": 1
+        }
+      },
+      "relativePath": "Season 02/episode-file-37.mkv",
+      "releaseGroup": "group-4",
+      "seasonNumber": 2,
+      "size": 1034000000
+    },
+    "episodeFileId": 37,
+    "episodeNumber": 12,
+    "hasFile": true,
+    "id": 37,
+    "seasonNumber": 2,
+    "seriesId": 1,
+    "title": "Love Attack!",
+    "tvdbId": 0
+  },
+  {
+    "absoluteEpisodeNumber": 39,
+    "airDate": "2008-07-06",
+    "arrapiUnknownField": 1,
+    "episodeFile": {
+      "arrapiUnknownField": 1,
+      "id": 38,
+      "mediaInfo": {
+        "arrapiUnknownField": 1,
+        "audioStreams": [
+          {
+            "arrapiUnknownField": 1,
+            "language": "eng"
+          },
+          {
+            "arrapiUnknownField": 1,
+            "language": "jpn"
+          },
+          {
+            "arrapiUnknownField": 1,
+            "language": "jpn"
+          }
+        ],
+        "videoCodec": "x264"
+      },
+      "path": "/tv/folder-1/Season 02/episode-file-38.mkv",
+      "quality": {
+        "arrapiUnknownField": 1,
+        "revision": {
+          "arrapiUnknownField": 1,
+          "isRepack": false,
+          "version": 1
+        }
+      },
+      "relativePath": "Season 02/episode-file-38.mkv",
+      "releaseGroup": "group-4",
+      "seasonNumber": 2,
+      "size": 1030000000
+    },
+    "episodeFileId": 38,
+    "episodeNumber": 13,
+    "hasFile": true,
+    "id": 38,
+    "seasonNumber": 2,
+    "seriesId": 1,
+    "title": "Assassin from the Past",
+    "tvdbId": 0
+  },
+  {
+    "absoluteEpisodeNumber": 40,
+    "airDate": "2008-07-13",
+    "arrapiUnknownField": 1,
+    "episodeFile": {
+      "arrapiUnknownField": 1,
+      "id": 39,
+      "mediaInfo": {
+        "arrapiUnknownField": 1,
+        "audioStreams": [
+          {
+            "arrapiUnknownField": 1,
+            "language": "eng"
+          },
+          {
+            "arrapiUnknownField": 1,
+            "language": "jpn"
+          },
+          {
+            "arrapiUnknownField": 1,
+            "language": "jpn"
+          }
+        ],
+        "videoCodec": "x264"
+      },
+      "path": "/tv/folder-1/Season 02/episode-file-39.mkv",
+      "quality": {
+        "arrapiUnknownField": 1,
+        "revision": {
+          "arrapiUnknownField": 1,
+          "isRepack": false,
+          "version": 1
+        }
+      },
+      "relativePath": "Season 02/episode-file-39.mkv",
+      "releaseGroup": "group-4",
+      "seasonNumber": 2,
+      "size": 1040000000
+    },
+    "episodeFileId": 39,
+    "episodeNumber": 14,
+    "hasFile": true,
+    "id": 39,
+    "seasonNumber": 2,
+    "seriesId": 1,
+    "title": "Geass Hunt",
+    "tvdbId": 0
+  },
+  {
+    "absoluteEpisodeNumber": 41,
+    "airDate": "2008-07-20",
+    "arrapiUnknownField": 1,
+    "episodeFile": {
+      "arrapiUnknownField": 1,
+      "id": 40,
+      "mediaInfo": {
+        "arrapiUnknownField": 1,
+        "audioStreams": [
+          {
+            "arrapiUnknownField": 1,
+            "language": "eng"
+          },
+          {
+            "arrapiUnknownField": 1,
+            "language": "jpn"
+          },
+          {
+            "arrapiUnknownField": 1,
+            "language": "jpn"
+          },
+          {
+            "arrapiUnknownField": 1,
+            "language": "jpn"
+          }
+        ],
+        "videoCodec": "x264"
+      },
+      "path": "/tv/folder-1/Season 02/episode-file-40.mkv",
+      "quality": {
+        "arrapiUnknownField": 1,
+        "revision": {
+          "arrapiUnknownField": 1,
+          "isRepack": false,
+          "version": 1
+        }
+      },
+      "relativePath": "Season 02/episode-file-40.mkv",
+      "releaseGroup": "group-4",
+      "seasonNumber": 2,
+      "size": 1058000000
+    },
+    "episodeFileId": 40,
+    "episodeNumber": 15,
+    "hasFile": true,
+    "id": 40,
+    "seasonNumber": 2,
+    "seriesId": 1,
+    "title": "The Cs' World",
+    "tvdbId": 0
+  },
+  {
+    "absoluteEpisodeNumber": 42,
+    "airDate": "2008-07-27",
+    "arrapiUnknownField": 1,
+    "episodeFile": {
+      "arrapiUnknownField": 1,
+      "id": 41,
+      "mediaInfo": {
+        "arrapiUnknownField": 1,
+        "audioStreams": [
+          {
+            "arrapiUnknownField": 1,
+            "language": "eng"
+          },
+          {
+            "arrapiUnknownField": 1,
+            "language": "jpn"
+          },
+          {
+            "arrapiUnknownField": 1,
+            "language": "jpn"
+          }
+        ],
+        "videoCodec": "x264"
+      },
+      "path": "/tv/folder-1/Season 02/episode-file-41.mkv",
+      "quality": {
+        "arrapiUnknownField": 1,
+        "revision": {
+          "arrapiUnknownField": 1,
+          "isRepack": false,
+          "version": 1
+        }
+      },
+      "relativePath": "Season 02/episode-file-41.mkv",
+      "releaseGroup": "group-4",
+      "seasonNumber": 2,
+      "size": 1031000000
+    },
+    "episodeFileId": 41,
+    "episodeNumber": 16,
+    "hasFile": true,
+    "id": 41,
+    "seasonNumber": 2,
+    "seriesId": 1,
+    "title": "United Federation of Nations Resolution Number One",
+    "tvdbId": 0
+  },
+  {
+    "absoluteEpisodeNumber": 43,
+    "airDate": "2008-08-03",
+    "arrapiUnknownField": 1,
+    "episodeFile": {
+      "arrapiUnknownField": 1,
+      "id": 42,
+      "mediaInfo": {
+        "arrapiUnknownField": 1,
+        "audioStreams": [
+          {
+            "arrapiUnknownField": 1,
+            "language": "eng"
+          },
+          {
+            "arrapiUnknownField": 1,
+            "language": "jpn"
+          },
+          {
+            "arrapiUnknownField": 1,
+            "language": "jpn"
+          }
+        ],
+        "videoCodec": "x264"
+      },
+      "path": "/tv/folder-1/Season 02/episode-file-42.mkv",
+      "quality": {
+        "arrapiUnknownField": 1,
+        "revision": {
+          "arrapiUnknownField": 1,
+          "isRepack": false,
+          "version": 1
+        }
+      },
+      "relativePath": "Season 02/episode-file-42.mkv",
+      "releaseGroup": "group-4",
+      "seasonNumber": 2,
+      "size": 1056000000
+    },
+    "episodeFileId": 42,
+    "episodeNumber": 17,
+    "hasFile": true,
+    "id": 42,
+    "seasonNumber": 2,
+    "seriesId": 1,
+    "title": "The Taste of Humiliation",
+    "tvdbId": 0
+  },
+  {
+    "absoluteEpisodeNumber": 44,
+    "airDate": "2008-08-10",
+    "arrapiUnknownField": 1,
+    "episodeFile": {
+      "arrapiUnknownField": 1,
+      "id": 43,
+      "mediaInfo": {
+        "arrapiUnknownField": 1,
+        "audioStreams": [
+          {
+            "arrapiUnknownField": 1,
+            "language": "eng"
+          },
+          {
+            "arrapiUnknownField": 1,
+            "language": "jpn"
+          },
+          {
+            "arrapiUnknownField": 1,
+            "language": "jpn"
+          }
+        ],
+        "videoCodec": "x264"
+      },
+      "path": "/tv/folder-1/Season 02/episode-file-43.mkv",
+      "quality": {
+        "arrapiUnknownField": 1,
+        "revision": {
+          "arrapiUnknownField": 1,
+          "isRepack": false,
+          "version": 1
+        }
+      },
+      "relativePath": "Season 02/episode-file-43.mkv",
+      "releaseGroup": "group-4",
+      "seasonNumber": 2,
+      "size": 1061000000
+    },
+    "episodeFileId": 43,
+    "episodeNumber": 18,
+    "hasFile": true,
+    "id": 43,
+    "seasonNumber": 2,
+    "seriesId": 1,
+    "title": "Final Battle Tokyo II",
+    "tvdbId": 0
+  },
+  {
+    "absoluteEpisodeNumber": 45,
+    "airDate": "2008-08-17",
+    "arrapiUnknownField": 1,
+    "episodeFile": {
+      "arrapiUnknownField": 1,
+      "id": 44,
+      "mediaInfo": {
+        "arrapiUnknownField": 1,
+        "audioStreams": [
+          {
+            "arrapiUnknownField": 1,
+            "language": "eng"
+          },
+          {
+            "arrapiUnknownField": 1,
+            "language": "jpn"
+          },
+          {
+            "arrapiUnknownField": 1,
+            "language": "jpn"
+          },
+          {
+            "arrapiUnknownField": 1,
+            "language": "jpn"
+          }
+        ],
+        "videoCodec": "x264"
+      },
+      "path": "/tv/folder-1/Season 02/episode-file-44.mkv",
+      "quality": {
+        "arrapiUnknownField": 1,
+        "revision": {
+          "arrapiUnknownField": 1,
+          "isRepack": false,
+          "version": 1
+        }
+      },
+      "relativePath": "Season 02/episode-file-44.mkv",
+      "releaseGroup": "group-4",
+      "seasonNumber": 2,
+      "size": 1036000000
+    },
+    "episodeFileId": 44,
+    "episodeNumber": 19,
+    "hasFile": true,
+    "id": 44,
+    "seasonNumber": 2,
+    "seriesId": 1,
+    "title": "Betrayal",
+    "tvdbId": 0
+  },
+  {
+    "absoluteEpisodeNumber": 46,
+    "airDate": "2008-08-24",
+    "arrapiUnknownField": 1,
+    "episodeFile": {
+      "arrapiUnknownField": 1,
+      "id": 45,
+      "mediaInfo": {
+        "arrapiUnknownField": 1,
+        "audioStreams": [
+          {
+            "arrapiUnknownField": 1,
+            "language": "eng"
+          },
+          {
+            "arrapiUnknownField": 1,
+            "language": "jpn"
+          },
+          {
+            "arrapiUnknownField": 1,
+            "language": "jpn"
+          }
+        ],
+        "videoCodec": "x264"
+      },
+      "path": "/tv/folder-1/Season 02/episode-file-45.mkv",
+      "quality": {
+        "arrapiUnknownField": 1,
+        "revision": {
+          "arrapiUnknownField": 1,
+          "isRepack": false,
+          "version": 1
+        }
+      },
+      "relativePath": "Season 02/episode-file-45.mkv",
+      "releaseGroup": "group-4",
+      "seasonNumber": 2,
+      "size": 1054000000
+    },
+    "episodeFileId": 45,
+    "episodeNumber": 20,
+    "hasFile": true,
+    "id": 45,
+    "seasonNumber": 2,
+    "seriesId": 1,
+    "title": "Emperor Dismissed",
+    "tvdbId": 0
+  },
+  {
+    "absoluteEpisodeNumber": 47,
+    "airDate": "2008-08-31",
+    "arrapiUnknownField": 1,
+    "episodeFile": {
+      "arrapiUnknownField": 1,
+      "id": 46,
+      "mediaInfo": {
+        "arrapiUnknownField": 1,
+        "audioStreams": [
+          {
+            "arrapiUnknownField": 1,
+            "language": "eng"
+          },
+          {
+            "arrapiUnknownField": 1,
+            "language": "jpn"
+          },
+          {
+            "arrapiUnknownField": 1,
+            "language": "jpn"
+          },
+          {
+            "arrapiUnknownField": 1,
+            "language": "jpn"
+          }
+        ],
+        "videoCodec": "x264"
+      },
+      "path": "/tv/folder-1/Season 02/episode-file-46.mkv",
+      "quality": {
+        "arrapiUnknownField": 1,
+        "revision": {
+          "arrapiUnknownField": 1,
+          "isRepack": false,
+          "version": 1
+        }
+      },
+      "relativePath": "Season 02/episode-file-46.mkv",
+      "releaseGroup": "group-4",
+      "seasonNumber": 2,
+      "size": 1062000000
+    },
+    "episodeFileId": 46,
+    "episodeNumber": 21,
+    "hasFile": true,
+    "id": 46,
+    "seasonNumber": 2,
+    "seriesId": 1,
+    "title": "The Ragnarök Connection",
+    "tvdbId": 0
+  },
+  {
+    "absoluteEpisodeNumber": 48,
+    "airDate": "2008-09-07",
+    "arrapiUnknownField": 1,
+    "episodeFile": {
+      "arrapiUnknownField": 1,
+      "id": 47,
+      "mediaInfo": {
+        "arrapiUnknownField": 1,
+        "audioStreams": [
+          {
+            "arrapiUnknownField": 1,
+            "language": "eng"
+          },
+          {
+            "arrapiUnknownField": 1,
+            "language": "jpn"
+          },
+          {
+            "arrapiUnknownField": 1,
+            "language": "jpn"
+          }
+        ],
+        "videoCodec": "x264"
+      },
+      "path": "/tv/folder-1/Season 02/episode-file-47.mkv",
+      "quality": {
+        "arrapiUnknownField": 1,
+        "revision": {
+          "arrapiUnknownField": 1,
+          "isRepack": false,
+          "version": 1
+        }
+      },
+      "relativePath": "Season 02/episode-file-47.mkv",
+      "releaseGroup": "group-4",
+      "seasonNumber": 2,
+      "size": 1053000000
+    },
+    "episodeFileId": 47,
+    "episodeNumber": 22,
+    "hasFile": true,
+    "id": 47,
+    "seasonNumber": 2,
+    "seriesId": 1,
+    "title": "Emperor Lelouch",
+    "tvdbId": 0
+  },
+  {
+    "absoluteEpisodeNumber": 49,
+    "airDate": "2008-09-14",
+    "arrapiUnknownField": 1,
+    "episodeFile": {
+      "arrapiUnknownField": 1,
+      "id": 48,
+      "mediaInfo": {
+        "arrapiUnknownField": 1,
+        "audioStreams": [
+          {
+            "arrapiUnknownField": 1,
+            "language": "eng"
+          },
+          {
+            "arrapiUnknownField": 1,
+            "language": "jpn"
+          },
+          {
+            "arrapiUnknownField": 1,
+            "language": "jpn"
+          }
+        ],
+        "videoCodec": "x264"
+      },
+      "path": "/tv/folder-1/Season 02/episode-file-48.mkv",
+      "quality": {
+        "arrapiUnknownField": 1,
+        "revision": {
+          "arrapiUnknownField": 1,
+          "isRepack": false,
+          "version": 1
+        }
+      },
+      "relativePath": "Season 02/episode-file-48.mkv",
+      "releaseGroup": "group-4",
+      "seasonNumber": 2,
+      "size": 1057000000
+    },
+    "episodeFileId": 48,
+    "episodeNumber": 23,
+    "hasFile": true,
+    "id": 48,
+    "seasonNumber": 2,
+    "seriesId": 1,
+    "title": "Schneizel's Guise",
+    "tvdbId": 0
+  },
+  {
+    "absoluteEpisodeNumber": 50,
+    "airDate": "2008-09-21",
+    "arrapiUnknownField": 1,
+    "episodeFile": {
+      "arrapiUnknownField": 1,
+      "id": 49,
+      "mediaInfo": {
+        "arrapiUnknownField": 1,
+        "audioStreams": [
+          {
+            "arrapiUnknownField": 1,
+            "language": "eng"
+          },
+          {
+            "arrapiUnknownField": 1,
+            "language": "jpn"
+          },
+          {
+            "arrapiUnknownField": 1,
+            "language": "jpn"
+          }
+        ],
+        "videoCodec": "x264"
+      },
+      "path": "/tv/folder-1/Season 02/episode-file-49.mkv",
+      "quality": {
+        "arrapiUnknownField": 1,
+        "revision": {
+          "arrapiUnknownField": 1,
+          "isRepack": false,
+          "version": 1
+        }
+      },
+      "relativePath": "Season 02/episode-file-49.mkv",
+      "releaseGroup": "group-4",
+      "seasonNumber": 2,
+      "size": 1060000000
+    },
+    "episodeFileId": 49,
+    "episodeNumber": 24,
+    "hasFile": true,
+    "id": 49,
+    "seasonNumber": 2,
+    "seriesId": 1,
+    "title": "The Grip of Damocles",
+    "tvdbId": 0
+  },
+  {
+    "absoluteEpisodeNumber": 51,
+    "airDate": "2008-09-28",
+    "arrapiUnknownField": 1,
+    "episodeFile": {
+      "arrapiUnknownField": 1,
+      "id": 50,
+      "mediaInfo": {
+        "arrapiUnknownField": 1,
+        "audioStreams": [
+          {
+            "arrapiUnknownField": 1,
+            "language": "eng"
+          },
+          {
+            "arrapiUnknownField": 1,
+            "language": "jpn"
+          },
+          {
+            "arrapiUnknownField": 1,
+            "language": "jpn"
+          },
+          {
+            "arrapiUnknownField": 1,
+            "language": "jpn"
+          },
+          {
+            "arrapiUnknownField": 1,
+            "language": "jpn"
+          }
+        ],
+        "videoCodec": "x264"
+      },
+      "path": "/tv/folder-1/Season 02/episode-file-50.mkv",
+      "quality": {
+        "arrapiUnknownField": 1,
+        "revision": {
+          "arrapiUnknownField": 1,
+          "isRepack": false,
+          "version": 1
+        }
+      },
+      "relativePath": "Season 02/episode-file-50.mkv",
+      "releaseGroup": "group-4",
+      "seasonNumber": 2,
+      "size": 1063000000
+    },
+    "episodeFileId": 50,
+    "episodeNumber": 25,
+    "hasFile": true,
+    "id": 50,
+    "seasonNumber": 2,
+    "seriesId": 1,
+    "title": "Re;",
+    "tvdbId": 0
+  },
+  {
+    "airDate": "2017-10-21",
+    "arrapiUnknownField": 1,
+    "episodeFileId": 0,
+    "episodeNumber": 1,
+    "hasFile": false,
+    "id": 51,
+    "seasonNumber": 0,
+    "seriesId": 1,
+    "title": "Code Geass: Lelouch of the Rebellion 1 - Initiation",
+    "tvdbId": 0
+  },
+  {
+    "airDate": "2018-02-10",
+    "arrapiUnknownField": 1,
+    "episodeFileId": 0,
+    "episodeNumber": 2,
+    "hasFile": false,
+    "id": 52,
+    "seasonNumber": 0,
+    "seriesId": 1,
+    "title": "Code Geass: Lelouch of the Rebellion 2 - Transgression",
+    "tvdbId": 0
+  },
+  {
+    "airDate": "2018-05-26",
+    "arrapiUnknownField": 1,
+    "episodeFileId": 0,
+    "episodeNumber": 3,
+    "hasFile": false,
+    "id": 53,
+    "seasonNumber": 0,
+    "seriesId": 1,
+    "title": "Code Geass: Lelouch of the Rebellion 3 - Glorification",
+    "tvdbId": 0
+  },
+  {
+    "absoluteEpisodeNumber": 52,
+    "airDate": "2019-02-09",
+    "arrapiUnknownField": 1,
+    "episodeFileId": 0,
+    "episodeNumber": 4,
+    "hasFile": false,
+    "id": 54,
+    "seasonNumber": 0,
+    "seriesId": 1,
+    "title": "Code Geass: Lelouch of the Re;surrection",
+    "tvdbId": 0
+  },
+  {
+    "airDate": "2008-02-22",
+    "arrapiUnknownField": 1,
+    "episodeFileId": 0,
+    "episodeNumber": 5,
+    "hasFile": false,
+    "id": 55,
+    "seasonNumber": 0,
+    "seriesId": 1,
+    "title": "Special Edition - Black Rebellion",
+    "tvdbId": 0
+  },
+  {
+    "airDate": "2009-07-24",
+    "arrapiUnknownField": 1,
+    "episodeFileId": 0,
+    "episodeNumber": 6,
+    "hasFile": false,
+    "id": 56,
+    "seasonNumber": 0,
+    "seriesId": 1,
+    "title": "Special Edition - Zero Requiem",
+    "tvdbId": 0
+  },
+  {
+    "airDate": "2012-07-16",
+    "arrapiUnknownField": 1,
+    "episodeFileId": 0,
+    "episodeNumber": 7,
+    "hasFile": false,
+    "id": 57,
+    "seasonNumber": 0,
+    "seriesId": 1,
+    "title": "Akito the Exiled 1 : The Wyvern Arrives",
+    "tvdbId": 0
+  },
+  {
+    "airDate": "2013-09-14",
+    "arrapiUnknownField": 1,
+    "episodeFileId": 0,
+    "episodeNumber": 8,
+    "hasFile": false,
+    "id": 58,
+    "seasonNumber": 0,
+    "seriesId": 1,
+    "title": "Akito the Exiled 2 : The Wyvern Divided",
+    "tvdbId": 0
+  },
+  {
+    "airDate": "2015-05-02",
+    "arrapiUnknownField": 1,
+    "episodeFileId": 0,
+    "episodeNumber": 9,
+    "hasFile": false,
+    "id": 59,
+    "seasonNumber": 0,
+    "seriesId": 1,
+    "title": "Akito the Exiled 3 : The Brightness Falls",
+    "tvdbId": 0
+  },
+  {
+    "airDate": "2015-07-04",
+    "arrapiUnknownField": 1,
+    "episodeFileId": 0,
+    "episodeNumber": 10,
+    "hasFile": false,
+    "id": 60,
+    "seasonNumber": 0,
+    "seriesId": 1,
+    "title": "Akito the Exiled 4 : Memories of Hatred",
+    "tvdbId": 0
+  },
+  {
+    "airDate": "2016-02-06",
+    "arrapiUnknownField": 1,
+    "episodeFileId": 0,
+    "episodeNumber": 11,
+    "hasFile": false,
+    "id": 61,
+    "seasonNumber": 0,
+    "seriesId": 1,
+    "title": "Akito the Exiled 5 : To Beloved Ones",
+    "tvdbId": 0
+  },
+  {
+    "airDate": "2012-07-27",
+    "arrapiUnknownField": 1,
+    "episodeFileId": 0,
+    "episodeNumber": 12,
+    "hasFile": false,
+    "id": 62,
+    "seasonNumber": 0,
+    "seriesId": 1,
+    "title": "OVA : Code Geass: Nunnally in Wonderland",
+    "tvdbId": 0
+  },
+  {
+    "airDate": "2013-01-10",
+    "arrapiUnknownField": 1,
+    "episodeFile": {
+      "arrapiUnknownField": 1,
+      "id": 51,
+      "mediaInfo": {
+        "arrapiUnknownField": 1,
+        "audioStreams": [
+          {
+            "arrapiUnknownField": 1,
+            "language": "jpn"
+          }
+        ],
+        "videoCodec": "x264"
+      },
+      "path": "/tv/folder-1/Season 00/episode-file-51.mkv",
+      "quality": {
+        "arrapiUnknownField": 1,
+        "revision": {
+          "arrapiUnknownField": 1,
+          "isRepack": false,
+          "version": 1
+        }
+      },
+      "relativePath": "Season 00/episode-file-51.mkv",
+      "releaseGroup": "group-1",
+      "seasonNumber": 0,
+      "size": 1000000000
+    },
+    "episodeFileId": 51,
+    "episodeNumber": 13,
+    "hasFile": true,
+    "id": 63,
+    "seasonNumber": 0,
+    "seriesId": 1,
+    "title": "Code Geass: Oz the Reflection Picture Drama",
+    "tvdbId": 0
+  },
+  {
+    "absoluteEpisodeNumber": 9,
+    "airDate": "2006-12-01",
+    "arrapiUnknownField": 1,
+    "episodeFileId": 0,
+    "episodeNumber": 14,
+    "hasFile": false,
+    "id": 64,
+    "seasonNumber": 0,
+    "seriesId": 1,
+    "title": "Stage 8.5: The Mask's Tracks",
+    "tvdbId": 0
+  },
+  {
+    "airDate": "2007-01-26",
+    "arrapiUnknownField": 1,
+    "episodeFileId": 0,
+    "episodeNumber": 16,
+    "hasFile": false,
+    "id": 65,
+    "seasonNumber": 0,
+    "seriesId": 1,
+    "title": "Picture Drama - Stage 0.515",
+    "tvdbId": 0
+  },
+  {
+    "airDate": "2007-02-23",
+    "arrapiUnknownField": 1,
+    "episodeFileId": 0,
+    "episodeNumber": 17,
+    "hasFile": false,
+    "id": 66,
+    "seasonNumber": 0,
+    "seriesId": 1,
+    "title": "Picture Drama - Stage 3.25",
+    "tvdbId": 0
+  },
+  {
+    "airDate": "2007-03-23",
+    "arrapiUnknownField": 1,
+    "episodeFileId": 0,
+    "episodeNumber": 18,
+    "hasFile": false,
+    "id": 67,
+    "seasonNumber": 0,
+    "seriesId": 1,
+    "title": "Picture Drama - Stage 4.33",
+    "tvdbId": 0
+  },
+  {
+    "airDate": "2007-04-25",
+    "arrapiUnknownField": 1,
+    "episodeFileId": 0,
+    "episodeNumber": 19,
+    "hasFile": false,
+    "id": 68,
+    "seasonNumber": 0,
+    "seriesId": 1,
+    "title": "Picture Drama - Stage 6.75",
+    "tvdbId": 0
+  },
+  {
+    "airDate": "2007-05-25",
+    "arrapiUnknownField": 1,
+    "episodeFileId": 0,
+    "episodeNumber": 20,
+    "hasFile": false,
+    "id": 69,
+    "seasonNumber": 0,
+    "seriesId": 1,
+    "title": "Picture Drama - Stage 8.75",
+    "tvdbId": 0
+  },
+  {
+    "airDate": "2007-06-22",
+    "arrapiUnknownField": 1,
+    "episodeFileId": 0,
+    "episodeNumber": 21,
+    "hasFile": false,
+    "id": 70,
+    "seasonNumber": 0,
+    "seriesId": 1,
+    "title": "Picture Drama - Stage 9.33",
+    "tvdbId": 0
+  },
+  {
+    "airDate": "2007-07-27",
+    "arrapiUnknownField": 1,
+    "episodeFileId": 0,
+    "episodeNumber": 22,
+    "hasFile": false,
+    "id": 71,
+    "seasonNumber": 0,
+    "seriesId": 1,
+    "title": "Picture Drama - Stage 9.75",
+    "tvdbId": 0
+  },
+  {
+    "airDate": "2007-08-24",
+    "arrapiUnknownField": 1,
+    "episodeFileId": 0,
+    "episodeNumber": 23,
+    "hasFile": false,
+    "id": 72,
+    "seasonNumber": 0,
+    "seriesId": 1,
+    "title": "Picture Drama - Stage 22.25",
+    "tvdbId": 0
+  },
+  {
+    "airDate": "2007-09-25",
+    "arrapiUnknownField": 1,
+    "episodeFileId": 0,
+    "episodeNumber": 24,
+    "hasFile": false,
+    "id": 73,
+    "seasonNumber": 0,
+    "seriesId": 1,
+    "title": "Picture Drama - Stage 23.95",
+    "tvdbId": 0
+  },
+  {
+    "airDate": "2008-08-22",
+    "arrapiUnknownField": 1,
+    "episodeFileId": 0,
+    "episodeNumber": 25,
+    "hasFile": false,
+    "id": 74,
+    "seasonNumber": 0,
+    "seriesId": 1,
+    "title": "Picture Drama - Turn 0.923",
+    "tvdbId": 0
+  },
+  {
+    "airDate": "2008-09-26",
+    "arrapiUnknownField": 1,
+    "episodeFileId": 0,
+    "episodeNumber": 26,
+    "hasFile": false,
+    "id": 75,
+    "seasonNumber": 0,
+    "seriesId": 1,
+    "title": "Picture Drama - Turn 0.56",
+    "tvdbId": 0
+  },
+  {
+    "airDate": "2008-10-24",
+    "arrapiUnknownField": 1,
+    "episodeFileId": 0,
+    "episodeNumber": 27,
+    "hasFile": false,
+    "id": 76,
+    "seasonNumber": 0,
+    "seriesId": 1,
+    "title": "Picture Drama - Turn 7.19",
+    "tvdbId": 0
+  },
+  {
+    "airDate": "2008-11-21",
+    "arrapiUnknownField": 1,
+    "episodeFileId": 0,
+    "episodeNumber": 28,
+    "hasFile": false,
+    "id": 77,
+    "seasonNumber": 0,
+    "seriesId": 1,
+    "title": "Picture Drama - Turn 9.34",
+    "tvdbId": 0
+  },
+  {
+    "airDate": "2014-03-26",
+    "arrapiUnknownField": 1,
+    "episodeFileId": 0,
+    "episodeNumber": 29,
+    "hasFile": false,
+    "id": 78,
+    "seasonNumber": 0,
+    "seriesId": 1,
+    "title": "Picture Drama - Turn 12.06",
+    "tvdbId": 0
+  },
+  {
+    "airDate": "2008-12-19",
+    "arrapiUnknownField": 1,
+    "episodeFileId": 0,
+    "episodeNumber": 30,
+    "hasFile": false,
+    "id": 79,
+    "seasonNumber": 0,
+    "seriesId": 1,
+    "title": "Picture Drama - Turn 12.59",
+    "tvdbId": 0
+  },
+  {
+    "airDate": "2009-01-23",
+    "arrapiUnknownField": 1,
+    "episodeFileId": 0,
+    "episodeNumber": 31,
+    "hasFile": false,
+    "id": 80,
+    "seasonNumber": 0,
+    "seriesId": 1,
+    "title": "Picture Drama - Turn 12.31",
+    "tvdbId": 0
+  },
+  {
+    "airDate": "2009-02-20",
+    "arrapiUnknownField": 1,
+    "episodeFileId": 0,
+    "episodeNumber": 32,
+    "hasFile": false,
+    "id": 81,
+    "seasonNumber": 0,
+    "seriesId": 1,
+    "title": "Picture Drama - Turn 19.02",
+    "tvdbId": 0
+  },
+  {
+    "airDate": "2009-03-27",
+    "arrapiUnknownField": 1,
+    "episodeFileId": 0,
+    "episodeNumber": 33,
+    "hasFile": false,
+    "id": 82,
+    "seasonNumber": 0,
+    "seriesId": 1,
+    "title": "Picture Drama - Turn 22.05",
+    "tvdbId": 0
+  },
+  {
+    "airDate": "2009-04-24",
+    "arrapiUnknownField": 1,
+    "episodeFileId": 0,
+    "episodeNumber": 34,
+    "hasFile": false,
+    "id": 83,
+    "seasonNumber": 0,
+    "seriesId": 1,
+    "title": "Picture Drama - Turn 25.01",
+    "tvdbId": 0
+  },
+  {
+    "airDate": "2007-01-25",
+    "arrapiUnknownField": 1,
+    "episodeFileId": 0,
+    "episodeNumber": 35,
+    "hasFile": false,
+    "id": 84,
+    "seasonNumber": 0,
+    "seriesId": 1,
+    "title": "Picture Drama - Stage 0.97",
+    "tvdbId": 0
+  },
+  {
+    "airDate": "2010-04-23",
+    "arrapiUnknownField": 1,
+    "episodeFileId": 0,
+    "episodeNumber": 36,
+    "hasFile": false,
+    "id": 85,
+    "seasonNumber": 0,
+    "seriesId": 1,
+    "title": "The Miraculous Birthday Picture Drama",
+    "tvdbId": 0
+  },
+  {
+    "airDate": "2008-08-22",
+    "arrapiUnknownField": 1,
+    "episodeFileId": 0,
+    "episodeNumber": 37,
+    "hasFile": false,
+    "id": 86,
+    "seasonNumber": 0,
+    "seriesId": 1,
+    "title": "Nunnally Diary - Episode 1",
+    "tvdbId": 0
+  },
+  {
+    "airDate": "2008-09-26",
+    "arrapiUnknownField": 1,
+    "episodeFileId": 0,
+    "episodeNumber": 38,
+    "hasFile": false,
+    "id": 87,
+    "seasonNumber": 0,
+    "seriesId": 1,
+    "title": "Nunnally Diary - Episode 2",
+    "tvdbId": 0
+  },
+  {
+    "airDate": "2008-10-24",
+    "arrapiUnknownField": 1,
+    "episodeFileId": 0,
+    "episodeNumber": 39,
+    "hasFile": false,
+    "id": 88,
+    "seasonNumber": 0,
+    "seriesId": 1,
+    "title": "Nunnally Diary - Episode 3",
+    "tvdbId": 0
+  },
+  {
+    "airDate": "2008-11-21",
+    "arrapiUnknownField": 1,
+    "episodeFileId": 0,
+    "episodeNumber": 40,
+    "hasFile": false,
+    "id": 89,
+    "seasonNumber": 0,
+    "seriesId": 1,
+    "title": "Nunnally Diary - Episode 4",
+    "tvdbId": 0
+  },
+  {
+    "airDate": "2008-12-19",
+    "arrapiUnknownField": 1,
+    "episodeFileId": 0,
+    "episodeNumber": 41,
+    "hasFile": false,
+    "id": 90,
+    "seasonNumber": 0,
+    "seriesId": 1,
+    "title": "Nunnally Diary - Episode 5",
+    "tvdbId": 0
+  },
+  {
+    "airDate": "2009-01-23",
+    "arrapiUnknownField": 1,
+    "episodeFileId": 0,
+    "episodeNumber": 42,
+    "hasFile": false,
+    "id": 91,
+    "seasonNumber": 0,
+    "seriesId": 1,
+    "title": "Nunnally Diary - Episode 6",
+    "tvdbId": 0
+  },
+  {
+    "airDate": "2009-02-20",
+    "arrapiUnknownField": 1,
+    "episodeFileId": 0,
+    "episodeNumber": 43,
+    "hasFile": false,
+    "id": 92,
+    "seasonNumber": 0,
+    "seriesId": 1,
+    "title": "Nunnally Diary - Episode 7",
+    "tvdbId": 0
+  },
+  {
+    "airDate": "2009-03-27",
+    "arrapiUnknownField": 1,
+    "episodeFileId": 0,
+    "episodeNumber": 44,
+    "hasFile": false,
+    "id": 93,
+    "seasonNumber": 0,
+    "seriesId": 1,
+    "title": "Nunnally Diary - Episode 8",
+    "tvdbId": 0
+  },
+  {
+    "airDate": "2009-04-24",
+    "arrapiUnknownField": 1,
+    "episodeFileId": 0,
+    "episodeNumber": 45,
+    "hasFile": false,
+    "id": 94,
+    "seasonNumber": 0,
+    "seriesId": 1,
+    "title": "Nunnally Diary - Episode 9",
+    "tvdbId": 0
+  },
+  {
+    "airDate": "2010-04-23",
+    "arrapiUnknownField": 1,
+    "episodeFileId": 0,
+    "episodeNumber": 46,
+    "hasFile": false,
+    "id": 95,
+    "seasonNumber": 0,
+    "seriesId": 1,
+    "title": "The Miraculous Birthday Omake Flash",
+    "tvdbId": 0
+  },
+  {
+    "airDate": "2013-12-25",
+    "arrapiUnknownField": 1,
+    "episodeFileId": 0,
+    "episodeNumber": 47,
+    "hasFile": false,
+    "id": 96,
+    "seasonNumber": 0,
+    "seriesId": 1,
+    "title": "Akito the Exiled: The Torn Wyvern - Picture Drama",
+    "tvdbId": 0
+  },
+  {
+    "airDate": "2015-06-25",
+    "arrapiUnknownField": 1,
+    "episodeFileId": 0,
+    "episodeNumber": 48,
+    "hasFile": false,
+    "id": 97,
+    "seasonNumber": 0,
+    "seriesId": 1,
+    "title": "Akito the Exiled: The Brightness Falls - Picture Drama",
+    "tvdbId": 0
+  },
+  {
+    "airDate": "2015-10-28",
+    "arrapiUnknownField": 1,
+    "episodeFileId": 0,
+    "episodeNumber": 49,
+    "hasFile": false,
+    "id": 98,
+    "seasonNumber": 0,
+    "seriesId": 1,
+    "title": "Akito the Exiled: Memories of Hatred - Picture Drama",
+    "tvdbId": 0
+  },
+  {
+    "airDate": "2016-04-22",
+    "arrapiUnknownField": 1,
+    "episodeFileId": 0,
+    "episodeNumber": 50,
+    "hasFile": false,
+    "id": 99,
+    "seasonNumber": 0,
+    "seriesId": 1,
+    "title": "Akito the Exiled: To Those Who are Precious - Picture Drama",
+    "tvdbId": 0
+  },
+  {
+    "airDate": "2017-10-21",
+    "arrapiUnknownField": 1,
+    "episodeFileId": 0,
+    "episodeNumber": 51,
+    "hasFile": false,
+    "id": 100,
+    "seasonNumber": 0,
+    "seriesId": 1,
+    "title": "Kiseki Anniversary Picture Drama",
+    "tvdbId": 0
+  },
+  {
+    "airDate": "2019-12-05",
+    "arrapiUnknownField": 1,
+    "episodeFileId": 0,
+    "episodeNumber": 52,
+    "hasFile": false,
+    "id": 101,
+    "seasonNumber": 0,
+    "seriesId": 1,
+    "title": "Picture Drama Re;f 1.05 - Talking in a Hammam",
+    "tvdbId": 0
+  },
+  {
+    "airDate": "2019-12-05",
+    "arrapiUnknownField": 1,
+    "episodeFileId": 0,
+    "episodeNumber": 53,
+    "hasFile": false,
+    "id": 102,
+    "seasonNumber": 0,
+    "seriesId": 1,
+    "title": "Picture Drama: Re;f 103.00 - Fragment of the Deep Sea",
+    "tvdbId": 0
+  }
+]

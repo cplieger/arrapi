@@ -1,0 +1,222 @@
+[
+  {
+    "alternateTitles": [
+      {
+        "arrapiUnknownField": 1,
+        "title": "Firefly - Der Aufbruch der Serenity"
+      }
+    ],
+    "aniListIds": [],
+    "arrapiUnknownField": 1,
+    "id": 4,
+    "imdbId": "tt0303461",
+    "language": {
+      "arrapiUnknownField": 1,
+      "id": 1,
+      "name": "English"
+    },
+    "originalLanguage": {
+      "arrapiUnknownField": 1,
+      "id": 1,
+      "name": "English"
+    },
+    "originalTitle": "Firefly",
+    "seasonType": "dvd",
+    "seasonTypes": [
+      {
+        "arrapiUnknownField": 1,
+        "name": "Aired Order",
+        "type": "official"
+      },
+      {
+        "arrapiUnknownField": 1,
+        "name": "DVD Order",
+        "type": "dvd"
+      }
+    ],
+    "seasons": [
+      {
+        "arrapiUnknownField": 1,
+        "seasonNumber": 0
+      },
+      {
+        "arrapiUnknownField": 1,
+        "seasonNumber": 1
+      }
+    ],
+    "statistics": {
+      "arrapiUnknownField": 1,
+      "episodeFileCount": 14
+    },
+    "tags": [],
+    "title": "Firefly",
+    "titleSlug": "firefly",
+    "tmdbId": 1437,
+    "translations": [
+      {
+        "arrapiUnknownField": 1,
+        "language": {
+          "arrapiUnknownField": 1,
+          "id": 25,
+          "name": "Czech"
+        },
+        "title": "Firefly"
+      },
+      {
+        "arrapiUnknownField": 1,
+        "language": {
+          "arrapiUnknownField": 1,
+          "id": 4,
+          "name": "German"
+        },
+        "title": "Firefly"
+      },
+      {
+        "arrapiUnknownField": 1,
+        "language": {
+          "arrapiUnknownField": 1,
+          "id": 1,
+          "name": "English"
+        },
+        "title": "Firefly"
+      },
+      {
+        "arrapiUnknownField": 1,
+        "language": {
+          "arrapiUnknownField": 1,
+          "id": 2,
+          "name": "French"
+        },
+        "title": "Firefly"
+      },
+      {
+        "arrapiUnknownField": 1,
+        "language": {
+          "arrapiUnknownField": 1,
+          "id": 23,
+          "name": "Hebrew"
+        },
+        "title": "פיירפלי"
+      },
+      {
+        "arrapiUnknownField": 1,
+        "language": {
+          "arrapiUnknownField": 1,
+          "id": 22,
+          "name": "Hungarian"
+        },
+        "title": "Firefly"
+      },
+      {
+        "arrapiUnknownField": 1,
+        "language": {
+          "arrapiUnknownField": 1,
+          "id": 5,
+          "name": "Italian"
+        },
+        "title": "Firefly"
+      },
+      {
+        "arrapiUnknownField": 1,
+        "language": {
+          "arrapiUnknownField": 1,
+          "id": 21,
+          "name": "Korean"
+        },
+        "title": "파이어플라이"
+      },
+      {
+        "arrapiUnknownField": 1,
+        "language": {
+          "arrapiUnknownField": 1,
+          "id": 7,
+          "name": "Dutch"
+        },
+        "title": "Firefly"
+      },
+      {
+        "arrapiUnknownField": 1,
+        "language": {
+          "arrapiUnknownField": 1,
+          "id": 12,
+          "name": "Polish"
+        },
+        "title": "Firefly"
+      },
+      {
+        "arrapiUnknownField": 1,
+        "language": {
+          "arrapiUnknownField": 1,
+          "id": 18,
+          "name": "Portuguese"
+        },
+        "title": "Firefly"
+      },
+      {
+        "arrapiUnknownField": 1,
+        "language": {
+          "arrapiUnknownField": 1,
+          "id": 11,
+          "name": "Russian"
+        },
+        "title": "Светлячок"
+      },
+      {
+        "arrapiUnknownField": 1,
+        "language": {
+          "arrapiUnknownField": 1,
+          "id": 3,
+          "name": "Spanish"
+        },
+        "title": "Firefly"
+      },
+      {
+        "arrapiUnknownField": 1,
+        "language": {
+          "arrapiUnknownField": 1,
+          "id": 14,
+          "name": "Swedish"
+        },
+        "title": "Firefly"
+      },
+      {
+        "arrapiUnknownField": 1,
+        "language": {
+          "arrapiUnknownField": 1,
+          "id": 10,
+          "name": "Chinese"
+        },
+        "title": "萤火虫"
+      },
+      {
+        "arrapiUnknownField": 1,
+        "language": {
+          "arrapiUnknownField": 1,
+          "id": 39,
+          "name": "Croatian"
+        },
+        "title": "Firefly"
+      },
+      {
+        "arrapiUnknownField": 1,
+        "language": {
+          "arrapiUnknownField": 1,
+          "id": 18,
+          "name": "Portuguese"
+        },
+        "title": "Firefly"
+      },
+      {
+        "arrapiUnknownField": 1,
+        "language": {
+          "arrapiUnknownField": 1,
+          "id": 16,
+          "name": "Finnish"
+        },
+        "title": "Firefly"
+      }
+    ],
+    "tvdbId": 78874,
+    "year": 2002
+  }
+]

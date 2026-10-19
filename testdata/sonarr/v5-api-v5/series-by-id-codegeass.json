@@ -1,0 +1,258 @@
+{
+  "alternateTitles": [
+    {
+      "arrapiUnknownField": 1,
+      "title": "Code Geass: Lelouch of the Rebellion R2"
+    },
+    {
+      "arrapiUnknownField": 1,
+      "title": "Code Geass: Lelouch of the Rebellion"
+    },
+    {
+      "arrapiUnknownField": 1,
+      "title": "コードギアス 反逆のルルーシュ"
+    },
+    {
+      "arrapiUnknownField": 1,
+      "title": "コードギアス 反逆のルルーシュ R2"
+    },
+    {
+      "arrapiUnknownField": 1,
+      "title": "Code Geass"
+    },
+    {
+      "arrapiUnknownField": 1,
+      "title": "Code Geass R2"
+    },
+    {
+      "arrapiUnknownField": 1,
+      "title": "Code Geass S1"
+    },
+    {
+      "arrapiUnknownField": 1,
+      "title": "Code Geass S2"
+    }
+  ],
+  "aniListIds": [
+    1575,
+    2904,
+    12685,
+    97880
+  ],
+  "arrapiUnknownField": 1,
+  "id": 1,
+  "imdbId": "tt0994314",
+  "language": {
+    "arrapiUnknownField": 1,
+    "id": 1,
+    "name": "English"
+  },
+  "originalLanguage": {
+    "arrapiUnknownField": 1,
+    "id": 8,
+    "name": "Japanese"
+  },
+  "originalTitle": "コードギアス 反逆のルルーシュ",
+  "seasonType": "official",
+  "seasonTypes": [
+    {
+      "arrapiUnknownField": 1,
+      "name": "Aired Order",
+      "type": "official"
+    },
+    {
+      "arrapiUnknownField": 1,
+      "name": "DVD Order",
+      "type": "dvd"
+    }
+  ],
+  "seasons": [
+    {
+      "arrapiUnknownField": 1,
+      "seasonNumber": 0
+    },
+    {
+      "arrapiUnknownField": 1,
+      "seasonNumber": 1
+    },
+    {
+      "arrapiUnknownField": 1,
+      "seasonNumber": 2,
+      "title": "R2"
+    }
+  ],
+  "statistics": {
+    "arrapiUnknownField": 1,
+    "episodeFileCount": 51
+  },
+  "tags": [],
+  "title": "Code Geass: Lelouch of the Rebellion",
+  "titleSlug": "code-geass-lelouch-of-the-rebellion",
+  "tmdbId": 31724,
+  "translations": [
+    {
+      "arrapiUnknownField": 1,
+      "language": {
+        "arrapiUnknownField": 1,
+        "id": 4,
+        "name": "German"
+      },
+      "title": "Code Geass: Lelouch of the Rebellion"
+    },
+    {
+      "arrapiUnknownField": 1,
+      "language": {
+        "arrapiUnknownField": 1,
+        "id": 1,
+        "name": "English"
+      },
+      "title": "Code Geass: Lelouch of the Rebellion"
+    },
+    {
+      "arrapiUnknownField": 1,
+      "language": {
+        "arrapiUnknownField": 1,
+        "id": 2,
+        "name": "French"
+      },
+      "title": "Code Geass: Lelouch of the Rebellion"
+    },
+    {
+      "arrapiUnknownField": 1,
+      "language": {
+        "arrapiUnknownField": 1,
+        "id": 23,
+        "name": "Hebrew"
+      },
+      "title": "קוֹד גיאַס: לולוש של המהפכה"
+    },
+    {
+      "arrapiUnknownField": 1,
+      "language": {
+        "arrapiUnknownField": 1,
+        "id": 5,
+        "name": "Italian"
+      },
+      "title": "Code Geass: Lelouch of the Rebellion"
+    },
+    {
+      "arrapiUnknownField": 1,
+      "language": {
+        "arrapiUnknownField": 1,
+        "id": 8,
+        "name": "Japanese"
+      },
+      "title": "コードギアス 反逆のルルーシュ"
+    },
+    {
+      "arrapiUnknownField": 1,
+      "language": {
+        "arrapiUnknownField": 1,
+        "id": 21,
+        "name": "Korean"
+      },
+      "title": "코드 기아스: 반역의 를르슈"
+    },
+    {
+      "arrapiUnknownField": 1,
+      "language": {
+        "arrapiUnknownField": 1,
+        "id": 7,
+        "name": "Dutch"
+      },
+      "title": "Code Geass: Lelouch of the Rebellion"
+    },
+    {
+      "arrapiUnknownField": 1,
+      "language": {
+        "arrapiUnknownField": 1,
+        "id": 12,
+        "name": "Polish"
+      },
+      "title": "Code Geass: Lelouch of the Rebellion"
+    },
+    {
+      "arrapiUnknownField": 1,
+      "language": {
+        "arrapiUnknownField": 1,
+        "id": 18,
+        "name": "Portuguese"
+      },
+      "title": "Code Geass: Lelouch of the Rebellion"
+    },
+    {
+      "arrapiUnknownField": 1,
+      "language": {
+        "arrapiUnknownField": 1,
+        "id": 11,
+        "name": "Russian"
+      },
+      "title": "Код Гиасс: Восстание Лелуша"
+    },
+    {
+      "arrapiUnknownField": 1,
+      "language": {
+        "arrapiUnknownField": 1,
+        "id": 3,
+        "name": "Spanish"
+      },
+      "title": "Code Geass: Hangyaku no Lelouch"
+    },
+    {
+      "arrapiUnknownField": 1,
+      "language": {
+        "arrapiUnknownField": 1,
+        "id": 17,
+        "name": "Turkish"
+      },
+      "title": "Code Geass: Lelouch of the Rebellion R2"
+    },
+    {
+      "arrapiUnknownField": 1,
+      "language": {
+        "arrapiUnknownField": 1,
+        "id": 10,
+        "name": "Chinese"
+      },
+      "title": "反叛的鲁路修"
+    },
+    {
+      "arrapiUnknownField": 1,
+      "language": {
+        "arrapiUnknownField": 1,
+        "id": 10,
+        "name": "Chinese"
+      },
+      "title": "Code Geass 反叛的魯路修"
+    },
+    {
+      "arrapiUnknownField": 1,
+      "language": {
+        "arrapiUnknownField": 1,
+        "id": 18,
+        "name": "Portuguese"
+      },
+      "title": "Code Geass"
+    },
+    {
+      "arrapiUnknownField": 1,
+      "language": {
+        "arrapiUnknownField": 1,
+        "id": 26,
+        "name": "Arabic"
+      },
+      "title": "Code Geass: Hangyaku no Lelouch"
+    },
+    {
+      "arrapiUnknownField": 1,
+      "language": {
+        "arrapiUnknownField": 1,
+        "id": 14,
+        "name": "Swedish"
+      },
+      "title": "Code Geass - Lelouch of the Rebellion"
+    }
+  ],
+  "tvdbId": 79525,
+  "year": 2006
+}

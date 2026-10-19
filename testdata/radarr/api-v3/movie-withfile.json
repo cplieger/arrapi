@@ -1,0 +1,53 @@
+{
+  "alternateTitles": [
+    {
+      "arrapiUnknownField": 1,
+      "title": "아리엘"
+    },
+    {
+      "arrapiUnknownField": 1,
+      "title": "Mayonaka no Niji"
+    },
+    {
+      "arrapiUnknownField": 1,
+      "title": "Ariel - Abgebrannt in Helsinki"
+    }
+  ],
+  "arrapiUnknownField": 1,
+  "hasFile": true,
+  "id": 4,
+  "imdbId": "tt0094675",
+  "movieFile": {
+    "arrapiUnknownField": 1,
+    "id": 1,
+    "mediaInfo": {
+      "arrapiUnknownField": 1,
+      "audioLanguages": "fin",
+      "videoCodec": "x264"
+    },
+    "path": "/movies/folder-1/movie-file-1.mkv",
+    "quality": {
+      "arrapiUnknownField": 1,
+      "revision": {
+        "arrapiUnknownField": 1,
+        "isRepack": false,
+        "version": 1
+      }
+    },
+    "relativePath": "movie-file-1.mkv",
+    "releaseGroup": "group-1",
+    "sceneName": "scene-1",
+    "size": 1000000000
+  },
+  "originalLanguage": {
+    "arrapiUnknownField": 1,
+    "id": 16,
+    "name": "Finnish"
+  },
+  "tags": [
+    1
+  ],
+  "title": "Ariel",
+  "tmdbId": 2,
+  "year": 1988
+}
