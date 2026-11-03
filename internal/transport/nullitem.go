@@ -11,7 +11,7 @@ import (
 // at any depth, and returns that field's declared JSON path and the item's index.
 // encoding/json decodes such an item as a zero value (seasons [null] a season 0, tags
 // [null] a tag id 0), and no Sonarr or Radarr resource holds one. An array the type
-// does not declare, a top-level list (GetList judges its items), and an item type
+// does not declare, a top-level list (nullListItem judges its items), and an item type
 // with its own UnmarshalJSON, which decides what null means, are not judged. data
 // must already have decoded into t.
 func nullItem(data []byte, t reflect.Type) (field string, index int, found bool) {

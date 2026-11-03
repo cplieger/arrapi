@@ -1,11 +1,13 @@
 package transport
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
 	"math/rand/v2"
+	"net/http"
 	"reflect"
 	"strings"
 	"testing"
@@ -33,6 +35,7 @@ type decodeInner struct {
 // quotingType stands for any Unmarshaler whose error renders the value it rejected.
 type quotingType int
 
+//deadset:ignore DS1103 -- encoding/json calls it for the eventType field; readInto decodes through an attempt's any, which deadset cannot follow
 func (*quotingType) UnmarshalJSON(b []byte) error {
 	if b[0] == '{' {
 		return fmt.Errorf("bad token %s", b)
@@ -40,10 +43,22 @@ func (*quotingType) UnmarshalJSON(b []byte) error {
 	return nil
 }
 
+// decodeBody runs readInto over an accepted 200 GET of decodePath answering body with
+// the given Content-Type.
+func decodeBody(c *Client, body []byte, contentType string, out any) (readErr, err error) {
+	a := &attempt{method: http.MethodGet, path: decodePath, shown: decodePath, limit: MaxListBytes, out: out}
+	resp := &http.Response{
+		StatusCode: http.StatusOK,
+		Header:     http.Header{"Content-Type": {contentType}},
+		Body:       io.NopCloser(bytes.NewReader(body)),
+	}
+	return c.readInto(a, resp)
+}
+
 func decodeErr(t *testing.T, c *Client, body string) error {
 	t.Helper()
 	var out []decodeProbe
-	readErr, err := c.readInto(io.NopCloser(strings.NewReader(body)), MaxListBytes, decodePath, &out)
+	readErr, err := decodeBody(c, []byte(body), "application/json", &out)
 	if readErr != nil || err == nil {
 		t.Fatalf("readInto(%.80q) = %v, %v; want a decode error", body, readErr, err)
 	}
@@ -71,8 +86,10 @@ func randomKey(r *rand.Rand, alphabet string) string {
 // TestDecodeErrorCarriesNoServerText pins, over random keys echoed into every field
 // kind, that a decode error's text does not depend on the value the server sent:
 // it holds no 8-byte window of the key, equals the text of the same slot holding
-// another value, and wraps nothing. A key opening with four digits parses as a
-// year, which time.ParseError then follows with the rest of the key.
+// another value, and wraps at most the decoder's error with its server values
+// removed: a *json.SyntaxError as it came, a rebuilt *json.UnmarshalTypeError, or
+// nothing. A key opening with four digits parses as a year, which time.ParseError
+// then follows with the rest of the key.
 func TestDecodeErrorCarriesNoServerText(t *testing.T) {
 	const hex = "0123456789abcdef"
 	const digits = "0123456789"
@@ -115,8 +132,13 @@ func TestDecodeErrorCarriesNoServerText(t *testing.T) {
 						t.Fatalf("key %s: %s = %q, want %q", key, what, text, want)
 					}
 				}
-				if errors.Unwrap(err) != nil {
-					t.Fatalf("key %s: error wraps %v, want nothing", key, errors.Unwrap(err))
+				AssertDecodeCause(t, err)
+				if cause := errors.Unwrap(err); cause != nil {
+					for what, text := range map[string]string{"Err.Error()": cause.Error(), "Err %+v": fmt.Sprintf("%+v", cause)} {
+						if w := keyWindow(text, key); w != "" {
+							t.Fatalf("key %s: %s holds %q: %s", key, what, w, text)
+						}
+					}
 				}
 				if multi, ok := err.(interface{ Unwrap() []error }); ok {
 					t.Fatalf("key %s: error wraps %v, want nothing", key, multi.Unwrap())
@@ -137,9 +159,7 @@ func TestDecodeErrorSyntax(t *testing.T) {
 		if got := err.Error(); got != "arrapi: decode "+decodePath+": "+want {
 			t.Errorf("decode(%q) = %q, want %q", body, got, want)
 		}
-		if errors.Unwrap(err) != nil {
-			t.Errorf("decode(%q) wraps %v, want nothing", body, errors.Unwrap(err))
-		}
+		AssertDecodeCause(t, err)
 	}
 }
 
@@ -173,28 +193,33 @@ type decodeKeyed struct {
 
 // TestDecodeErrorFieldThroughTheDecoder pins the field path the toolchain's decoder
 // really reports: it carries list indices and map keys, an empty key included, and a
-// key the type does not declare drops the path.
+// key the type does not declare drops the path, from the sentence and from Err. Err's
+// Struct is the root type's name, "" for a list (encoding/json v2_inject.go).
 func TestDecodeErrorFieldThroughTheDecoder(t *testing.T) {
 	c := internalClient(t, "unrelated-client-key")
-	for body, want := range map[string]string{
-		`[{"ids":[1,2,"x"]}]`:                     "field ids: a JSON string cannot decode into int",
-		`{"byName":{"":{"count":"x"}}}`:           "field byName.count: a JSON string cannot decode into int",
-		`{"byName":{"count":{"count":"x"}}}`:      "field byName.count.count: a JSON string cannot decode into int",
-		`{"byName":{"2024abcdef":{"count":"x"}}}`: "a JSON string cannot decode into int",
-		`{"byName":{"a.b":{"count":"x"}}}`:        "a JSON string cannot decode into int",
-		`{"byName":{"12":{"count":"x"}}}`:         "field byName.count: a JSON string cannot decode into int",
+	const noField = "json: cannot unmarshal string into Go value of type int"
+	for body, want := range map[string]struct{ sentence, cause string }{
+		`[{"ids":[1,2,"x"]}]`:                     {"field ids: a JSON string cannot decode into int", "json: cannot unmarshal string into Go struct field .ids of type int"},
+		`{"byName":{"":{"count":"x"}}}`:           {"field byName.count: a JSON string cannot decode into int", "json: cannot unmarshal string into Go struct field decodeKeyed.byName.count of type int"},
+		`{"byName":{"count":{"count":"x"}}}`:      {"field byName.count.count: a JSON string cannot decode into int", "json: cannot unmarshal string into Go struct field decodeKeyed.byName.count.count of type int"},
+		`{"byName":{"2024abcdef":{"count":"x"}}}`: {"a JSON string cannot decode into int", noField},
+		`{"byName":{"a.b":{"count":"x"}}}`:        {"a JSON string cannot decode into int", noField},
+		`{"byName":{"12":{"count":"x"}}}`:         {"field byName.count: a JSON string cannot decode into int", "json: cannot unmarshal string into Go struct field decodeKeyed.byName.count of type int"},
 	} {
 		var out any = &[]decodeProbe{}
 		if body[0] == '{' {
 			out = &decodeKeyed{}
 		}
-		readErr, err := c.readInto(io.NopCloser(strings.NewReader(body)), MaxListBytes, decodePath, out)
+		readErr, err := decodeBody(c, []byte(body), "application/json", out)
 		if readErr != nil || err == nil {
 			t.Errorf("readInto(%q) = %v, %v; want a decode error", body, readErr, err)
 			continue
 		}
-		if got := err.Error(); got != "arrapi: decode "+decodePath+": "+want {
-			t.Errorf("decode(%q) = %q, want %q", body, got, "arrapi: decode "+decodePath+": "+want)
+		if got := err.Error(); got != "arrapi: decode "+decodePath+": "+want.sentence {
+			t.Errorf("decode(%q) = %q, want %q", body, got, "arrapi: decode "+decodePath+": "+want.sentence)
+		}
+		if cause := errors.Unwrap(err); cause == nil || cause.Error() != want.cause {
+			t.Errorf("decode(%q) Err = %v, want %q", body, cause, want.cause)
 		}
 	}
 }

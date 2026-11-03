@@ -3,9 +3,11 @@ package arrapi
 import (
 	"errors"
 	"fmt"
+	"net/http"
 	"testing"
 	"time"
 
+	"github.com/cplieger/arrapi/v3/internal/decodehook"
 	"github.com/cplieger/arrapi/v3/internal/statushook"
 	"github.com/cplieger/httpx/v5"
 )
@@ -50,5 +52,25 @@ func TestStatusErrorRetryAfterHintReturnsTheStoredHint(t *testing.T) {
 	}
 	if got := hint.RetryAfterHint(); got != 7*time.Second {
 		t.Errorf("httpx.RetryAfterHint view through a wrapper = %v, want 7s", got)
+	}
+}
+
+// TestDecodeHookBuildsTheError pins that the hook internal/transport calls returns an
+// *DecodeError holding every value it was given, rendering the field form.
+func TestDecodeHookBuildsTheError(t *testing.T) {
+	cause := errors.New("decoder")
+	err := decodehook.New(decodehook.Fields{
+		Err: cause, Method: http.MethodGet, Path: "/api/v3/episode", ContentType: "application/json",
+		Field: "tags", Reason: "item 0 is null", Status: 200,
+	})
+	e, ok := err.(*DecodeError)
+	if !ok {
+		t.Fatalf("decodehook.New = %T, want *DecodeError", err)
+	}
+	if e.Err != cause || e.Method != http.MethodGet || e.Path != "/api/v3/episode" || e.ContentType != "application/json" || e.Status != 200 {
+		t.Errorf("decodehook.New = %+v, want every exported field set", e)
+	}
+	if got, want := e.Error(), "arrapi: decode /api/v3/episode: field tags: item 0 is null"; got != want {
+		t.Errorf("Error() = %q, want %q", got, want)
 	}
 }

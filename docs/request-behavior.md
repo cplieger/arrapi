@@ -141,7 +141,14 @@ A by-ID read such as `SeriesByID` returns `(zero, false, nil)` for a 404 that ca
 
 An `*arrapi.ServerChangedError` says an answer came from another server version than the one the call relied on, or that version can no longer be confirmed. Its text names the origin and the versions, never a path. A later call uses a current detection or detects again. It wraps the answer's `*StatusError` when the answer was not a success.
 
-A body that does not decode returns an error naming the path, the field and the Go type, never a value the server sent.
+A body that does not decode returns an `*arrapi.DecodeError` naming the path, the field and the Go type. Its text holds no value the server sent. The decoder's error it wraps holds none either, except a `*json.SyntaxError`, whose text quotes the one invalid character or escape sequence, at most 12 bytes, escaped. Match it with `errors.As`:
+
+- `Method` is `GET`, and `Path` is the request path without its query.
+- `Status` is the answer's HTTP status. It is always exactly 200, because only a 200 answer to a GET is decoded.
+- `ContentType` is the answer's `Content-Type` media type as the server sent it: parameters dropped, case kept, the API key redacted, one line, at most 64 bytes, or `""` when the answer had none. Compare it with `strings.EqualFold` or `mime.ParseMediaType`.
+- `Unwrap` returns the decoder's error: the `*json.SyntaxError` as it came, a `*json.UnmarshalTypeError` holding only the JSON kind, the declared field path and the Go types, or nil for a date that is not RFC 3339, any other shape mismatch, and a `null` answer or item. It is also nil whenever its text would render the API key.
+
+An error answer, a body over its cap, a body the network cut and a command's answer are never a `*DecodeError`.
 
 Every error is safe to log:
 

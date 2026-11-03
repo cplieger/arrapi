@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/cplieger/arrapi/v3/internal/decodehook"
 	"github.com/cplieger/arrapi/v3/internal/statushook"
 	"github.com/cplieger/httpx/v5"
 	"github.com/cplieger/runesafe/v3"
@@ -16,6 +17,12 @@ func init() {
 	statushook.SetRetryAfter = func(err error, d time.Duration) {
 		if e, ok := errors.AsType[*StatusError](err); ok {
 			e.retryAfter = min(max(d, 0), httpx.RetryAfterCap)
+		}
+	}
+	decodehook.New = func(f decodehook.Fields) error {
+		return &DecodeError{
+			Err: f.Err, Method: f.Method, Path: f.Path, ContentType: f.ContentType,
+			field: f.Field, reason: f.Reason, Status: f.Status,
 		}
 	}
 }
@@ -69,6 +76,41 @@ type ResponseTooLargeError struct {
 func (e *ResponseTooLargeError) Error() string {
 	return fmt.Sprintf("arrapi: %s: response exceeds %d-byte limit", e.Path, e.Limit)
 }
+
+// DecodeError is an answer arrapi accepted whose body did not decode into the type the
+// call reads. Its own fields and its Error text hold no byte of the body: Error renders
+// arrapi's own sentence, naming the path, a field the type declares and the Go type.
+// Err is the one exception: when it is a *json.SyntaxError, its text quotes the one
+// invalid character or escape sequence, at most 12 bytes, escaped by Go's quoting.
+type DecodeError struct {
+	Err         error  // the decoder's error with server values removed (see Unwrap); nil when arrapi's own null check refused a decoded value, or when no scrubbed form exists
+	Method      string // the request method; "GET", the only method whose answer arrapi decodes
+	Path        string // the request path relative to the base URL, without its query, as StatusError.Path carries it
+	ContentType string // the answer's Content-Type media type as sent: parameters dropped, key redacted, single-line, at most 64 bytes; "" when absent
+	field       string
+	reason      string
+	Status      int // the answer's HTTP status; 200 for every DecodeError arrapi returns, since a read or probe accepts only 200
+}
+
+// Error renders "arrapi: decode <path>: [field <field>: ]<reason>" on one line, with
+// "the answer does not decode" as the reason of a value built outside arrapi. It
+// never renders Err.
+func (e *DecodeError) Error() string {
+	reason := e.reason
+	if reason == "" {
+		reason = "the answer does not decode"
+	}
+	path := runesafe.SanitizeSingleLine(e.Path)
+	if e.field != "" {
+		return "arrapi: decode " + path + ": field " + e.field + ": " + reason
+	}
+	return "arrapi: decode " + path + ": " + reason
+}
+
+// Unwrap returns Err: a *json.SyntaxError as the decoder returned it, a
+// *json.UnmarshalTypeError rebuilt from its kind word, the declared field path and
+// the Go types, or nil. Err is nil whenever its text would render the client's key.
+func (e *DecodeError) Unwrap() error { return e.Err }
 
 // UnsupportedReason says why a server cannot be read.
 type UnsupportedReason int

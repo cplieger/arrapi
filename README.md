@@ -85,7 +85,7 @@ The `radarr` package has the same shape: `radarr.New`, `Info`, `Movies` and so o
 - `MediaCoverURL` builds an image URL under your base URL, and `Series.WebURL` and `Movie.WebURL` link to an item's web UI page.
 - `arrapi.TagIDs` and `arrapi.HasAnyTag` filter by tag label.
 - The options are `WithHTTPClient`, `WithMaxAttempts`, `WithBaseDelay`, `WithTimeout` and `WithLogger`, in each package.
-- Errors are `*arrapi.StatusError`, `*arrapi.ResponseTooLargeError`, `*arrapi.UnsupportedAPIError` with a reason and a fix, `*arrapi.ServerChangedError` and `arrapi.ErrCommandOutcomeUnknown`.
+- Errors are `*arrapi.StatusError`, `*arrapi.ResponseTooLargeError`, `*arrapi.DecodeError`, `*arrapi.UnsupportedAPIError` with a reason and a fix, `*arrapi.ServerChangedError` and `arrapi.ErrCommandOutcomeUnknown`.
 
 The full reference is on [pkg.go.dev](https://pkg.go.dev/github.com/cplieger/arrapi/v3). [Data types](docs/data-model.md) covers the normalized types, episode orders, audio languages and history.
 
