@@ -251,8 +251,10 @@ func TestNullAnswerIsADecodeError(t *testing.T) {
 }
 
 // TestGetJSONDecodeErrorCarriesNoServerText pins, through GetJSON, that a decode error
-// renders none of the value the server sent and wraps nothing. A key opening with
-// four digits parses as a year, after which time.ParseError quotes the rest of it.
+// renders none of the value the server sent and wraps at most the decoder's error with
+// its server values removed: a *json.SyntaxError as it came, a rebuilt
+// *json.UnmarshalTypeError, or nothing. A key opening with four digits parses as a
+// year, after which time.ParseError quotes the rest of it.
 func TestGetJSONDecodeErrorCarriesNoServerText(t *testing.T) {
 	const path = "/api/v3/history/since"
 	type record struct {
@@ -290,9 +292,7 @@ func TestGetJSONDecodeErrorCarriesNoServerText(t *testing.T) {
 			if want := "arrapi: decode " + path + ": " + tc.want; res.Err == nil || res.Err.Error() != want {
 				t.Fatalf("error = %v, want %q", res.Err, want)
 			}
-			if errors.Unwrap(res.Err) != nil {
-				t.Errorf("error wraps %v, want nothing", errors.Unwrap(res.Err))
-			}
+			transport.AssertDecodeCause(t, res.Err)
 			assertChainClean(t, res.Err, tc.key, tc.key[4:])
 		})
 	}

@@ -107,7 +107,7 @@ func (c *Client) send(ctx context.Context, a *attempt) (Meta, Result) {
 			discardBody(resp)
 			break
 		}
-		readErr, err := c.readInto(resp.Body, a.limit, t.path, a.out)
+		readErr, err := c.readInto(a, resp)
 		if readErr != nil {
 			safe := markAttemptTimeout(ctx, actx, c.safeDoError(t.path, readErr))
 			r.Verdict, r.Next = Decide(sent, a.call, End{Kind: EndTransport, Transient: transient(ctx, safe)})

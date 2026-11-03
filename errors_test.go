@@ -332,3 +332,23 @@ func TestErrCommandOutcomeUnknownWrapsItsCause(t *testing.T) {
 		t.Errorf("errors.As(*UnsupportedAPIError) = %v, %v; want the cause", got, ok)
 	}
 }
+
+// TestDecodeErrorCallerBuilt pins Error for a value built outside arrapi, whose
+// unexported fields are empty: the path on one line, the generic reason, never Err.
+func TestDecodeErrorCallerBuilt(t *testing.T) {
+	cause := errors.New("cause text " + hostile[:20])
+	e := &arrapi.DecodeError{Err: cause, Method: "GET", Path: "/api/v3/series\r\nforged", Status: 200}
+	const want = "arrapi: decode /api/v3/series  forged: the answer does not decode"
+	if got := e.Error(); got != want {
+		t.Errorf("Error() = %q, want %q", got, want)
+	}
+	if !errors.Is(e, cause) || errors.Unwrap(e) != cause {
+		t.Errorf("Unwrap() = %v, want the cause it holds", errors.Unwrap(e))
+	}
+	if got := (&arrapi.DecodeError{}).Error(); got != "arrapi: decode : the answer does not decode" {
+		t.Errorf("zero DecodeError Error() = %q", got)
+	}
+	if errors.Unwrap(&arrapi.DecodeError{}) != nil {
+		t.Error("zero DecodeError unwraps to a cause")
+	}
+}
