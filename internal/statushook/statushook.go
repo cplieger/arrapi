@@ -7,7 +7,7 @@ package statushook
 
 import "time"
 
-// SetRetryAfter stores d, capped to [0, httpx.RetryAfterCap], as the Retry-After
+// SetRetryAfter stores d, capped to [0, httpclient.RetryAfterCap], as the Retry-After
 // hint of the *arrapi.StatusError in err's chain; a chain without one is left
 // unchanged.
 var SetRetryAfter func(err error, d time.Duration)

@@ -23,7 +23,7 @@ var (
 
 // keyAlphabet is every byte that each encoder able to write the key into an answer
 // (Go's net/url and encoding/json, .NET's Uri.EscapeDataString, WebUtility.UrlEncode and
-// System.Text.Json) leaves as it is, and that no runesafe sanitizer writes or rewrites:
+// System.Text.Json) leaves as it is, and that no textsafe sanitizer writes or rewrites:
 // so the key as sent is the only form those encoders write, and redaction (redact.go)
 // matches it byte for byte, before or after sanitizing alike.
 const keyAlphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789._-"

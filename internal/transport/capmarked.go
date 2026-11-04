@@ -3,7 +3,7 @@ package transport
 import (
 	"strings"
 
-	"github.com/cplieger/runesafe/v3"
+	"github.com/cplieger/go/textsafe"
 )
 
 const cutMarker = "..."
@@ -13,7 +13,7 @@ const cutMarker = "..."
 // most limit bytes. The trim sits before the marker, which would hide the prefix from
 // it; the purge comes after it, because the key can be the marker.
 func (c *Client) cutMarked(s string, limit int) string {
-	return c.purge(c.trimTrailingKeyPrefix(runesafe.CapBytes(s, max(limit-len(cutMarker), 0))) + cutMarker)
+	return c.purge(c.trimTrailingKeyPrefix(textsafe.CapBytes(s, max(limit-len(cutMarker), 0))) + cutMarker)
 }
 
 // trimTrailingKeyPrefix removes from s every trailing run that is a non-empty proper

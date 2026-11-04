@@ -18,7 +18,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/cplieger/runesafe/v3"
+	"github.com/cplieger/go/textsafe"
 )
 
 // errorTree is every error of err's tree, walked as errors.Is walks it.
@@ -62,7 +62,7 @@ func forgedNameCert(t *testing.T, name string) tls.Certificate {
 // certificate's DNS names as the server wrote them (go1.27 crypto/x509/verify.go), so
 // a TLS failure can quote CR, LF and ESC. The returned error's Error() is still one
 // line (docs/request-behavior.md "Errors"), each unsafe rune a space
-// (runesafe.SanitizeSingleLine), and the TLS cause stays reachable for errors.As.
+// (textsafe.SanitizeSingleLine), and the TLS cause stays reachable for errors.As.
 func TestTransportErrorRendersOneLine(t *testing.T) {
 	srv := httptest.NewUnstartedServer(http.NotFoundHandler())
 	srv.TLS = &tls.Config{Certificates: []tls.Certificate{forgedNameCert(t, "evil\r\nlevel=INFO msg=forged\x1b[2J")}}
@@ -84,7 +84,7 @@ func TestTransportErrorRendersOneLine(t *testing.T) {
 	}
 	got := err.Error()
 	for _, r := range got {
-		if runesafe.IsUnsafeSingleLine(r) {
+		if textsafe.IsUnsafeSingleLine(r) {
 			t.Errorf("Error() = %q holds unsafe rune %U", got, r)
 		}
 	}
@@ -100,8 +100,8 @@ func TestTransportErrorRendersOneLine(t *testing.T) {
 }
 
 // TestStatusErrorRendersOneLine: Body keeps the answer's line breaks (its godoc: the
-// capture sanitized, which runesafe.Sanitize does keeping CR and LF), while Error() is
-// one line for a line-oriented log, each unsafe rune a space (runesafe.SanitizeSingleLine).
+// capture sanitized, which textsafe.Sanitize does keeping CR and LF), while Error() is
+// one line for a line-oriented log, each unsafe rune a space (textsafe.SanitizeSingleLine).
 func TestStatusErrorRendersOneLine(t *testing.T) {
 	f := newFake().sonarr4(v4)
 	f.on(v4Series, ans(http.StatusInternalServerError, v4, "upstream failed\r\nlevel=INFO msg=forged\u2028end"))
@@ -115,7 +115,7 @@ func TestStatusErrorRendersOneLine(t *testing.T) {
 	}
 	for _, e := range errorTree(err) {
 		for _, r := range e.Error() {
-			if runesafe.IsUnsafeSingleLine(r) {
+			if textsafe.IsUnsafeSingleLine(r) {
 				t.Errorf("%T renders unsafe rune %U: %q", e, r, e.Error())
 			}
 		}

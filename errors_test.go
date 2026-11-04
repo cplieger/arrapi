@@ -9,8 +9,8 @@ import (
 	"testing"
 
 	"github.com/cplieger/arrapi/v3"
-	"github.com/cplieger/httpx/v5"
-	"github.com/cplieger/runesafe/v3"
+	"github.com/cplieger/go/httpclient"
+	"github.com/cplieger/go/textsafe"
 )
 
 // hostile is server text that would forge a log line (CR, LF), reorder it (a bidi
@@ -21,7 +21,7 @@ var hostile = "a\r\nforged\u202eb" + strings.Repeat("x", 1<<20)
 func assertOneLine(t *testing.T, s string) {
 	t.Helper()
 	for i, r := range s {
-		if runesafe.IsUnsafeSingleLine(r) {
+		if textsafe.IsUnsafeSingleLine(r) {
 			t.Fatalf("Error() holds unsafe rune %U at byte %d", r, i)
 		}
 	}
@@ -94,15 +94,15 @@ func TestStatusErrorIsTransient(t *testing.T) {
 			if got := e.IsTransient(); got != tc.want {
 				t.Errorf("IsTransient() = %v, want %v", got, tc.want)
 			}
-			if got := httpx.IsTransient(fmt.Errorf("wrapped: %w", e)); got != tc.want {
-				t.Errorf("httpx.IsTransient(wrapped) = %v, want %v", got, tc.want)
+			if got := httpclient.IsTransient(fmt.Errorf("wrapped: %w", e)); got != tc.want {
+				t.Errorf("httpclient.IsTransient(wrapped) = %v, want %v", got, tc.want)
 			}
 		})
 	}
 }
 
 func TestStatusErrorRetryAfterHintWithoutHint(t *testing.T) {
-	var hint httpx.RetryAfterHint = &arrapi.StatusError{Code: 503, Path: "/api/v3/series"}
+	var hint httpclient.RetryAfterHint = &arrapi.StatusError{Code: 503, Path: "/api/v3/series"}
 	if got := hint.RetryAfterHint(); got != 0 {
 		t.Errorf("RetryAfterHint() without a hint = %v, want 0", got)
 	}

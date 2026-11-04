@@ -11,7 +11,7 @@ import (
 	"strings"
 
 	"github.com/cplieger/arrapi/v3"
-	"github.com/cplieger/httpx/v5"
+	"github.com/cplieger/go/httpclient"
 )
 
 // Meta is what a probe's caller needs beyond the decoded body.
@@ -71,7 +71,7 @@ func stripQuery(path string) string {
 
 func (c *Client) send(ctx context.Context, a *attempt) (Meta, Result) {
 	t := newTag(a.shown, a.det, a.run)
-	actx, cancel := httpx.ContextWithDefaultTimeout(ctx, c.cfg.Timeout)
+	actx, cancel := httpclient.ContextWithDefaultTimeout(ctx, c.cfg.Timeout)
 	defer cancel()
 
 	var body io.Reader = http.NoBody
@@ -81,7 +81,7 @@ func (c *Client) send(ctx context.Context, a *attempt) (Meta, Result) {
 	req, err := http.NewRequestWithContext(withTag(actx, t), a.method, c.base+a.path, body)
 	if err != nil {
 		// net/url's parse error quotes the whole URL, the base's user info included.
-		err = c.leaving(fmt.Errorf("arrapi: build request %s: %w", t.path, httpx.LogSafeError(err)))
+		err = c.leaving(fmt.Errorf("arrapi: build request %s: %w", t.path, httpclient.LogSafeError(err)))
 		return Meta{}, Result{Err: err, Verdict: VerdictTransport, Next: NextDone}
 	}
 	req.Header.Set(headerAPIKey, string(c.key))
@@ -224,16 +224,16 @@ func (c *Client) markRecorded(t *tag) bool {
 }
 
 // markAttemptTimeout marks an expiry of the per-attempt bound under a live caller
-// context, which httpx cannot tell from the caller's own deadline.
+// context, which httpclient cannot tell from the caller's own deadline.
 func markAttemptTimeout(ctx, actx context.Context, err error) error {
 	if actx.Err() != nil && ctx.Err() == nil {
-		return httpx.AttemptTimeout(err)
+		return httpclient.AttemptTimeout(err)
 	}
 	return err
 }
 
-// transient is httpx's verdict on a marked error, except that once the caller's
+// transient is httpclient's verdict on a marked error, except that once the caller's
 // context has ended no error is transient, whatever it surfaced as.
 func transient(ctx context.Context, marked error) bool {
-	return ctx.Err() == nil && httpx.IsTransient(marked)
+	return ctx.Err() == nil && httpclient.IsTransient(marked)
 }

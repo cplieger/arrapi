@@ -9,7 +9,7 @@ import (
 
 	"github.com/cplieger/arrapi/v3/internal/decodehook"
 	"github.com/cplieger/arrapi/v3/internal/statushook"
-	"github.com/cplieger/httpx/v5"
+	"github.com/cplieger/go/httpclient"
 )
 
 func TestStatusErrorRetryAfterHint(t *testing.T) {
@@ -19,7 +19,7 @@ func TestStatusErrorRetryAfterHint(t *testing.T) {
 		want time.Duration
 	}{
 		{"within the cap", 7 * time.Second, 7 * time.Second},
-		{"two hours capped", 2 * time.Hour, httpx.RetryAfterCap},
+		{"two hours capped", 2 * time.Hour, httpclient.RetryAfterCap},
 		{"negative is zero", -time.Second, 0},
 	}
 	for _, tc := range tests {
@@ -46,12 +46,12 @@ func TestStatusErrorRetryAfterHintReturnsTheStoredHint(t *testing.T) {
 	if got := e.RetryAfterHint(); got != 7*time.Second {
 		t.Errorf("RetryAfterHint() = %v, want 7s", got)
 	}
-	hint, ok := errors.AsType[httpx.RetryAfterHint](fmt.Errorf("attempt: %w", e))
+	hint, ok := errors.AsType[httpclient.RetryAfterHint](fmt.Errorf("attempt: %w", e))
 	if !ok {
-		t.Fatal("errors.As(httpx.RetryAfterHint) found nothing through a wrapper")
+		t.Fatal("errors.As(httpclient.RetryAfterHint) found nothing through a wrapper")
 	}
 	if got := hint.RetryAfterHint(); got != 7*time.Second {
-		t.Errorf("httpx.RetryAfterHint view through a wrapper = %v, want 7s", got)
+		t.Errorf("httpclient.RetryAfterHint view through a wrapper = %v, want 7s", got)
 	}
 }
 
