@@ -8,7 +8,7 @@ import (
 	"testing"
 
 	"github.com/cplieger/arrapi/v3"
-	"github.com/cplieger/runesafe/v3"
+	"github.com/cplieger/go/textsafe"
 )
 
 // FuzzRedactionLeavesNoKey: whatever a server answers, with or without an echo of an
@@ -34,7 +34,7 @@ func FuzzRedactionLeavesNoKey(f *testing.F) {
 		for _, in := range []string{text, text[:at] + key + text[at:]} {
 			c := internalClient(t, arrapi.APIKey(key))
 			got := c.Present(in, ServerTextBytes)
-			if strings.Contains(got, key) || len(got) > ServerTextBytes || strings.ContainsFunc(got, runesafe.IsUnsafeSingleLine) {
+			if strings.Contains(got, key) || len(got) > ServerTextBytes || strings.ContainsFunc(got, textsafe.IsUnsafeSingleLine) {
 				t.Fatalf("key %q: Present(%q) = %q", key, in, got)
 			}
 			body, err := json.Marshal(map[string]string{"message": in})
@@ -47,7 +47,7 @@ func FuzzRedactionLeavesNoKey(f *testing.F) {
 				if strings.Contains(se.Body, key) || strings.Contains(se.Message, key) || strings.Contains(detail, key) {
 					t.Fatalf("key %q: answer %q gave Body %q, Message %q, Error() %q", key, raw, se.Body, se.Message, se.Error())
 				}
-				if len(se.Body) > maxErrorBodyBytes || len(se.Message) > maxMessageBytes || strings.ContainsFunc(se.Error(), runesafe.IsUnsafeSingleLine) {
+				if len(se.Body) > maxErrorBodyBytes || len(se.Message) > maxMessageBytes || strings.ContainsFunc(se.Error(), textsafe.IsUnsafeSingleLine) {
 					t.Fatalf("key %q: answer %q gave a Body of %d bytes, a Message of %d or Error() %q", key, raw, len(se.Body), len(se.Message), se.Error())
 				}
 			}
@@ -86,7 +86,7 @@ func FuzzDecodeErrorLeavesNoKey(f *testing.F) {
 		if !ok {
 			t.Fatalf("key %q: body %q gave %v (%T), want an *arrapi.DecodeError", key, body, err, err)
 		}
-		if strings.Contains(de.ContentType, key) || len(de.ContentType) > ServerTextBytes || strings.ContainsFunc(de.ContentType, runesafe.IsUnsafeSingleLine) {
+		if strings.Contains(de.ContentType, key) || len(de.ContentType) > ServerTextBytes || strings.ContainsFunc(de.ContentType, textsafe.IsUnsafeSingleLine) {
 			t.Fatalf("key %q: Content-Type %q gave ContentType %q", key, contentType, de.ContentType)
 		}
 		if de.Err != nil && (strings.Contains(de.Err.Error(), key) || strings.Contains(fmt.Sprintf("%+v", de.Err), key)) {

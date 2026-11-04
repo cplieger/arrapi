@@ -6,12 +6,12 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/cplieger/httpx/v5"
+	"github.com/cplieger/go/httpclient"
 )
 
 // defaultRedirectPolicy is every read client's follow-or-refuse decision: the exact
-// origin (RFC 6454) under httpx's own hop cap; transport passes no hop count of its own.
-var defaultRedirectPolicy = httpx.RedirectPolicyFunc(httpx.WithSameOrigin(true))
+// origin (RFC 6454) under httpclient's own hop cap; transport passes no hop count of its own.
+var defaultRedirectPolicy = httpclient.RedirectPolicyFunc(httpclient.WithSameOrigin(true))
 
 // redirectRefusedError is checkDefaultRedirect's error: the policy's refusal
 // plus what safeDoError needs to name the cap or the fix. It never leaves transport,
@@ -48,13 +48,13 @@ func checkDefaultRedirect(req *http.Request, via []*http.Request) error {
 	if err == nil || errors.Is(err, http.ErrUseLastResponse) {
 		return err
 	}
-	refused, typed := errors.AsType[*httpx.RedirectRefusedError](err)
+	refused, typed := errors.AsType[*httpclient.RedirectRefusedError](err)
 	from := via[0].URL
 	return &redirectRefusedError{
 		cause:    err,
 		target:   req.URL,
 		followed: len(via) - 1,
-		tooMany:  typed && refused.Reason == httpx.RedirectTooMany,
+		tooMany:  typed && refused.Reason == httpclient.RedirectTooMany,
 		upgrade: strings.EqualFold(from.Scheme, "http") && strings.EqualFold(req.URL.Scheme, "https") &&
 			asciiLower(from.Hostname()) == asciiLower(req.URL.Hostname()),
 	}

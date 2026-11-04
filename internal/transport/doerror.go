@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"slices"
 
-	"github.com/cplieger/httpx/v5"
-	"github.com/cplieger/runesafe/v3"
+	"github.com/cplieger/go/httpclient"
+	"github.com/cplieger/go/textsafe"
 )
 
 const maxOriginBytes = 255
@@ -17,11 +17,11 @@ const maxOriginBytes = 255
 // a server chose and can carry the key; it is replaced by transport's own text, which
 // leaves through leaving.
 func (c *Client) safeDoError(path string, err error) error {
-	cause := httpx.LogSafeError(err)
+	cause := httpclient.LogSafeError(err)
 	var safe error
 	if r, ok := errors.AsType[*redirectRefusedError](cause); ok {
 		target, refusal := c.Present(originOf(r.target), maxOriginBytes), c.redactRefusal(r.cause)
-		// The cap first: httpx judges the count before the target, so a refused hop past
+		// The cap first: httpclient judges the count before the target, so a refused hop past
 		// the cap can also be an upgrade or another origin.
 		switch {
 		case r.tooMany:
@@ -37,12 +37,12 @@ func (c *Client) safeDoError(path string, err error) error {
 	return c.leaving(safe)
 }
 
-// redactRefusal returns err, or, when err is httpx's refusal of an origin that holds
+// redactRefusal returns err, or, when err is httpclient's refusal of an origin that holds
 // the key (a server can put it in a redirect target's host), a copy whose Origin is
 // presented, so the chain stays typed for errors.As and renders no key. Only a direct
 // cause can be replaced; a refusal deeper in a chain is left to leaving.
 func (c *Client) redactRefusal(err error) error {
-	refused, ok := err.(*httpx.RedirectRefusedError)
+	refused, ok := err.(*httpclient.RedirectRefusedError)
 	if !ok || !c.containsKey(refused.Origin) {
 		return err
 	}
@@ -66,7 +66,7 @@ func (c *Client) leaving(err error) error {
 // a certificate's DNS names as written). errors.Is and errors.As reach the error.
 type oneLineError struct{ err error }
 
-func (e *oneLineError) Error() string { return runesafe.SanitizeSingleLine(e.err.Error()) }
+func (e *oneLineError) Error() string { return textsafe.SanitizeSingleLine(e.err.Error()) }
 func (e *oneLineError) Unwrap() error { return e.err }
 
 // treeRendersKey walks both Unwrap forms, as errors.Is and errors.As do, so a key

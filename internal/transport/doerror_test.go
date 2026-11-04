@@ -11,7 +11,7 @@ import (
 	"testing/iotest"
 
 	"github.com/cplieger/arrapi/v3/internal/transport"
-	"github.com/cplieger/runesafe/v3"
+	"github.com/cplieger/go/textsafe"
 )
 
 func TestTransportErrorCarriesNoURL(t *testing.T) {
@@ -65,7 +65,7 @@ func TestCallerTransportErrorTreeCarriesNoKey(t *testing.T) {
 
 // TestTransportErrorRendersOneLine: an error that leaves transport is one line
 // (docs/request-behavior.md "Errors"), whatever text its cause quotes, each unsafe rune
-// a space (runesafe.SanitizeSingleLine's documented policy), and its cause stays
+// a space (textsafe.SanitizeSingleLine's documented policy), and its cause stays
 // reachable for errors.Is.
 func TestTransportErrorRendersOneLine(t *testing.T) {
 	forged := errors.New("lookup evil\r\nlevel=INFO msg=forged\x1b[2J")
@@ -121,7 +121,7 @@ func TestTransportErrorRendersOneLine(t *testing.T) {
 			}
 			got := res.Err.Error()
 			for _, r := range got {
-				if runesafe.IsUnsafeSingleLine(r) {
+				if textsafe.IsUnsafeSingleLine(r) {
 					t.Errorf("Error() = %q holds unsafe rune %U", got, r)
 				}
 			}

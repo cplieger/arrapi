@@ -8,7 +8,7 @@ import (
 	"unicode/utf8"
 
 	"github.com/cplieger/arrapi/v3"
-	"github.com/cplieger/runesafe/v3"
+	"github.com/cplieger/go/textsafe"
 )
 
 func internalClient(t *testing.T, key arrapi.APIKey) *Client {
@@ -94,7 +94,7 @@ func TestStatusErrorRedactionMatchesRawBytes(t *testing.T) {
 
 func TestStatusErrorBodyIsSanitizerStable(t *testing.T) {
 	se := captureBody(t, "mix \x1b\u009b\u202e\u2028\x00ok\xff\xfe tail", "irrelevant-key")
-	if got := runesafe.Sanitize(se.Body); got != se.Body {
+	if got := textsafe.Sanitize(se.Body); got != se.Body {
 		t.Errorf("Body is not sanitizer-stable:\n got %q\nafter %q", se.Body, got)
 	}
 }
@@ -148,7 +148,7 @@ func TestPresentRedactsTheKey(t *testing.T) {
 				t.Errorf("Present = %q ends in a %d-byte key prefix", got, n)
 			}
 			for _, r := range got {
-				if runesafe.IsUnsafeSingleLine(r) {
+				if textsafe.IsUnsafeSingleLine(r) {
 					t.Errorf("Present = %q holds unsafe rune %U", got, r)
 				}
 			}
@@ -158,7 +158,7 @@ func TestPresentRedactsTheKey(t *testing.T) {
 
 // TestRedactionMasksOverlappingOccurrencesOnce: every byte an occurrence covers is
 // found before any is replaced, and one "[redacted]" replaces each run, the rule
-// runesafe.RedactSingleLineCapped documents; a mask per occurrence would leave a
+// textsafe.RedactSingleLineCapped documents; a mask per occurrence would leave a
 // fragment of the second one ("[redacted]ba").
 func TestRedactionMasksOverlappingOccurrencesOnce(t *testing.T) {
 	const key = "aba"

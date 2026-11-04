@@ -14,8 +14,8 @@ import (
 	"github.com/cplieger/arrapi/v3"
 	"github.com/cplieger/arrapi/v3/internal/decodehook"
 	"github.com/cplieger/arrapi/v3/internal/statushook"
-	"github.com/cplieger/httpx/v5"
-	"github.com/cplieger/runesafe/v3"
+	"github.com/cplieger/go/httpclient"
+	"github.com/cplieger/go/textsafe"
 )
 
 // The body bounds. Every body is read through one of them or discardBody's.
@@ -43,7 +43,7 @@ func (c *Client) capture(code int, resp *http.Response, path string) *arrapi.Sta
 			e.Message = c.message(raw)
 		}
 	}
-	statushook.SetRetryAfter(e, httpx.ParseRetryAfter(resp.Header.Get("Retry-After")))
+	statushook.SetRetryAfter(e, httpclient.ParseRetryAfter(resp.Header.Get("Retry-After")))
 	return e
 }
 
@@ -69,7 +69,7 @@ func (c *Client) readErrorWindow(body io.ReadCloser) (raw string, lost bool, err
 // read window cut is a trailing prefix cutMarked trims. cut reports that the result is
 // not the whole text.
 func (c *Client) redactErrorBody(raw string, lost bool) (s string, cut bool) {
-	s = c.purge(c.mask(runesafe.Sanitize(raw)))
+	s = c.purge(c.mask(textsafe.Sanitize(raw)))
 	if lost || len(s) > maxErrorBodyBytes {
 		return c.cutMarked(s, maxErrorBodyBytes), true
 	}
@@ -103,9 +103,9 @@ func (c *Client) message(raw string) string {
 // a.out. An over-cap body is rejected, never decoded cut. A failed read is returned as
 // the raw error for the caller to judge as a transport outcome.
 func (c *Client) readInto(a *attempt, resp *http.Response) (readErr, err error) {
-	data, rerr := httpx.ReadLimitedBody(resp.Body, a.limit)
+	data, rerr := httpclient.ReadLimitedBody(resp.Body, a.limit)
 	if rerr != nil {
-		if _, ok := errors.AsType[*httpx.ResponseTooLargeError](rerr); ok {
+		if _, ok := errors.AsType[*httpclient.ResponseTooLargeError](rerr); ok {
 			return nil, &arrapi.ResponseTooLargeError{Path: a.shown, Limit: a.limit}
 		}
 		return rerr, nil

@@ -9,14 +9,14 @@ import (
 
 	"github.com/cplieger/arrapi/v3/internal/decodehook"
 	"github.com/cplieger/arrapi/v3/internal/statushook"
-	"github.com/cplieger/httpx/v5"
-	"github.com/cplieger/runesafe/v3"
+	"github.com/cplieger/go/httpclient"
+	"github.com/cplieger/go/textsafe"
 )
 
 func init() {
 	statushook.SetRetryAfter = func(err error, d time.Duration) {
 		if e, ok := errors.AsType[*StatusError](err); ok {
-			e.retryAfter = min(max(d, 0), httpx.RetryAfterCap)
+			e.retryAfter = min(max(d, 0), httpclient.RetryAfterCap)
 		}
 	}
 	decodehook.New = func(f decodehook.Fields) error {
@@ -38,8 +38,8 @@ type StatusError struct {
 }
 
 var (
-	_ httpx.Transient      = (*StatusError)(nil)
-	_ httpx.RetryAfterHint = (*StatusError)(nil)
+	_ httpclient.Transient      = (*StatusError)(nil)
+	_ httpclient.RetryAfterHint = (*StatusError)(nil)
 )
 
 // Error renders "arrapi: <path>: HTTP <code>", followed by Message, else Body, when set,
@@ -50,11 +50,11 @@ func (e *StatusError) Error() string {
 	if detail == "" {
 		detail = e.Body
 	}
-	path := runesafe.SanitizeSingleLine(e.Path)
+	path := textsafe.SanitizeSingleLine(e.Path)
 	if detail == "" {
 		return fmt.Sprintf("arrapi: %s: HTTP %d", path, e.Code)
 	}
-	return fmt.Sprintf("arrapi: %s: HTTP %d: %s", path, e.Code, runesafe.SanitizeSingleLine(detail))
+	return fmt.Sprintf("arrapi: %s: HTTP %d: %s", path, e.Code, textsafe.SanitizeSingleLine(detail))
 }
 
 // IsTransient reports whether the status is worth sending again: 429, or 500 through
@@ -100,7 +100,7 @@ func (e *DecodeError) Error() string {
 	if reason == "" {
 		reason = "the answer does not decode"
 	}
-	path := runesafe.SanitizeSingleLine(e.Path)
+	path := textsafe.SanitizeSingleLine(e.Path)
 	if e.field != "" {
 		return "arrapi: decode " + path + ": field " + e.field + ": " + reason
 	}
@@ -142,7 +142,7 @@ type UnsupportedAPIError struct {
 // again, because a value built outside arrapi carries no such guarantee. It cannot
 // redact a key, which it never holds.
 func (e *UnsupportedAPIError) Error() string {
-	want, path := runesafe.SanitizeSingleLine(e.Want), runesafe.SanitizeSingleLine(e.Path)
+	want, path := textsafe.SanitizeSingleLine(e.Want), textsafe.SanitizeSingleLine(e.Path)
 	switch e.Reason {
 	case ReasonV5Unreachable:
 		if current := serverText(e.Current); current != "" {
@@ -195,7 +195,7 @@ type ServerChangedError struct {
 // Error names Origin and the versions, never Path: a server change when To is a version
 // other than From, else that From is no longer confirmed.
 func (e *ServerChangedError) Error() string {
-	origin, _ := runesafe.SanitizeSingleLineCapped(e.Origin, maxOriginBytes, "...")
+	origin, _ := textsafe.SanitizeSingleLineCapped(e.Origin, maxOriginBytes, "...")
 	from := serverText(e.From)
 	if e.To != "" && e.To != e.From {
 		return fmt.Sprintf("arrapi: %s answered with version %s, but version %s also answered this client: the server behind the URL changed", origin, serverText(e.To), from)
@@ -223,6 +223,6 @@ const (
 )
 
 func serverText(s string) string {
-	text, _ := runesafe.SanitizeSingleLineCapped(s, maxServerTextBytes, "...")
+	text, _ := textsafe.SanitizeSingleLineCapped(s, maxServerTextBytes, "...")
 	return text
 }

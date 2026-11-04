@@ -19,7 +19,7 @@ import (
 
 	"github.com/cplieger/arrapi/v3/internal/transport"
 	"github.com/cplieger/arrapi/v3/sonarr"
-	"github.com/cplieger/httpx/v5"
+	"github.com/cplieger/go/httpclient"
 )
 
 // crossHost returns f's URL under the name localhost: another origin, though the
@@ -52,7 +52,7 @@ func TestRedirectRefusalCarriesNoLocationPathOrQuery(t *testing.T) {
 	if ue, ok := errors.AsType[*url.Error](res.Err); ok {
 		t.Errorf("a *url.Error survived: %v", ue)
 	}
-	if refused := assertRefused(t, res.Err, httpx.RedirectOtherOrigin); refused.Origin != target {
+	if refused := assertRefused(t, res.Err, httpclient.RedirectOtherOrigin); refused.Origin != target {
 		t.Errorf("Origin = %q, want %q", refused.Origin, target)
 	}
 	if res.Verdict != transport.VerdictTransport || res.Next != transport.NextDone {
@@ -83,18 +83,18 @@ func TestRedirectToKeyBearingHostRedacted(t *testing.T) {
 	if !strings.Contains(res.Err.Error(), "redirect to "+redacted+" refused") {
 		t.Errorf("Error() = %q, want the key-bearing host redacted as %s", res.Err.Error(), redacted)
 	}
-	if refused := assertRefused(t, res.Err, httpx.RedirectOtherOrigin); refused.Origin != redacted {
+	if refused := assertRefused(t, res.Err, httpclient.RedirectOtherOrigin); refused.Origin != redacted {
 		t.Errorf("Origin = %q, want the redacted origin %q", refused.Origin, redacted)
 	}
 }
 
-// TestCallerPolicyRefusalToKeyBearingHostRedacted: a WithHTTPClient client under httpx's
+// TestCallerPolicyRefusalToKeyBearingHostRedacted: a WithHTTPClient client under httpclient's
 // own policy gets the same typed, redacted refusal as the default client.
 func TestCallerPolicyRefusalToKeyBearingHostRedacted(t *testing.T) {
 	other := newFake(t, reply(200, v4, `[]`))
 	target := strings.Replace(other.srv.URL, "127.0.0.1", string(testKey)+".localhost", 1)
 	f := newFake(t, nil)
-	hc := &http.Client{CheckRedirect: httpx.RedirectPolicyFunc(httpx.WithSameOrigin(true))}
+	hc := &http.Client{CheckRedirect: httpclient.RedirectPolicyFunc(httpclient.WithSameOrigin(true))}
 	c := newClient(t, f.srv.URL, transport.Config{HTTPClient: hc})
 	d := detect(t, c, f, v4)
 	f.set(redirectTo(302, target+"/x", v4))
@@ -105,7 +105,7 @@ func TestCallerPolicyRefusalToKeyBearingHostRedacted(t *testing.T) {
 	}
 	assertChainClean(t, res.Err, string(testKey))
 	redacted := strings.Replace(other.srv.URL, "127.0.0.1", "[redacted].localhost", 1)
-	if refused := assertRefused(t, res.Err, httpx.RedirectOtherOrigin); refused.Origin != redacted {
+	if refused := assertRefused(t, res.Err, httpclient.RedirectOtherOrigin); refused.Origin != redacted {
 		t.Errorf("Origin = %q, want the redacted origin %q", refused.Origin, redacted)
 	}
 	if got := other.requests(); len(got) != 0 {
@@ -149,11 +149,11 @@ func TestSameOriginRedirectFollowed(t *testing.T) {
 }
 
 // assertRefused checks that err carries the redirect policy's typed refusal for reason.
-func assertRefused(t *testing.T, err error, reason httpx.RedirectReason) *httpx.RedirectRefusedError {
+func assertRefused(t *testing.T, err error, reason httpclient.RedirectReason) *httpclient.RedirectRefusedError {
 	t.Helper()
-	refused, ok := errors.AsType[*httpx.RedirectRefusedError](err)
+	refused, ok := errors.AsType[*httpclient.RedirectRefusedError](err)
 	if !ok {
-		t.Fatalf("Err = %v, want a *httpx.RedirectRefusedError reachable through errors.As", err)
+		t.Fatalf("Err = %v, want a *httpclient.RedirectRefusedError reachable through errors.As", err)
 	}
 	if refused.Reason != reason {
 		t.Errorf("Reason = %v, want %v", refused.Reason, reason)
@@ -319,7 +319,7 @@ func TestCallerPolicyStillRefusesMore(t *testing.T) {
 }
 
 // keepsKeyOnOrigin pins the redirect rule every read client gets, the exact origin of
-// RFC 6454 (scheme, host, effective port), and its hop cap, httpx's default of 5
+// RFC 6454 (scheme, host, effective port), and its hop cap, httpclient's default of 5
 // followed with the 6th refused.
 func keepsKeyOnOrigin(t *testing.T, newSonarrClient func(*testing.T, string) *sonarr.Client) {
 	t.Helper()
@@ -465,7 +465,7 @@ func TestDefaultClientRefusalCarriesNoLocationPathOrQuery(t *testing.T) {
 	if !strings.Contains(err.Error(), target) {
 		t.Errorf("Error() = %q, want it to name the refused origin %s", err.Error(), target)
 	}
-	if refused := assertRefused(t, err, httpx.RedirectOtherOrigin); refused.Origin != target {
+	if refused := assertRefused(t, err, httpclient.RedirectOtherOrigin); refused.Origin != target {
 		t.Errorf("Origin = %q, want %q", refused.Origin, target)
 	}
 	if got := keys(); len(got) != 0 {
@@ -474,7 +474,7 @@ func TestDefaultClientRefusalCarriesNoLocationPathOrQuery(t *testing.T) {
 }
 
 // TestHopCapNamedBeforeOrigin: the policy judges the count before the target
-// (httpx's RedirectPolicyFunc), so a 6th redirect to another host, or one upgrading to
+// (httpclient's RedirectPolicyFunc), so a 6th redirect to another host, or one upgrading to
 // https on the same host, is the cap.
 func TestHopCapNamedBeforeOrigin(t *testing.T) {
 	other, keys := counting(t)
@@ -504,7 +504,7 @@ func TestHopCapNamedBeforeOrigin(t *testing.T) {
 			if want := "arrapi: /api/v3/series stopped after 5 redirects: "; !strings.HasPrefix(res.Err.Error(), want) {
 				t.Errorf("Error() = %q, want it to start %q", res.Err.Error(), want)
 			}
-			assertRefused(t, res.Err, httpx.RedirectTooMany)
+			assertRefused(t, res.Err, httpclient.RedirectTooMany)
 		})
 	}
 	if got := keys(); len(got) != 0 {
