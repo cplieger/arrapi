@@ -8,7 +8,7 @@ This page sets out how arrapi detects the server's API, sends, retries, bounds a
 - The API key must not be empty or only whitespace, and may hold only letters, digits, `.`, `_` and `-`. A key Sonarr or Radarr generates is 32 hex digits and always passes. A key you set by hand (`Sonarr__Auth__ApiKey`, `Radarr__Auth__ApiKey` or `ApiKey` in `config.xml`), which the server accepts as written, must use only these characters, or `New` refuses it. `sonarr.New` and `radarr.New` return an error instead of a client when a check fails. The error names the rule, never the URL or the key.
 - `New` sends no request and starts no goroutine. The first call detects the API.
 - `APIKey` is its own type, so a URL variable and a key variable cannot be swapped without a compile error. An untyped string literal still converts to it.
-- No exported function takes or returns an httpx type, so building a client needs no httpx import.
+- No exported function takes or returns an httpclient type, so building a client needs no httpclient import.
 
 ## Detection
 
@@ -98,7 +98,7 @@ Without `WithLogger`, the records go to `slog.Default()`. arrapi writes no other
 - `c.Transport` must not follow redirects itself, as the `http.RoundTripper` contract requires. A transport that does hides a redirect from arrapi and can turn a command into a `GET` that reads as success.
 - arrapi's `WithTimeout` still bounds each attempt when your context has no deadline.
 
-`WithHTTPClient` is also how you share a connection pool, pin a CA with `httpx.CATransport`, or inject a test client.
+`WithHTTPClient` is also how you share a connection pool, pin a CA with `httpclient.CATransport`, or inject a test client.
 
 ## Redirects
 
@@ -109,7 +109,7 @@ Every request carries the `X-Api-Key` header and a `User-Agent` that names arrap
 - A redirect from `https` to `http` is refused, so a redirect never moves the key off an encrypted connection. An `http` base URL sends it unencrypted from the first request.
 - At most 5 redirects are followed. The 6th fails with `arrapi: <path> stopped after 5 redirects`.
 
-Every refusal by these rules wraps an `*httpx.RedirectRefusedError` you can match with `errors.As`, and its text names only the target origin, never the target's path or query. A hop your `CheckRedirect` refuses returns your error.
+Every refusal by these rules wraps an `*httpclient.RedirectRefusedError` you can match with `errors.As`, and its text names only the target origin, never the target's path or query. A hop your `CheckRedirect` refuses returns your error.
 
 A redirect a reverse proxy writes without `X-Application-Version` is followed, and the answer at its target is judged. A redirect a call ends on without the header ends the client's detection, as an error answer without the header does. A refused redirect is returned at once, and a later call detects.
 
@@ -135,13 +135,20 @@ A GET succeeds only on 200, and a command on any 2xx. Any other answer returns a
 - `Message` is the server's one-line message, at most 512 bytes, or `""` when it sent none.
 - `Body` is the response body, made safe to log as described below, at most 64 KiB. A body that was cut ends in `...`.
 
-`Error()` renders `arrapi: <path>: HTTP <code>`, then the message, else the body, on one line. `IsTransient()` reports true for a 429 or a 500 through 599. `*StatusError` implements httpx's `Transient` and `RetryAfterHint` interfaces.
+`Error()` renders `arrapi: <path>: HTTP <code>`, then the message, else the body, on one line. `IsTransient()` reports true for a 429 or a 500 through 599. `*StatusError` implements httpclient's `Transient` and `RetryAfterHint` interfaces.
 
 A by-ID read such as `SeriesByID` returns `(zero, false, nil)` for a 404 that carries the detected version. A 404 without the header is a proxy's page, not Sonarr's answer, so it is a 404 `*StatusError`.
 
 An `*arrapi.ServerChangedError` says an answer came from another server version than the one the call relied on, or that version can no longer be confirmed. Its text names the origin and the versions, never a path. A later call uses a current detection or detects again. It wraps the answer's `*StatusError` when the answer was not a success.
 
-A body that does not decode returns an error naming the path, the field and the Go type, never a value the server sent.
+A body that does not decode returns an `*arrapi.DecodeError` naming the path, the field and the Go type. Its text holds no value the server sent. The decoder's error it wraps holds none either, except a `*json.SyntaxError`, whose text quotes the one invalid character or escape sequence, at most 12 bytes, escaped. Match it with `errors.As`:
+
+- `Method` is `GET`, and `Path` is the request path without its query.
+- `Status` is the answer's HTTP status. It is always exactly 200, because only a 200 answer to a GET is decoded.
+- `ContentType` is the answer's `Content-Type` media type as the server sent it: parameters dropped, case kept, the API key redacted, one line, at most 64 bytes, or `""` when the answer had none. Compare it with `strings.EqualFold` or `mime.ParseMediaType`.
+- `Unwrap` returns the decoder's error: the `*json.SyntaxError` as it came, a `*json.UnmarshalTypeError` holding only the JSON kind, the declared field path and the Go types, or nil for a date that is not RFC 3339, any other shape mismatch, and a `null` answer or item. It is also nil whenever its text would render the API key.
+
+An error answer, a body over its cap, a body the network cut and a command's answer are never a `*DecodeError`.
 
 Every error is safe to log:
 

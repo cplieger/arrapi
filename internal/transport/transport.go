@@ -13,7 +13,7 @@ import (
 	"time"
 
 	"github.com/cplieger/arrapi/v3"
-	"github.com/cplieger/httpx/v5"
+	"github.com/cplieger/go/httpclient"
 )
 
 const (
@@ -70,7 +70,7 @@ func New(baseURL string, key arrapi.APIKey, cfg Config) (*Client, error) {
 	// Commands follow no redirect: net/http rewrites a POST answered 301, 302 or 303
 	// into a GET (net/http/client.go redirectBehavior), whose 2xx would read as the
 	// command's success.
-	cmd.CheckRedirect = httpx.RefuseAllRedirects
+	cmd.CheckRedirect = httpclient.RefuseAllRedirects
 	c.data, c.cmd = &data, &cmd
 	return c, nil
 }

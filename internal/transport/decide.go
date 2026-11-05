@@ -18,7 +18,7 @@ type End struct {
 	Header    http.Header // EndAnswer: the answer's header
 	Kind      EndKind
 	Code      int  // EndAnswer: the answer's status
-	Transient bool // EndTransport: httpx.IsTransient of the safe error
+	Transient bool // EndTransport: httpclient.IsTransient of the safe error
 	HopFailed bool // EndTransport: a header-less 301, 302, 303, 307 or 308 whose hop failed marked the detection stale; never set for an unanchored probe
 }
 

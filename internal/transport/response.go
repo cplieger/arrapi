@@ -12,9 +12,10 @@ import (
 	"time"
 
 	"github.com/cplieger/arrapi/v3"
+	"github.com/cplieger/arrapi/v3/internal/decodehook"
 	"github.com/cplieger/arrapi/v3/internal/statushook"
-	"github.com/cplieger/httpx/v5"
-	"github.com/cplieger/runesafe/v3"
+	"github.com/cplieger/go/httpclient"
+	"github.com/cplieger/go/textsafe"
 )
 
 // The body bounds. Every body is read through one of them or discardBody's.
@@ -42,7 +43,7 @@ func (c *Client) capture(code int, resp *http.Response, path string) *arrapi.Sta
 			e.Message = c.message(raw)
 		}
 	}
-	statushook.SetRetryAfter(e, httpx.ParseRetryAfter(resp.Header.Get("Retry-After")))
+	statushook.SetRetryAfter(e, httpclient.ParseRetryAfter(resp.Header.Get("Retry-After")))
 	return e
 }
 
@@ -68,7 +69,7 @@ func (c *Client) readErrorWindow(body io.ReadCloser) (raw string, lost bool, err
 // read window cut is a trailing prefix cutMarked trims. cut reports that the result is
 // not the whole text.
 func (c *Client) redactErrorBody(raw string, lost bool) (s string, cut bool) {
-	s = c.purge(c.mask(runesafe.Sanitize(raw)))
+	s = c.purge(c.mask(textsafe.Sanitize(raw)))
 	if lost || len(s) > maxErrorBodyBytes {
 		return c.cutMarked(s, maxErrorBodyBytes), true
 	}
@@ -98,14 +99,14 @@ func (c *Client) message(raw string) string {
 	return ""
 }
 
-// readInto reads at most limit bytes of an accepted body and decodes it into out.
-// An over-cap body is rejected, never decoded cut. A failed read is returned as the
-// raw error for the caller to judge as a transport outcome.
-func (*Client) readInto(body io.ReadCloser, limit int64, path string, out any) (readErr, err error) {
-	data, rerr := httpx.ReadLimitedBody(body, limit)
+// readInto reads at most a.limit bytes of the accepted answer resp and decodes it into
+// a.out. An over-cap body is rejected, never decoded cut. A failed read is returned as
+// the raw error for the caller to judge as a transport outcome.
+func (c *Client) readInto(a *attempt, resp *http.Response) (readErr, err error) {
+	data, rerr := httpclient.ReadLimitedBody(resp.Body, a.limit)
 	if rerr != nil {
-		if _, ok := errors.AsType[*httpx.ResponseTooLargeError](rerr); ok {
-			return nil, &arrapi.ResponseTooLargeError{Path: path, Limit: limit}
+		if _, ok := errors.AsType[*httpclient.ResponseTooLargeError](rerr); ok {
+			return nil, &arrapi.ResponseTooLargeError{Path: a.shown, Limit: a.limit}
 		}
 		return rerr, nil
 	}
@@ -113,49 +114,96 @@ func (*Client) readInto(body io.ReadCloser, limit int64, path string, out any) (
 	// would pass as an empty answer; no arr route answers 200 with it (ASP.NET Core
 	// answers a null result 204).
 	if string(bytes.Trim(data, " \t\r\n")) == "null" {
-		return nil, &decodeError{path: path, reason: "the answer is null"}
+		return nil, c.decodeFailure(a, resp, decodeFault{reason: "the answer is null"})
 	}
-	if err := json.Unmarshal(data, out); err != nil {
-		return nil, newDecodeError(path, reflect.TypeOf(out), err)
+	out := reflect.TypeOf(a.out)
+	if err := json.Unmarshal(data, a.out); err != nil {
+		return nil, c.decodeFailure(a, resp, newDecodeError(out, err))
 	}
-	if field, i, found := nullItem(data, reflect.TypeOf(out)); found {
-		return nil, &decodeError{path: path, field: field, reason: "item " + strconv.Itoa(i) + " is null"}
+	if field, i, found := nullItem(data, out); found {
+		return nil, c.decodeFailure(a, resp, decodeFault{field: field, reason: "item " + strconv.Itoa(i) + " is null"})
+	}
+	if i, found := nullListItem(a.out); found {
+		return nil, c.decodeFailure(a, resp, decodeFault{reason: "list item " + strconv.Itoa(i) + " is null"})
 	}
 	return nil, nil
 }
 
-// decodeError is an accepted body that failed to decode. It holds only text arrapi
-// defines and wraps nothing: a decoder's error can quote any part of the value it
-// rejected (time.ParseError quotes the unparsed suffix, UnmarshalTypeError a number
-// literal, an UnmarshalJSON method anything), and a server can echo the key there.
-type decodeError struct {
-	path   string
-	field  string
-	reason string
-}
-
-func (e *decodeError) Error() string {
-	if e.field != "" {
-		return "arrapi: decode " + e.path + ": field " + e.field + ": " + e.reason
+// nullListItem finds the first nil item of a top-level list of pointers, GetList's
+// shape, which a null item decodes to: no resource list holds one, and GetList's
+// mapper would dereference it.
+func nullListItem(out any) (index int, found bool) {
+	v := reflect.ValueOf(out)
+	if v.Kind() != reflect.Pointer || v.IsNil() {
+		return 0, false
 	}
-	return "arrapi: decode " + e.path + ": " + e.reason
+	list := v.Elem()
+	if list.Kind() != reflect.Slice || list.Type().Elem().Kind() != reflect.Pointer {
+		return 0, false
+	}
+	for i := range list.Len() {
+		if list.Index(i).IsNil() {
+			return i, true
+		}
+	}
+	return 0, false
 }
 
-func newDecodeError(path string, out reflect.Type, err error) error {
+// decodeFault is what one decode site found: arrapi's sentence, the declared field it
+// names, and the decoder's error already scrubbed by newDecodeError (nil when none).
+type decodeFault struct {
+	cause         error
+	field, reason string
+}
+
+// decodeFailure builds the *arrapi.DecodeError of a's accepted answer resp. A cause
+// whose text still renders the key is dropped: a hand-set key can be short enough to
+// sit in a syntax error's fragment, or equal a declared name.
+func (c *Client) decodeFailure(a *attempt, resp *http.Response, f decodeFault) error {
+	cause := f.cause
+	if c.treeRendersKey(cause) {
+		cause = nil
+	}
+	mediaType, _, _ := strings.Cut(resp.Header.Get("Content-Type"), ";")
+	return decodehook.New(decodehook.Fields{
+		Err:         cause,
+		Method:      a.method,
+		Path:        a.shown,
+		ContentType: c.Present(strings.Trim(mediaType, " \t"), ServerTextBytes),
+		Field:       f.field,
+		Reason:      f.reason,
+		Status:      resp.StatusCode,
+	})
+}
+
+// newDecodeError names the decoder's err in arrapi's words and keeps of it only what
+// holds no server value: a decoder's error can quote any part of the value it rejected
+// (time.ParseError the unparsed suffix, UnmarshalTypeError a number literal or a map
+// key, an UnmarshalJSON method anything), and a server can echo the key there. A
+// *json.SyntaxError is kept as it came, since its text quotes at most one escaped
+// character or escape sequence; an UnmarshalTypeError is rebuilt from the kind word,
+// declared names and Go types; no other error has a form without the value.
+func newDecodeError(out reflect.Type, err error) decodeFault {
 	if se, ok := errors.AsType[*json.SyntaxError](err); ok {
-		return &decodeError{path: path, reason: "invalid JSON at byte " + strconv.FormatInt(se.Offset, 10)}
+		return decodeFault{cause: se, reason: "invalid JSON at byte " + strconv.FormatInt(se.Offset, 10)}
 	}
 	if te, ok := errors.AsType[*json.UnmarshalTypeError](err); ok && te.Type != nil {
-		return &decodeError{
-			path:   path,
-			field:  fieldPath(te.Field, declaredNames(out)),
-			reason: "a JSON " + jsonKind(te.Value) + " cannot decode into " + te.Type.String(),
+		field, kind := fieldPath(te.Field, declaredNames(out)), jsonKind(te.Value)
+		cause := &json.UnmarshalTypeError{Value: kind, Type: te.Type, Offset: te.Offset}
+		if field != "" {
+			// A Struct with no Field renders as "Go struct field T. of type".
+			cause.Struct, cause.Field = te.Struct, field
+		}
+		return decodeFault{
+			cause:  cause,
+			field:  field,
+			reason: "a JSON " + kind + " cannot decode into " + te.Type.String(),
 		}
 	}
 	if _, ok := errors.AsType[*time.ParseError](err); ok {
-		return &decodeError{path: path, reason: "a date-time is not RFC 3339"}
+		return decodeFault{reason: "a date-time is not RFC 3339"}
 	}
-	return &decodeError{path: path, reason: "the answer does not match the expected shape"}
+	return decodeFault{reason: "the answer does not match the expected shape"}
 }
 
 // jsonKind keeps only the kind word of UnmarshalTypeError.Value, which can go on to

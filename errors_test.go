@@ -9,8 +9,8 @@ import (
 	"testing"
 
 	"github.com/cplieger/arrapi/v3"
-	"github.com/cplieger/httpx/v5"
-	"github.com/cplieger/runesafe/v3"
+	"github.com/cplieger/go/httpclient"
+	"github.com/cplieger/go/textsafe"
 )
 
 // hostile is server text that would forge a log line (CR, LF), reorder it (a bidi
@@ -21,7 +21,7 @@ var hostile = "a\r\nforged\u202eb" + strings.Repeat("x", 1<<20)
 func assertOneLine(t *testing.T, s string) {
 	t.Helper()
 	for i, r := range s {
-		if runesafe.IsUnsafeSingleLine(r) {
+		if textsafe.IsUnsafeSingleLine(r) {
 			t.Fatalf("Error() holds unsafe rune %U at byte %d", r, i)
 		}
 	}
@@ -94,15 +94,15 @@ func TestStatusErrorIsTransient(t *testing.T) {
 			if got := e.IsTransient(); got != tc.want {
 				t.Errorf("IsTransient() = %v, want %v", got, tc.want)
 			}
-			if got := httpx.IsTransient(fmt.Errorf("wrapped: %w", e)); got != tc.want {
-				t.Errorf("httpx.IsTransient(wrapped) = %v, want %v", got, tc.want)
+			if got := httpclient.IsTransient(fmt.Errorf("wrapped: %w", e)); got != tc.want {
+				t.Errorf("httpclient.IsTransient(wrapped) = %v, want %v", got, tc.want)
 			}
 		})
 	}
 }
 
 func TestStatusErrorRetryAfterHintWithoutHint(t *testing.T) {
-	var hint httpx.RetryAfterHint = &arrapi.StatusError{Code: 503, Path: "/api/v3/series"}
+	var hint httpclient.RetryAfterHint = &arrapi.StatusError{Code: 503, Path: "/api/v3/series"}
 	if got := hint.RetryAfterHint(); got != 0 {
 		t.Errorf("RetryAfterHint() without a hint = %v, want 0", got)
 	}
@@ -330,5 +330,25 @@ func TestErrCommandOutcomeUnknownWrapsItsCause(t *testing.T) {
 	}
 	if got, ok := errors.AsType[*arrapi.UnsupportedAPIError](err); !ok || got != noHeader {
 		t.Errorf("errors.As(*UnsupportedAPIError) = %v, %v; want the cause", got, ok)
+	}
+}
+
+// TestDecodeErrorCallerBuilt pins Error for a value built outside arrapi, whose
+// unexported fields are empty: the path on one line, the generic reason, never Err.
+func TestDecodeErrorCallerBuilt(t *testing.T) {
+	cause := errors.New("cause text " + hostile[:20])
+	e := &arrapi.DecodeError{Err: cause, Method: "GET", Path: "/api/v3/series\r\nforged", Status: 200}
+	const want = "arrapi: decode /api/v3/series  forged: the answer does not decode"
+	if got := e.Error(); got != want {
+		t.Errorf("Error() = %q, want %q", got, want)
+	}
+	if !errors.Is(e, cause) || errors.Unwrap(e) != cause {
+		t.Errorf("Unwrap() = %v, want the cause it holds", errors.Unwrap(e))
+	}
+	if got := (&arrapi.DecodeError{}).Error(); got != "arrapi: decode : the answer does not decode" {
+		t.Errorf("zero DecodeError Error() = %q", got)
+	}
+	if errors.Unwrap(&arrapi.DecodeError{}) != nil {
+		t.Error("zero DecodeError unwraps to a cause")
 	}
 }

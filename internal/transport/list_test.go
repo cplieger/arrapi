@@ -185,21 +185,22 @@ func TestNestedNullItemIsADecodeError(t *testing.T) {
 		body, want string
 		decoded    []wireNested
 	}{
-		"a struct item":          {`[{"id":1,"seasons":[null]}]`, "arrapi: decode " + path + ": field seasons: item 0 is null", nil},
-		"a later struct item":    {`[{"id":1},{"id":2,"seasons":[{"number":1}, null]}]`, "arrapi: decode " + path + ": field seasons: item 1 is null", nil},
-		"an int item":            {`[{"id":1,"tags":[4,null]}]`, "arrapi: decode " + path + ": field tags: item 1 is null", nil},
-		"an item two deep":       {`[{"id":1,"seasons":[{"number":1,"names":["a",null]}]}]`, "arrapi: decode " + path + ": field seasons.names: item 1 is null", nil},
-		"under an object":        {`[{"id":1,"stats":{"groups":[null]}}]`, "arrapi: decode " + path + ": field stats.groups: item 0 is null", nil},
-		"a key in another case":  {`[{"id":1,"Seasons":[null]}]`, "arrapi: decode " + path + ": field seasons: item 0 is null", nil},
-		"padded by JSON":         {"[{\"id\":1,\"tags\":[ 1 ,\n null ]}]", "arrapi: decode " + path + ": field tags: item 1 is null", nil},
-		"a promoted field":       {`[{"id":1,"extra":[null]}]`, "arrapi: decode " + path + ": field extra: item 0 is null", nil},
-		"a map value":            {`[{"id":1,"byName":{"a key":[1,null]}}]`, "arrapi: decode " + path + ": field byName: item 1 is null", nil},
-		"an undeclared array":    {`[{"id":1,"genres":[null],"ratings":{"votes":[null]}}]`, "", []wireNested{{ID: 1}}},
-		"a self-decoding item":   {`[{"id":1,"tokens":[null,2]}]`, "", []wireNested{{ID: 1, Tokens: []token{-1, 0}}}},
-		"a null array":           {`[{"id":1,"seasons":null,"tags":null}]`, "", []wireNested{{ID: 1}}},
-		"null text in a string":  {`[{"id":1,"title":"[null, null]"}]`, "", []wireNested{{ID: 1, Title: "[null, null]"}}},
-		"an escaped quote first": {`[{"id":1,"title":"a\"[null","tags":[1]}]`, "", []wireNested{{ID: 1, Title: `a"[null`, Tags: []int{1}}}},
-		"every member":           {`[{"id":1,"title":"T","tags":[2],"extra":[3],"stats":{"groups":["g"]},"byName":{"k":[4]},"seasons":[{"number":1,"names":["n"]}]}]`, "", []wireNested{{Extra: []int{3}, Stats: &wireStats{Groups: []string{"g"}}, ByName: map[string][]int{"k": {4}}, Seasons: []wireSeason{{Names: []string{"n"}, Number: 1}}, Tags: []int{2}, Title: "T", ID: 1}}},
+		"a struct item":           {`[{"id":1,"seasons":[null]}]`, "arrapi: decode " + path + ": field seasons: item 0 is null", nil},
+		"a later struct item":     {`[{"id":1},{"id":2,"seasons":[{"number":1}, null]}]`, "arrapi: decode " + path + ": field seasons: item 1 is null", nil},
+		"an int item":             {`[{"id":1,"tags":[4,null]}]`, "arrapi: decode " + path + ": field tags: item 1 is null", nil},
+		"an item two deep":        {`[{"id":1,"seasons":[{"number":1,"names":["a",null]}]}]`, "arrapi: decode " + path + ": field seasons.names: item 1 is null", nil},
+		"under an object":         {`[{"id":1,"stats":{"groups":[null]}}]`, "arrapi: decode " + path + ": field stats.groups: item 0 is null", nil},
+		"a key in another case":   {`[{"id":1,"Seasons":[null]}]`, "arrapi: decode " + path + ": field seasons: item 0 is null", nil},
+		"padded by JSON":          {"[{\"id\":1,\"tags\":[ 1 ,\n null ]}]", "arrapi: decode " + path + ": field tags: item 1 is null", nil},
+		"a promoted field":        {`[{"id":1,"extra":[null]}]`, "arrapi: decode " + path + ": field extra: item 0 is null", nil},
+		"a map value":             {`[{"id":1,"byName":{"a key":[1,null]}}]`, "arrapi: decode " + path + ": field byName: item 1 is null", nil},
+		"before a null list item": {`[null,{"id":1,"tags":[null]}]`, "arrapi: decode " + path + ": field tags: item 0 is null", nil},
+		"an undeclared array":     {`[{"id":1,"genres":[null],"ratings":{"votes":[null]}}]`, "", []wireNested{{ID: 1}}},
+		"a self-decoding item":    {`[{"id":1,"tokens":[null,2]}]`, "", []wireNested{{ID: 1, Tokens: []token{-1, 0}}}},
+		"a null array":            {`[{"id":1,"seasons":null,"tags":null}]`, "", []wireNested{{ID: 1}}},
+		"null text in a string":   {`[{"id":1,"title":"[null, null]"}]`, "", []wireNested{{ID: 1, Title: "[null, null]"}}},
+		"an escaped quote first":  {`[{"id":1,"title":"a\"[null","tags":[1]}]`, "", []wireNested{{ID: 1, Title: `a"[null`, Tags: []int{1}}}},
+		"every member":            {`[{"id":1,"title":"T","tags":[2],"extra":[3],"stats":{"groups":["g"]},"byName":{"k":[4]},"seasons":[{"number":1,"names":["n"]}]}]`, "", []wireNested{{Extra: []int{3}, Stats: &wireStats{Groups: []string{"g"}}, ByName: map[string][]int{"k": {4}}, Seasons: []wireSeason{{Names: []string{"n"}, Number: 1}}, Tags: []int{2}, Title: "T", ID: 1}}},
 	} {
 		t.Run(name, func(t *testing.T) {
 			f := newFake(t, nil)

@@ -2,11 +2,14 @@ package radarr
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"path/filepath"
 	"runtime"
 	"slices"
 	"strings"
@@ -660,6 +663,46 @@ func TestHistorySinceDecodeErrorNamesTheField(t *testing.T) {
 	const want = "arrapi: decode /api/v3/history/since: field eventType: a JSON object cannot decode into radarr.EventType"
 	if err == nil || err.Error() != want {
 		t.Errorf("HistorySince = %v, want %q", err, want)
+	}
+}
+
+// TestMoviesDecodeErrorIsTyped pins that a recorded movie list holding one field of
+// the wrong kind makes Movies return the *arrapi.DecodeError itself, after one movie
+// request.
+func TestMoviesDecodeErrorIsTyped(t *testing.T) {
+	recorded, err := os.ReadFile(filepath.Join("..", "testdata", "radarr", "api-v3", "movies.json"))
+	if err != nil {
+		t.Fatalf("%v; %s", err, reRecord)
+	}
+	body := strings.Replace(string(recorded), `"tmdbId": 2,`, `"tmdbId": "2",`, 1)
+	if body == string(recorded) {
+		t.Fatalf("movies.json holds no tmdbId 2; %s", reRecord)
+	}
+	f := newFake().radarr(vRadarr)
+	f.on(movies, ans(200, vRadarr, body))
+	srv := httptest.NewServer(f)
+	t.Cleanup(srv.Close)
+	c, err := New(srv.URL, testKey, WithBaseDelay(time.Millisecond), WithLogger(slog.New(slog.DiscardHandler)))
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	t.Cleanup(c.Close)
+	_, err = c.Movies(t.Context())
+	de, ok := err.(*arrapi.DecodeError)
+	if !ok {
+		t.Fatalf("Movies error = %v (%T), want an *arrapi.DecodeError", err, err)
+	}
+	if want := "arrapi: decode /api/v3/movie: field tmdbId: a JSON string cannot decode into int"; de.Error() != want {
+		t.Errorf("Error() = %q, want %q", de.Error(), want)
+	}
+	if de.Method != http.MethodGet || de.Path != "/api/v3/movie" || de.Status != http.StatusOK {
+		t.Errorf("DecodeError = {Method %q, Path %q, Status %d}, want {GET, /api/v3/movie, 200}", de.Method, de.Path, de.Status)
+	}
+	if te, ok := de.Err.(*json.UnmarshalTypeError); !ok || te.Value != "string" || te.Field != "tmdbId" {
+		t.Errorf("Err = %#v, want a *json.UnmarshalTypeError of a string at tmdbId", de.Err)
+	}
+	if n := count(f, movies); n != 1 {
+		t.Errorf("Movies sent %d movie requests, want 1", n)
 	}
 }
 

@@ -3,7 +3,7 @@ package transport
 import (
 	"strings"
 
-	"github.com/cplieger/runesafe/v3"
+	"github.com/cplieger/go/textsafe"
 )
 
 // redactedMask replaces each run of bytes a key occurrence covers, in Body and in
@@ -73,6 +73,6 @@ func (c *Client) containsKey(s string) bool { return strings.Contains(s, string(
 // client's key. It masks with the marker Body uses (redactErrorBody owns Body's
 // multi-line form) and caps last, so a key straddling the cap is already gone.
 func (c *Client) Present(s string, limit int) string {
-	text, _ := runesafe.RedactSingleLineCapped(s, limit, cutMarker, string(c.key))
+	text, _ := textsafe.RedactSingleLineCapped(s, limit, cutMarker, string(c.key))
 	return c.purge(text)
 }

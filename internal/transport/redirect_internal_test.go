@@ -9,11 +9,11 @@ import (
 	"testing"
 
 	"github.com/cplieger/arrapi/v3"
-	"github.com/cplieger/httpx/v5"
+	"github.com/cplieger/go/httpclient"
 )
 
 // refuseEveryHop makes the default policy refuse every hop with an untyped error, so
-// the wrapper's text and its %w are judged apart from httpx's reasons.
+// the wrapper's text and its %w are judged apart from httpclient's reasons.
 func refuseEveryHop(t *testing.T) error {
 	t.Helper()
 	refusal := errors.New("refused by the stub policy")
@@ -128,7 +128,7 @@ func TestPolicyUseLastResponseIsTheAnswer(t *testing.T) {
 }
 
 // TestDefaultClientRefusesDowngrade is the converse pin of the exact-origin rule, true
-// of the same-host policy as well (httpx names it RedirectDowngrade there and
+// of the same-host policy as well (httpclient names it RedirectDowngrade there and
 // RedirectOtherOrigin under WithSameOrigin): an https base redirected to http on its
 // own host is refused before the http origin is dialled. It is internal so the default
 // client can trust the test server's certificate.
@@ -162,8 +162,8 @@ func TestDefaultClientRefusesDowngrade(t *testing.T) {
 	if res.Err == nil {
 		t.Fatal("the downgrade was followed")
 	}
-	if _, ok := errors.AsType[*httpx.RedirectRefusedError](res.Err); !ok {
-		t.Errorf("Err = %v, want httpx's refusal reachable through errors.As", res.Err)
+	if _, ok := errors.AsType[*httpclient.RedirectRefusedError](res.Err); !ok {
+		t.Errorf("Err = %v, want httpclient's refusal reachable through errors.As", res.Err)
 	}
 	if n := plainHits.Load(); n != 0 {
 		t.Errorf("the http origin received %d requests, want none", n)

@@ -7,15 +7,22 @@ import (
 	"strings"
 	"time"
 
+	"github.com/cplieger/arrapi/v3/internal/decodehook"
 	"github.com/cplieger/arrapi/v3/internal/statushook"
-	"github.com/cplieger/httpx/v5"
-	"github.com/cplieger/runesafe/v3"
+	"github.com/cplieger/go/httpclient"
+	"github.com/cplieger/go/textsafe"
 )
 
 func init() {
 	statushook.SetRetryAfter = func(err error, d time.Duration) {
 		if e, ok := errors.AsType[*StatusError](err); ok {
-			e.retryAfter = min(max(d, 0), httpx.RetryAfterCap)
+			e.retryAfter = min(max(d, 0), httpclient.RetryAfterCap)
+		}
+	}
+	decodehook.New = func(f decodehook.Fields) error {
+		return &DecodeError{
+			Err: f.Err, Method: f.Method, Path: f.Path, ContentType: f.ContentType,
+			field: f.Field, reason: f.Reason, Status: f.Status,
 		}
 	}
 }
@@ -31,8 +38,8 @@ type StatusError struct {
 }
 
 var (
-	_ httpx.Transient      = (*StatusError)(nil)
-	_ httpx.RetryAfterHint = (*StatusError)(nil)
+	_ httpclient.Transient      = (*StatusError)(nil)
+	_ httpclient.RetryAfterHint = (*StatusError)(nil)
 )
 
 // Error renders "arrapi: <path>: HTTP <code>", followed by Message, else Body, when set,
@@ -43,11 +50,11 @@ func (e *StatusError) Error() string {
 	if detail == "" {
 		detail = e.Body
 	}
-	path := runesafe.SanitizeSingleLine(e.Path)
+	path := textsafe.SanitizeSingleLine(e.Path)
 	if detail == "" {
 		return fmt.Sprintf("arrapi: %s: HTTP %d", path, e.Code)
 	}
-	return fmt.Sprintf("arrapi: %s: HTTP %d: %s", path, e.Code, runesafe.SanitizeSingleLine(detail))
+	return fmt.Sprintf("arrapi: %s: HTTP %d: %s", path, e.Code, textsafe.SanitizeSingleLine(detail))
 }
 
 // IsTransient reports whether the status is worth sending again: 429, or 500 through
@@ -69,6 +76,41 @@ type ResponseTooLargeError struct {
 func (e *ResponseTooLargeError) Error() string {
 	return fmt.Sprintf("arrapi: %s: response exceeds %d-byte limit", e.Path, e.Limit)
 }
+
+// DecodeError is an answer arrapi accepted whose body did not decode into the type the
+// call reads. Its own fields and its Error text hold no byte of the body: Error renders
+// arrapi's own sentence, naming the path, a field the type declares and the Go type.
+// Err is the one exception: when it is a *json.SyntaxError, its text quotes the one
+// invalid character or escape sequence, at most 12 bytes, escaped by Go's quoting.
+type DecodeError struct {
+	Err         error  // the decoder's error with server values removed (see Unwrap); nil when arrapi's own null check refused a decoded value, or when no scrubbed form exists
+	Method      string // the request method; "GET", the only method whose answer arrapi decodes
+	Path        string // the request path relative to the base URL, without its query, as StatusError.Path carries it
+	ContentType string // the answer's Content-Type media type as sent: parameters dropped, key redacted, single-line, at most 64 bytes; "" when absent
+	field       string
+	reason      string
+	Status      int // the answer's HTTP status; 200 for every DecodeError arrapi returns, since a read or probe accepts only 200
+}
+
+// Error renders "arrapi: decode <path>: [field <field>: ]<reason>" on one line, with
+// "the answer does not decode" as the reason of a value built outside arrapi. It
+// never renders Err.
+func (e *DecodeError) Error() string {
+	reason := e.reason
+	if reason == "" {
+		reason = "the answer does not decode"
+	}
+	path := textsafe.SanitizeSingleLine(e.Path)
+	if e.field != "" {
+		return "arrapi: decode " + path + ": field " + e.field + ": " + reason
+	}
+	return "arrapi: decode " + path + ": " + reason
+}
+
+// Unwrap returns Err: a *json.SyntaxError as the decoder returned it, a
+// *json.UnmarshalTypeError rebuilt from its kind word, the declared field path and
+// the Go types, or nil. Err is nil whenever its text would render the client's key.
+func (e *DecodeError) Unwrap() error { return e.Err }
 
 // UnsupportedReason says why a server cannot be read.
 type UnsupportedReason int
@@ -100,7 +142,7 @@ type UnsupportedAPIError struct {
 // again, because a value built outside arrapi carries no such guarantee. It cannot
 // redact a key, which it never holds.
 func (e *UnsupportedAPIError) Error() string {
-	want, path := runesafe.SanitizeSingleLine(e.Want), runesafe.SanitizeSingleLine(e.Path)
+	want, path := textsafe.SanitizeSingleLine(e.Want), textsafe.SanitizeSingleLine(e.Path)
 	switch e.Reason {
 	case ReasonV5Unreachable:
 		if current := serverText(e.Current); current != "" {
@@ -153,7 +195,7 @@ type ServerChangedError struct {
 // Error names Origin and the versions, never Path: a server change when To is a version
 // other than From, else that From is no longer confirmed.
 func (e *ServerChangedError) Error() string {
-	origin, _ := runesafe.SanitizeSingleLineCapped(e.Origin, maxOriginBytes, "...")
+	origin, _ := textsafe.SanitizeSingleLineCapped(e.Origin, maxOriginBytes, "...")
 	from := serverText(e.From)
 	if e.To != "" && e.To != e.From {
 		return fmt.Sprintf("arrapi: %s answered with version %s, but version %s also answered this client: the server behind the URL changed", origin, serverText(e.To), from)
@@ -181,6 +223,6 @@ const (
 )
 
 func serverText(s string) string {
-	text, _ := runesafe.SanitizeSingleLineCapped(s, maxServerTextBytes, "...")
+	text, _ := textsafe.SanitizeSingleLineCapped(s, maxServerTextBytes, "...")
 	return text
 }

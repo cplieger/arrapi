@@ -16,7 +16,7 @@ type options struct{ cfg transport.Config }
 // WithHTTPClient sends every request, detection probes included, through copies of c whose
 // Transport wraps c's, so arrapi sees every answer; nil is ignored. The caller owns c's
 // transport. A read follows a redirect only where the default client would, to the exact
-// origin under httpx's default hop cap, and then only if c.CheckRedirect, when set, allows
+// origin under httpclient's default hop cap, and then only if c.CheckRedirect, when set, allows
 // it too; a command follows none. c's Transport must not follow redirects itself (the
 // http.RoundTripper contract): one that does hides a redirect from arrapi and can turn a
 // command into a GET that reads as success. The context deadline and WithTimeout still

@@ -4,7 +4,7 @@
 
 arrapi gives your Go code typed clients for Sonarr and Radarr. They read a media library with its history and tags, queue rescans, retry brief failures and detect which Sonarr API the server speaks.
 
-It replaces the `net/http` calls, response types, version checks and retry loop you would write around a Sonarr or Radarr instance. It depends on [httpx](https://github.com/cplieger/httpx) for redirect policy and backoff and on [runesafe](https://github.com/cplieger/runesafe) for log-safe error text, both from the same author. It needs Go 1.27.2 or later and is licensed under Apache-2.0.
+It replaces the `net/http` calls, response types, version checks and retry loop you would write around a Sonarr or Radarr instance. It depends on [httpclient](https://github.com/cplieger/go/tree/main/httpclient) for redirect policy and backoff and on [textsafe](https://github.com/cplieger/go/tree/main/textsafe) for log-safe error text, both from the same author. It needs Go 1.27.2 or later and is licensed under Apache-2.0.
 
 ## Why use it
 
@@ -85,7 +85,7 @@ The `radarr` package has the same shape: `radarr.New`, `Info`, `Movies` and so o
 - `MediaCoverURL` builds an image URL under your base URL, and `Series.WebURL` and `Movie.WebURL` link to an item's web UI page.
 - `arrapi.TagIDs` and `arrapi.HasAnyTag` filter by tag label.
 - The options are `WithHTTPClient`, `WithMaxAttempts`, `WithBaseDelay`, `WithTimeout` and `WithLogger`, in each package.
-- Errors are `*arrapi.StatusError`, `*arrapi.ResponseTooLargeError`, `*arrapi.UnsupportedAPIError` with a reason and a fix, `*arrapi.ServerChangedError` and `arrapi.ErrCommandOutcomeUnknown`.
+- Errors are `*arrapi.StatusError`, `*arrapi.ResponseTooLargeError`, `*arrapi.DecodeError`, `*arrapi.UnsupportedAPIError` with a reason and a fix, `*arrapi.ServerChangedError` and `arrapi.ErrCommandOutcomeUnknown`.
 
 The full reference is on [pkg.go.dev](https://pkg.go.dev/github.com/cplieger/arrapi/v3). [Data types](docs/data-model.md) covers the normalized types, episode orders, audio languages and history.
 

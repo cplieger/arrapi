@@ -1,6 +1,12 @@
 package sonarr
 
 import (
+	"encoding/json"
+	"log/slog"
+	"net/http"
+	"net/http/httptest"
+	"os"
+	"path/filepath"
 	"slices"
 	"strings"
 	"testing"
@@ -271,6 +277,46 @@ func TestHistorySinceDecodeErrorNamesTheField(t *testing.T) {
 				t.Errorf("HistorySince = %v, want %q", err, want)
 			}
 		})
+	}
+}
+
+// TestSeriesDecodeErrorIsTyped pins that a recorded series list holding one field of
+// the wrong kind makes Series return the *arrapi.DecodeError itself, after one
+// series request.
+func TestSeriesDecodeErrorIsTyped(t *testing.T) {
+	recorded, err := os.ReadFile(filepath.Join(fixtureDir("sonarr/v4-api-v3"), "series-codegeass.json"))
+	if err != nil {
+		t.Fatalf("%v; %s", err, reRecord)
+	}
+	body := strings.Replace(string(recorded), `"tvdbId": 79525`, `"tvdbId": "79525"`, 1)
+	if body == string(recorded) {
+		t.Fatalf("series-codegeass.json holds no tvdbId 79525; %s", reRecord)
+	}
+	f := newFake().sonarr4(v4)
+	f.on(v4Series, ans(200, v4, body))
+	srv := httptest.NewServer(f)
+	t.Cleanup(srv.Close)
+	c, err := New(srv.URL, testKey, WithBaseDelay(time.Millisecond), WithLogger(slog.New(slog.DiscardHandler)))
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	t.Cleanup(c.Close)
+	_, err = c.Series(t.Context())
+	de, ok := err.(*arrapi.DecodeError)
+	if !ok {
+		t.Fatalf("Series error = %v (%T), want an *arrapi.DecodeError", err, err)
+	}
+	if want := "arrapi: decode /api/v3/series: field tvdbId: a JSON string cannot decode into int"; de.Error() != want {
+		t.Errorf("Error() = %q, want %q", de.Error(), want)
+	}
+	if de.Method != http.MethodGet || de.Path != "/api/v3/series" || de.Status != http.StatusOK {
+		t.Errorf("DecodeError = {Method %q, Path %q, Status %d}, want {GET, /api/v3/series, 200}", de.Method, de.Path, de.Status)
+	}
+	if te, ok := de.Err.(*json.UnmarshalTypeError); !ok || te.Value != "string" || te.Field != "tvdbId" {
+		t.Errorf("Err = %#v, want a *json.UnmarshalTypeError of a string at tvdbId", de.Err)
+	}
+	if n := count(f, v4Series); n != 1 {
+		t.Errorf("Series sent %d series requests, want 1", n)
 	}
 }
 

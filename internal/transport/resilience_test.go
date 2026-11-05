@@ -8,7 +8,7 @@ import (
 
 	"github.com/cplieger/arrapi/v3"
 	"github.com/cplieger/arrapi/v3/internal/transport"
-	"github.com/cplieger/httpx/v5"
+	"github.com/cplieger/go/httpclient"
 )
 
 func TestStatusErrorCarriesRetryAfter(t *testing.T) {
@@ -18,7 +18,7 @@ func TestStatusErrorCarriesRetryAfter(t *testing.T) {
 		want  time.Duration
 	}{
 		{"seconds", "30", 30 * time.Second},
-		{"capped", "86400", httpx.RetryAfterCap},
+		{"capped", "86400", httpclient.RetryAfterCap},
 		{"absent", "", 0},
 		{"malformed", "soon", 0},
 	}

@@ -8,7 +8,7 @@ import (
 
 	"github.com/cplieger/arrapi/v3"
 	"github.com/cplieger/arrapi/v3/internal/transport"
-	"github.com/cplieger/httpx/v5"
+	"github.com/cplieger/go/httpclient"
 )
 
 // budget is one call's attempt budget, wait base and log destination.
@@ -173,17 +173,17 @@ func (st *callState) wait(ctx context.Context, r transport.Result) (time.Duratio
 	if err := ctx.Err(); err != nil {
 		return 0, err
 	}
-	d := httpx.JitteredBackoff(st.backoff)
-	if h, ok := errors.AsType[httpx.RetryAfterHint](r.Err); ok && h.RetryAfterHint() > 0 {
+	d := httpclient.JitteredBackoff(st.backoff)
+	if h, ok := errors.AsType[httpclient.RetryAfterHint](r.Err); ok && h.RetryAfterHint() > 0 {
 		d = h.RetryAfterHint()
 	}
-	st.backoff = httpx.SafeDouble(st.backoff)
-	return d, httpx.SleepCtx(ctx, d)
+	st.backoff = httpclient.SafeDouble(st.backoff)
+	return d, httpclient.SleepCtx(ctx, d)
 }
 
 func (st *callState) logRetry(b budget, r transport.Result, delay time.Duration, fresh bool) {
 	b.logger.Debug("arrapi failed, retrying", "attempt", st.passes, "max", b.attempts,
-		"delay", delay.String(), "fresh", fresh, "error", httpx.LogSafeError(r.Err))
+		"delay", delay.String(), "fresh", fresh, "error", httpclient.LogSafeError(r.Err))
 }
 
 // exhausted ends a call whose Retry or Fresh the budget table turned into Done.
@@ -193,7 +193,7 @@ func (st *callState) exhausted(ctx context.Context, b budget, r transport.Result
 		level = slog.LevelWarn
 	}
 	b.logger.Log(ctx, level, "arrapi retries exhausted", "attempts", st.sends, "bound", bound,
-		"error", httpx.LogSafeError(r.Err))
+		"error", httpclient.LogSafeError(r.Err))
 	return r.Err
 }
 

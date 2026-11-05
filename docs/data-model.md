@@ -66,7 +66,7 @@ A `HistoryRecord` carries `ID`, `Date`, `EventType` and `SeriesID` from Sonarr o
 ## Answers arrapi refuses to decode
 
 - A `null` answer, a `null` item of a list, and a `null` item of an array inside a resource, such as `seasons: [null]`, are decode errors. Decoding them would hand you a zero-value series, season or tag ID. No Sonarr or Radarr route sends one. Arrays arrapi does not read are not checked.
-- A decode error names the request path and, where it applies, the field and the item's index. It never quotes a value the server sent.
+- An `*arrapi.DecodeError` names the request path and, where it applies, the field and the item's index. Its text never quotes a value the server sent; the one exception, in the decoder's error it wraps, is in [Request behavior: Errors](request-behavior.md#errors).
 
 ## How the types stay in line with upstream
 
