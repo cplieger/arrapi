@@ -63,7 +63,7 @@ func (c *Client) purge(s string) string {
 // ContainsKey reports whether s holds the client's key as sent, the only form the
 // encoders in play write it in (validate).
 //
-//deadset:ignore DS1004 -- read only by the fixture recorder, internal/fixturegen and the sonarr and radarr record tests
+//deadset:ignore DS1102 -- read only by the fixture recorder, internal/fixturegen and the sonarr and radarr record tests
 func (c *Client) ContainsKey(s string) bool { return c.containsKey(s) }
 
 func (c *Client) containsKey(s string) bool { return strings.Contains(s, string(c.key)) }

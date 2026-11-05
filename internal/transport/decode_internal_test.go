@@ -35,7 +35,6 @@ type decodeInner struct {
 // quotingType stands for any Unmarshaler whose error renders the value it rejected.
 type quotingType int
 
-//deadset:ignore DS1103 -- encoding/json calls it for the eventType field; readInto decodes through an attempt's any, which deadset cannot follow
 func (*quotingType) UnmarshalJSON(b []byte) error {
 	if b[0] == '{' {
 		return fmt.Errorf("bad token %s", b)

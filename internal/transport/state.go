@@ -49,7 +49,7 @@ func NewProbeRun() *ProbeRun { return &ProbeRun{} }
 // AnchoredRun returns a run anchored at d's Identity and epoch, for reads judged as
 // probes on a detection that already exists.
 //
-//deadset:ignore DS1004 -- read only by the fixture recorder, internal/fixturegen and the sonarr and radarr record tests
+//deadset:ignore DS1102 -- read only by the fixture recorder, internal/fixturegen and the sonarr and radarr record tests
 func AnchoredRun(d *Detection) *ProbeRun {
 	return &ProbeRun{identity: d.Identity, epoch: d.Epoch, anchored: true}
 }

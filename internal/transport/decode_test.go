@@ -14,11 +14,8 @@ import (
 )
 
 type siteRecord struct {
-	//deadset:ignore DS1003 -- the decoder writes it; the test reads only the error the decode reports
-	Date time.Time `json:"date"`
-	//deadset:ignore DS1003 -- the decoder writes it; the test reads only the error the decode reports
-	Tags []int `json:"tags"`
-	//deadset:ignore DS1003 -- the decoder writes it; the test reads only the error the decode reports
+	Date  time.Time  `json:"date"`
+	Tags  []int      `json:"tags"`
 	Shape shapeToken `json:"shape"`
 	ID    int        `json:"id"`
 }
@@ -27,7 +24,6 @@ type siteRecord struct {
 // method of any other type than the decoder's does.
 type shapeToken struct{}
 
-//deadset:ignore DS1103 -- encoding/json calls it for the shape field; readInto decodes through an attempt's any, which deadset cannot follow
 func (*shapeToken) UnmarshalJSON([]byte) error { return errors.New("refused") }
 
 // wantCause is the Err a DecodeError carries: kind "syntax" at offset, kind "type"

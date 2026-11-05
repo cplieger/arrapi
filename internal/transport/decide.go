@@ -24,7 +24,7 @@ type End struct {
 
 // EndKind is the kind of an attempt's terminal outcome.
 //
-//deadset:ignore DS1101 -- the type of End.Kind, whose exported constants the black-box decide tests build End values from
+//deadset:ignore DS1501 -- the type of End.Kind, whose exported constants the black-box decide tests build End values from
 type EndKind int
 
 // The kinds of terminal outcome.

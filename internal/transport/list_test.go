@@ -138,7 +138,6 @@ func TestResultAccepted(t *testing.T) {
 // does, so a null item of a list of tokens is its own to judge.
 type token int
 
-//deadset:ignore DS1103 -- encoding/json calls it for each tokens item; readInto decodes through an any, which deadset cannot follow
 func (k *token) UnmarshalJSON(b []byte) error {
 	if string(b) == "null" {
 		*k = -1
