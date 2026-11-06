@@ -16,8 +16,9 @@
     ],
     "arrapiUnknownField": 1,
     "hasFile": true,
-    "id": 4,
+    "id": 3,
     "imdbId": "tt0094675",
+    "monitored": true,
     "movieFile": {
       "arrapiUnknownField": 1,
       "id": 1,
@@ -56,8 +57,9 @@
     "alternateTitles": [],
     "arrapiUnknownField": 1,
     "hasFile": false,
-    "id": 5,
+    "id": 4,
     "imdbId": "tt0924122",
+    "monitored": true,
     "originalLanguage": {
       "arrapiUnknownField": 1,
       "id": 1,

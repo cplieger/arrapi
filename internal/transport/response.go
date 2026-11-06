@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
+	"mime"
 	"net/http"
 	"reflect"
 	"strconv"
@@ -18,7 +19,8 @@ import (
 	"github.com/cplieger/go/textsafe"
 )
 
-// The body bounds. Every body is read through one of them or discardBody's.
+// The body bounds. Every body is read through one of them, a file read's caller-given
+// limit, or discardBody's.
 const (
 	MaxListBytes      = 64 << 20 // a list answer
 	MaxObjectBytes    = 1 << 20  // a single object, and every detection probe
@@ -31,8 +33,8 @@ const ServerTextBytes = 64
 
 // capture reads a failure's body into the *arrapi.StatusError the caller receives.
 // resp nil is a redirect net/http discarded, which leaves no body.
-func (c *Client) capture(code int, resp *http.Response, path string) *arrapi.StatusError {
-	e := &arrapi.StatusError{Code: code, Path: path}
+func (c *Client) capture(code int, resp *http.Response, path string, attributed bool) *arrapi.StatusError {
+	e := &arrapi.StatusError{Code: code, Path: path, Attributed: attributed}
 	if resp == nil {
 		return e
 	}
@@ -103,12 +105,12 @@ func (c *Client) message(raw string) string {
 // a.out. An over-cap body is rejected, never decoded cut. A failed read is returned as
 // the raw error for the caller to judge as a transport outcome.
 func (c *Client) readInto(a *attempt, resp *http.Response) (readErr, err error) {
-	data, rerr := httpclient.ReadLimitedBody(resp.Body, a.limit)
-	if rerr != nil {
-		if _, ok := errors.AsType[*httpclient.ResponseTooLargeError](rerr); ok {
-			return nil, &arrapi.ResponseTooLargeError{Path: a.shown, Limit: a.limit}
-		}
-		return rerr, nil
+	if a.media != "" {
+		return c.readFile(a, resp)
+	}
+	data, readErr, err := readLimited(a, resp)
+	if readErr != nil || err != nil {
+		return readErr, err
 	}
 	// encoding/json sets a slice nil on null and leaves a struct as it was, so null
 	// would pass as an empty answer; no arr route answers 200 with it (ASP.NET Core
@@ -127,6 +129,71 @@ func (c *Client) readInto(a *attempt, resp *http.Response) (readErr, err error) 
 		return nil, c.decodeFailure(a, resp, decodeFault{reason: "list item " + strconv.Itoa(i) + " is null"})
 	}
 	return nil, nil
+}
+
+// readLimited reads at most a.limit bytes of resp's body, mapping httpclient's
+// over-cap error to arrapi's and returning any other read error as readErr.
+func readLimited(a *attempt, resp *http.Response) (data []byte, readErr, err error) {
+	data, rerr := httpclient.ReadLimitedBody(resp.Body, a.limit)
+	if rerr != nil {
+		if _, ok := errors.AsType[*httpclient.ResponseTooLargeError](rerr); ok {
+			return nil, nil, &arrapi.ResponseTooLargeError{Path: a.shown, Limit: a.limit}
+		}
+		return nil, rerr, nil
+	}
+	return data, nil, nil
+}
+
+// readFile reads a file answer into a.out, a *[]byte, only when its media type is
+// a.media and it holds 1 to a.limit bytes; *a.out stays nil otherwise.
+func (c *Client) readFile(a *attempt, resp *http.Response) (readErr, err error) {
+	if mediaType, _, perr := mime.ParseMediaType(resp.Header.Get("Content-Type")); perr != nil || mediaType != a.media {
+		discardBody(resp)
+		return nil, c.decodeFailure(a, resp, decodeFault{reason: "the answer is not " + a.media})
+	}
+	if resp.ContentLength > a.limit {
+		discardBody(resp)
+		return nil, &arrapi.ResponseTooLargeError{Path: a.shown, Limit: a.limit}
+	}
+	data, readErr, err := readLimited(a, resp)
+	if readErr != nil || err != nil {
+		return readErr, err
+	}
+	// The route answers a missing or empty resized file with its full-size base after
+	// checking only that the base exists, so a zero-length base is a 200
+	// (MediaCoverController.cs in Sonarr 4, Sonarr 5 and Radarr).
+	if len(data) == 0 {
+		return nil, c.decodeFailure(a, resp, decodeFault{reason: "the answer is empty"})
+	}
+	out, _ := a.out.(*[]byte) // GetFile, the one attempt with a media type, sets a *[]byte
+	*out = data
+	return nil, nil
+}
+
+var errNoCommandID = errors.New("arrapi: the command answer holds no id of 1 or more")
+
+// acceptCommand reads an accepted command's answer when a.out is a *CommandAnswer and
+// discards it otherwise. The server already took the command, and a caller that sees
+// an error may send it again, so no failure here reaches the Result: it zeroes the id
+// and is logged once. Every logged cause renders no byte of the body.
+func (c *Client) acceptCommand(a *attempt, resp *http.Response, path string) {
+	answer, ok := a.out.(*CommandAnswer)
+	if !ok {
+		discardBody(resp)
+		return
+	}
+	readErr, cause := c.readInto(a, resp)
+	switch {
+	case readErr != nil:
+		cause = c.safeDoError(path, readErr)
+	case cause == nil && answer.ID < 1:
+		cause = errNoCommandID
+	}
+	if cause == nil {
+		return
+	}
+	answer.ID = 0
+	c.cfg.Logger.Warn("arrapi: command accepted; its answer was not read", "path", path, "err", cause)
 }
 
 // nullListItem finds the first nil item of a top-level list of pointers, GetList's

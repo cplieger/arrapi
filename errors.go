@@ -3,7 +3,6 @@ package arrapi
 import (
 	"errors"
 	"fmt"
-	"net/http"
 	"strings"
 	"time"
 
@@ -29,12 +28,18 @@ func init() {
 
 // StatusError is an answer that is not a success, detection probes included: any status
 // but 200 to a GET, any non-2xx to a command.
+//
+// Attributed is set only on an answer to a read or a command. An answer without the
+// header can still come from the server: Sonarr 4, Sonarr 5 before 5.0.0.2701 and Radarr
+// send their exception-built errors without it (Sonarr#9161), so false means unknown,
+// never "a proxy".
 type StatusError struct {
 	Message    string // the server's one-line message, key redacted (error-model "message", else ProblemDetails "title"); "" when none
 	Body       string // the capture: key redacted, sanitized keeping CR and LF (safe for a sink that escapes them), at most 64 KiB, ending in "..." when cut
 	Path       string
 	Code       int
 	retryAfter time.Duration
+	Attributed bool // the answer carried the X-Application-Version of the detection the request was sent on; false for a detection probe's answer and for the Status inside a *ServerChangedError
 }
 
 var (
@@ -57,14 +62,64 @@ func (e *StatusError) Error() string {
 	return fmt.Sprintf("arrapi: %s: HTTP %d: %s", path, e.Code, textsafe.SanitizeSingleLine(detail))
 }
 
-// IsTransient reports whether the status is worth sending again: 429, or 500 through
-// 599. 600 and above are not.
+// IsTransient reports whether the status is worth sending again, by
+// httpclient.IsRetryableStatus: 408, 429, and 500 through 599 except 501, 505, 506,
+// 508, 510 and 511, which repeat on a retry. 600 and above are not.
 func (e *StatusError) IsTransient() bool {
-	return e.Code == http.StatusTooManyRequests || (e.Code >= 500 && e.Code <= 599)
+	return httpclient.IsRetryableStatus(e.Code)
 }
 
 // RetryAfterHint is the answer's capped Retry-After; 0 when it carried none.
 func (e *StatusError) RetryAfterHint() time.Duration { return e.retryAfter }
+
+// GrabReason is why an arr refused a grab, read from its status and its own message.
+type GrabReason int
+
+// The reasons an arr gives for a refused grab.
+const (
+	GrabNotCached   GrabReason = iota + 1 // 404: the release left the arr's 30-minute search cache; search again
+	GrabUnmapped                          // 404: the arr could not map the release onto a series and episodes, or a movie
+	GrabUnavailable                       // 409: the arr could not get the release from the indexer
+)
+
+// GrabError is a grab the arr refused for a reason it explained. Err is the refusal,
+// with its code and the arr's message, so errors.As reaches *StatusError as for any
+// other refusal. Only an answer whose code and message are the arr's own sentences for
+// the reason is a GrabError; any other refused grab is a plain *StatusError.
+type GrabError struct {
+	Err    *StatusError
+	Reason GrabReason
+}
+
+// Error is "arrapi: grab refused (<reason words>): " followed by Err's text; the words
+// are "refused" for a Reason outside the three, and the text is "arrapi: grab refused"
+// alone when Err is nil.
+func (e *GrabError) Error() string {
+	if e.Err == nil {
+		return "arrapi: grab refused"
+	}
+	return "arrapi: grab refused (" + e.Reason.words() + "): " + e.Err.Error()
+}
+
+// Unwrap returns Err, or nil when Err is nil.
+func (e *GrabError) Unwrap() error {
+	if e.Err == nil {
+		return nil
+	}
+	return e.Err
+}
+
+func (r GrabReason) words() string {
+	switch r {
+	case GrabNotCached:
+		return "not in the search cache"
+	case GrabUnmapped:
+		return "not mapped"
+	case GrabUnavailable:
+		return "unavailable from the indexer"
+	}
+	return "refused"
+}
 
 // ResponseTooLargeError is an answer whose body exceeds the cap for its path. The body
 // is rejected, never decoded cut.
@@ -78,13 +133,14 @@ func (e *ResponseTooLargeError) Error() string {
 }
 
 // DecodeError is an answer arrapi accepted whose body did not decode into the type the
+// call reads or, for a file read, an answer that is empty or not the media type the
 // call reads. Its own fields and its Error text hold no byte of the body: Error renders
 // arrapi's own sentence, naming the path, a field the type declares and the Go type.
 // Err is the one exception: when it is a *json.SyntaxError, its text quotes the one
 // invalid character or escape sequence, at most 12 bytes, escaped by Go's quoting.
 type DecodeError struct {
 	Err         error  // the decoder's error with server values removed (see Unwrap); nil when arrapi's own null check refused a decoded value, or when no scrubbed form exists
-	Method      string // the request method; "GET", the only method whose answer arrapi decodes
+	Method      string // the request method; "GET" on every DecodeError arrapi returns; a logged one from a command's answer says "POST"
 	Path        string // the request path relative to the base URL, without its query, as StatusError.Path carries it
 	ContentType string // the answer's Content-Type media type as sent: parameters dropped, key redacted, single-line, at most 64 bytes; "" when absent
 	field       string
@@ -129,6 +185,7 @@ const (
 // App, Version, Current and Deprecated are server text with the client's API key redacted,
 // single-line and at most 64 bytes each.
 type UnsupportedAPIError struct {
+	Err        error    // ReasonNotAPI: the status answer's *DecodeError, or its *ResponseTooLargeError when the body was over the cap; nil otherwise
 	App        string   // appName the server reported; "" when unknown
 	Version    string   // its version; "" when unknown
 	Current    string   // /api "current"; "" when /api was not readable
@@ -137,6 +194,9 @@ type UnsupportedAPIError struct {
 	Deprecated []string // /api "deprecated": its well-formed tokens ("v" and 1 to 3 digits), at most 8
 	Reason     UnsupportedReason
 }
+
+// Unwrap returns Err.
+func (e *UnsupportedAPIError) Unwrap() error { return e.Err }
 
 // Error renders one line whatever the fields hold: server text is sanitized and capped
 // again, because a value built outside arrapi carries no such guarantee. It cannot
@@ -215,6 +275,45 @@ func (e *ServerChangedError) Unwrap() error {
 // but the answer cannot be attributed to the server the command was sent to: it may
 // have run, and it was not re-sent.
 var ErrCommandOutcomeUnknown = errors.New("arrapi: the command's outcome is unknown and it was not re-sent")
+
+// CheckReason says what a failed connection check found to fix.
+type CheckReason int
+
+// The reasons a connection check fails.
+const (
+	CheckKey         CheckReason = iota + 1 // the key is refused: a 401 or 403, or a key New refuses
+	CheckBasePath                           // nothing answers at the URL's path: the last status path detection tries answered 404
+	CheckURL                                // the URL is wrong or unreachable: New refuses it; a dial, DNS, TLS or redirect failure, a sign-in portal on another origin included, or the 5 s bound, in the client's own words; or a 400, which a TLS port sends to a plain http:// request
+	CheckWrongApp                           // the URL answers as another application
+	CheckUnsupported                        // the application answers, but arrapi cannot read it: its version, its API generation, or a reverse proxy hiding /api/v5 or X-Application-Version
+	CheckNotArrAPI                          // something answered 200 that is not the Sonarr or Radarr API: a web page (fix the base path, or what answers at the URL), a sign-in portal on the same origin, another JSON API; no *StatusError, so no status to show
+	CheckServer                             // the server or a proxy in front of it failed: any other status but 400 (its *StatusError), a JSON status answer cut or malformed (its *DecodeError), a server version change during the check
+)
+
+// CheckError is a failed connection check: Reason says what to fix, Err is the
+// failure the check met, which errors.Is and errors.As reach.
+type CheckError struct {
+	Err    error
+	Reason CheckReason
+}
+
+// Error renders one line: the *DecodeError's text when Reason is CheckServer and Err's
+// chain holds a *DecodeError (a status answer whose JSON is cut or malformed), Err's
+// text otherwise, and "arrapi: connection check failed" when Err is nil.
+func (e *CheckError) Error() string {
+	if e.Err == nil {
+		return "arrapi: connection check failed"
+	}
+	text := e.Err.Error()
+	// The ReasonNotAPI text wrapping a cut answer names the base path, the wrong fix.
+	if de, ok := errors.AsType[*DecodeError](e.Err); ok && e.Reason == CheckServer {
+		text = de.Error()
+	}
+	return textsafe.SanitizeSingleLine(text)
+}
+
+// Unwrap returns Err.
+func (e *CheckError) Unwrap() error { return e.Err }
 
 const (
 	// maxServerTextBytes matches the bound internal/transport owns (ServerTextBytes).

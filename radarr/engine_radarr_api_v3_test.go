@@ -1,6 +1,7 @@
 package radarr
 
 import (
+	"encoding/json"
 	"log/slog"
 	"net/http/httptest"
 	"os"
@@ -124,6 +125,7 @@ func TestRadarrAPIv3MovieMapping(t *testing.T) {
 		ID:               41,
 		Year:             2011,
 		HasFile:          true,
+		Monitored:        true,
 	})
 }
 
@@ -216,6 +218,60 @@ func fixtureMovieID(t *testing.T, file string) int {
 	return int(id)
 }
 
+// recordedCommand is one item of the recorded commands.json, read without the engine.
+type recordedCommand struct {
+	name string
+	id   int
+}
+
+func recordedCommands(t *testing.T) []recordedCommand {
+	t.Helper()
+	b, err := os.ReadFile(filepath.Join("..", "testdata", dirRadarrAPIv3, "commands.json"))
+	if err != nil {
+		t.Fatalf("%v; %s", err, reRecord)
+	}
+	v, err := fixturegen.Decode(b)
+	items, ok := v.([]any)
+	if err != nil || !ok || len(items) == 0 {
+		t.Fatalf("commands.json is not a non-empty JSON list; %s", reRecord)
+	}
+	out := make([]recordedCommand, 0, len(items))
+	for _, it := range items {
+		obj, _ := it.(map[string]any)
+		id, okID := fixturegen.Int(obj["id"])
+		name, okName := obj["name"].(string)
+		if !okID || !okName {
+			t.Fatalf("commands.json holds an item without an integer id and a name; %s", reRecord)
+		}
+		out = append(out, recordedCommand{name: name, id: int(id)})
+	}
+	return out
+}
+
+// recordedDownloadIDs is the sorted set of non-empty downloadIds in the recorded
+// queue.json, read without the engine.
+func recordedDownloadIDs(t *testing.T) []string {
+	t.Helper()
+	b, err := os.ReadFile(filepath.Join("..", "testdata", dirRadarrAPIv3, "queue.json"))
+	if err != nil {
+		t.Fatalf("%v; %s", err, reRecord)
+	}
+	v, err := fixturegen.Decode(b)
+	items, ok := v.([]any)
+	if err != nil || !ok {
+		t.Fatalf("queue.json is not a JSON list; %s", reRecord)
+	}
+	var out []string
+	for _, it := range items {
+		obj, _ := it.(map[string]any)
+		if id, _ := obj["downloadId"].(string); id != "" {
+			out = append(out, id)
+		}
+	}
+	slices.Sort(out)
+	return slices.Compact(out)
+}
+
 func replayRadarr(t *testing.T) (*Client, *fixturegen.Replay) {
 	t.Helper()
 	routes := map[string]fixturegen.Route{
@@ -225,6 +281,8 @@ func replayRadarr(t *testing.T) (*Client, *fixturegen.Replay) {
 		"GET " + historySincePath(fixtureSince): {File: "history-since.json"},
 		"GET /api/v3/tag":                       {File: "tags.json"},
 		"GET /api/v3/rootfolder":                {File: "rootfolders.json"},
+		"GET /api/v3/command":                   {File: "commands.json"},
+		"GET /api/v3/queue/details":             {File: "queue.json"},
 	}
 	for _, f := range recordedMovieFiles {
 		routes["GET /api/v3/movie/"+strconv.Itoa(fixtureMovieID(t, f))] = fixturegen.Route{File: f}
@@ -267,9 +325,10 @@ func recordedMovies() []Movie {
 			IDs:              ExternalIDs{IMDb: "tt0094675", TMDB: 2},
 			AlternateTitles:  []string{"아리엘", "Mayonaka no Niji", "Ariel - Abgebrannt in Helsinki"},
 			Tags:             []int{1},
-			ID:               4,
+			ID:               3,
 			Year:             1988,
 			HasFile:          true,
+			Monitored:        true,
 		},
 		{
 			OriginalLanguage: &arrapi.Language{Name: "English", ID: 1},
@@ -277,8 +336,9 @@ func recordedMovies() []Movie {
 			IDs:              ExternalIDs{IMDb: "tt0924122", TMDB: 121255},
 			AlternateTitles:  []string{},
 			Tags:             []int{1},
-			ID:               5,
+			ID:               4,
 			Year:             2006,
+			Monitored:        true,
 		},
 	}
 }
@@ -321,21 +381,44 @@ func TestRadarrAPIv3Fixtures(t *testing.T) {
 		}
 		at := func(h int) time.Time { return fixtureSince.Add(time.Duration(h) * time.Hour) }
 		want := []HistoryRecord{
-			{Date: at(0), EventType: EventGrabbed, ID: 1, MovieID: 3},
-			{Date: at(1), EventType: EventFileDeleted, ID: 2, MovieID: 3},
-			{Date: at(1), EventType: EventDownloadImported, ID: 3, MovieID: 3},
-			{Date: at(2), EventType: EventGrabbed, ID: 4, MovieID: 6},
-			{Date: at(3), EventType: EventDownloadImported, ID: 5, MovieID: 6},
-			{Date: at(4), EventType: EventGrabbed, ID: 6, MovieID: 1},
-			{Date: at(5), EventType: EventFileDeleted, ID: 7, MovieID: 1},
-			{Date: at(6), EventType: EventDownloadFailed, ID: 8, MovieID: 2},
+			{
+				Date: at(0), EventType: EventGrabbed, ID: 1, MovieID: 2, DownloadID: "download-2", SourceTitle: "release-7",
+				GUID: "guid-1", Indexer: "indexer-2", InfoURL: "infourl-2", Source: arrapi.SourceRSS,
+			},
+			{Date: at(1), EventType: EventFileDeleted, ID: 2, MovieID: 2, SourceTitle: "release-2"},
+			{Date: at(1), EventType: EventDownloadImported, ID: 3, MovieID: 2, DownloadID: "download-2", SourceTitle: "release-6"},
+			{
+				Date: at(2), EventType: EventGrabbed, ID: 4, MovieID: 5, DownloadID: "download-3", SourceTitle: "release-4",
+				GUID: "guid-3", Indexer: "indexer-3", InfoURL: "infourl-3", Source: arrapi.SourceRSS,
+			},
+			{
+				Date: at(3), EventType: EventGrabbed, ID: 5, MovieID: 6, DownloadID: "download-1", SourceTitle: "release-8",
+				GUID: "guid-2", Indexer: "indexer-1", InfoURL: "infourl-1", Source: arrapi.SourceSearch,
+			},
+			{Date: at(4), EventType: EventFileDeleted, ID: 6, MovieID: 5, SourceTitle: "release-1"},
+			{Date: at(4), EventType: EventDownloadImported, ID: 7, MovieID: 5, DownloadID: "download-3", SourceTitle: "release-3"},
+			{
+				Date: at(5), EventType: EventDownloadFailed, ID: 8, MovieID: 1, DownloadID: "download-4", SourceTitle: "release-5",
+				Indexer: "indexer-2", Message: "message-1",
+			},
 		}
 		if len(got) != len(want) {
 			t.Fatalf("history = %+v, want %+v", got, want)
 		}
 		for i, w := range want {
-			if g := got[i]; !g.Date.Equal(w.Date) || g.EventType != w.EventType || g.ID != w.ID || g.MovieID != w.MovieID {
+			g := got[i]
+			gd, wd := g, w
+			gd.Date, wd.Date = time.Time{}, time.Time{}
+			if !g.Date.Equal(w.Date) || gd != wd {
 				t.Errorf("history[%d] = %+v, want %+v", i, g, w)
+			}
+		}
+		for _, r := range got {
+			switch {
+			case r.EventType == EventGrabbed && (r.GUID == "" || r.Indexer == "" || r.DownloadID == "" || r.Source == ""):
+				t.Errorf("grabbed record %d lacks a grab field: %+v", r.ID, r)
+			case r.EventType == EventDownloadFailed && r.Message == "":
+				t.Errorf("downloadFailed record %d has no Message", r.ID)
 			}
 		}
 	})
@@ -351,10 +434,98 @@ func TestRadarrAPIv3Fixtures(t *testing.T) {
 			t.Errorf("RootFolders = %q, %v; want %q", got, err, want)
 		}
 	})
+	t.Run("Commands", func(t *testing.T) {
+		got, err := c.Commands(t.Context())
+		if err != nil {
+			t.Fatal(err)
+		}
+		want := recordedCommands(t)
+		if len(got) != len(want) {
+			t.Fatalf("Commands returned %d commands, want the %d recorded", len(got), len(want))
+		}
+		known := []arrapi.CommandStatus{
+			arrapi.CommandQueued, arrapi.CommandStarted, arrapi.CommandCompleted, arrapi.CommandFailed,
+			arrapi.CommandAborted, arrapi.CommandCancelled, arrapi.CommandOrphaned,
+		}
+		for i, w := range want {
+			if g := got[i]; g.ID != w.id || g.Name != w.name || !slices.Contains(known, g.Status) {
+				t.Errorf("command %d = %+v, want id %d, name %q and a known status", i, g, w.id, w.name)
+			}
+		}
+	})
+	t.Run("Queue", func(t *testing.T) {
+		got, err := c.Queue(t.Context())
+		if err != nil {
+			t.Fatal(err)
+		}
+		known := []arrapi.DownloadState{
+			arrapi.DownloadDownloading, arrapi.DownloadImportBlocked, arrapi.DownloadImportPending, arrapi.DownloadImporting,
+			arrapi.DownloadImported, arrapi.DownloadFailedPending, arrapi.DownloadFailed, arrapi.DownloadIgnored,
+		}
+		var ids []string
+		for i, q := range got {
+			if q.State != "" && !slices.Contains(known, q.State) || q.Size < 0 || q.SizeLeft < 0 {
+				t.Errorf("queue item %d = %+v, want a known state and sizes of 0 or more", i, q)
+			}
+			if q.DownloadID != "" {
+				ids = append(ids, q.DownloadID)
+			}
+		}
+		slices.Sort(ids)
+		if ids, want := slices.Compact(ids), recordedDownloadIDs(t); !slices.Equal(ids, want) {
+			t.Errorf("queue download ids = %q, want the recorded %q", ids, want)
+		}
+	})
 	t.Run("MediaCoverURL", func(t *testing.T) {
 		got, err := c.MediaCoverURL(t.Context(), 4, "poster.jpg")
 		if want := c.t.BaseURL() + "/api/v3/mediacover/4/poster.jpg"; err != nil || got != want {
 			t.Errorf("MediaCoverURL = %q, %v; want %q", got, err, want)
 		}
 	})
+}
+
+// radarrFlagBits is Radarr's IndexerFlags enum (NzbDrone.Core/Parser/Model/IndexerFlags.cs),
+// name to bit, as Radarr writes a release's indexerFlags.
+var radarrFlagBits = map[string]IndexerFlags{
+	"G_Freeleech": 1, "G_Halfleech": 2, "G_DoubleUpload": 4, "PTP_Golden": 8, "PTP_Approved": 16,
+	"G_Internal": 32, "AHD_Internal": 64, "G_Scene": 128, "G_Freeleech75": 256, "G_Freeleech25": 512,
+	"AHD_UserRelease": 1024, "Nuked": 2048,
+}
+
+func TestRadarrIndexerFlags(t *testing.T) {
+	rows := map[string]struct {
+		wire string
+		want IndexerFlags
+	}{
+		"Scene and Freeleech25":   {`["G_Scene","G_Freeleech25"]`, 640},
+		"no names":                {`[]`, 0},
+		"null":                    {`null`, 0},
+		"unknown names":           {`["Unknown","0"]`, 0},
+		"an integer":              {`640`, 640},
+		"an integer's other bits": {`4097`, 1},
+		"other entries skipped":   {`[1,null,{},"Nuked","nuked"]`, FlagNuked},
+		"every name":              {`["G_Freeleech","G_Halfleech","G_DoubleUpload","PTP_Golden","PTP_Approved","G_Internal","AHD_Internal","G_Scene","G_Freeleech75","G_Freeleech25","AHD_UserRelease","Nuked"]`, 4095},
+	}
+	for name, bit := range radarrFlagBits {
+		rows[name] = struct {
+			wire string
+			want IndexerFlags
+		}{`["` + name + `"]`, bit}
+	}
+	for name, r := range rows {
+		t.Run(name, func(t *testing.T) {
+			var got radarrIndexerFlags
+			if err := json.Unmarshal([]byte(r.wire), &got); err != nil || IndexerFlags(got) != r.want {
+				t.Errorf("decode %s = (%d, %v), want %d", r.wire, got, err, r.want)
+			}
+		})
+	}
+	for _, wire := range []string{`"G_Scene"`, `-1`, `1.5`, `4294967296`, `true`, `{}`} {
+		t.Run("refuses "+wire, func(t *testing.T) {
+			var got radarrIndexerFlags
+			if err := json.Unmarshal([]byte(wire), &got); err == nil {
+				t.Errorf("decode %s = %d, want an error", wire, got)
+			}
+		})
+	}
 }

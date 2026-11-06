@@ -82,7 +82,7 @@ type sonarrShape struct {
 }
 
 type sonarrTypes struct {
-	series, seriesList, episodes, files, history, tags, roots reflect.Type
+	series, seriesList, episodes, files, history, tags, roots, commands, queue reflect.Type
 }
 
 func sonarrV4APIv3Shape() sonarrShape {
@@ -94,7 +94,8 @@ func sonarrV4APIv3Shape() sonarrShape {
 			series: reflect.TypeFor[sonarrV4Series](), seriesList: reflect.TypeFor[[]sonarrV4Series](),
 			episodes: reflect.TypeFor[[]sonarrV4Episode](), files: reflect.TypeFor[[]sonarrV4EpisodeFile](),
 			history: reflect.TypeFor[[]sonarrV4History](), tags: reflect.TypeFor[[]sonarrV4Tag](),
-			roots: reflect.TypeFor[[]sonarrV4RootFolder](),
+			roots: reflect.TypeFor[[]sonarrV4RootFolder](), commands: reflect.TypeFor[[]sonarrV4Command](),
+			queue: reflect.TypeFor[[]sonarrV4QueueItem](),
 		},
 		errors: []errorStep{
 			{"v5-system-status-404", "/api/v5/system/status", true},
@@ -112,7 +113,8 @@ func sonarrV5APIv5Shape() sonarrShape {
 			series: reflect.TypeFor[sonarrV5Series](), seriesList: reflect.TypeFor[[]sonarrV5Series](),
 			episodes: reflect.TypeFor[[]sonarrV5Episode](), files: reflect.TypeFor[[]sonarrV5EpisodeFile](),
 			history: reflect.TypeFor[[]sonarrV5History](), tags: reflect.TypeFor[[]sonarrV5Tag](),
-			roots: reflect.TypeFor[[]sonarrV5RootFolder](),
+			roots: reflect.TypeFor[[]sonarrV5RootFolder](), commands: reflect.TypeFor[[]sonarrV5Command](),
+			queue: reflect.TypeFor[[]sonarrV5QueueItem](),
 		},
 		errors: []errorStep{
 			{"series-404", fmt.Sprintf("%s/series/%d", sonarrV5Prefix, absentSeriesID), true},
@@ -137,17 +139,48 @@ var sonarrFixtureRules = func() fixturegen.Rules {
 		"sceneName":    {Kind: fixturegen.Pseudo, Role: "scene"},
 		"releaseGroup": {Kind: fixturegen.Pseudo, Role: "group"},
 	}
-	history := map[string]fixturegen.Rule{"id": id("history"), "seriesId": id("series"), "date": {Kind: fixturegen.Date}}
+	history := map[string]fixturegen.Rule{
+		"id": id("history"), "seriesId": id("series"), "episodeId": id("episode"), "date": {Kind: fixturegen.Date},
+		"downloadId":  {Kind: fixturegen.Pseudo, Role: "download"},
+		"sourceTitle": {Kind: fixturegen.Pseudo, Role: "release"},
+	}
+	historyData := map[string]fixturegen.Rule{
+		"guid":       {Kind: fixturegen.Pseudo, Role: "guid"},
+		"indexer":    {Kind: fixturegen.Pseudo, Role: "indexer"},
+		"nzbInfoUrl": {Kind: fixturegen.Pseudo, Role: "infourl"},
+		"message":    {Kind: fixturegen.Pseudo, Role: "message"},
+	}
 	tag := map[string]fixturegen.Rule{"id": id("tag"), "label": {Kind: fixturegen.Pseudo, Role: "tag"}}
 	root := map[string]fixturegen.Rule{"path": {Kind: fixturegen.RootPath, Root: "/tv"}}
+	command := map[string]fixturegen.Rule{
+		"id": id("command"), "queued": {Kind: fixturegen.Date}, "started": {Kind: fixturegen.Date}, "ended": {Kind: fixturegen.Date},
+		"message": {Kind: fixturegen.Pseudo, Role: "message"},
+	}
+	commandBody := map[string]fixturegen.Rule{"seriesIds": id("series"), "seriesId": id("series")}
+	queue := map[string]fixturegen.Rule{
+		"seriesId": id("series"), "episodeId": id("episode"), "episodeIds": id("episode"),
+		"title":          {Kind: fixturegen.Pseudo, Role: "release"},
+		"downloadId":     {Kind: fixturegen.Pseudo, Role: "download"},
+		"downloadClient": {Kind: fixturegen.Pseudo, Role: "client"},
+		"size":           {Kind: fixturegen.Size}, "sizeleft": {Kind: fixturegen.Size}, "sizeLeft": {Kind: fixturegen.Size},
+	}
+	statusMessage := map[string]fixturegen.Rule{
+		"title":    {Kind: fixturegen.Pseudo, Role: "release"},
+		"messages": {Kind: fixturegen.Pseudo, Role: "message"},
+	}
 	return fixturegen.Rules{
 		reflect.TypeFor[sonarrV4Series](): series, reflect.TypeFor[sonarrV5Series](): series,
 		reflect.TypeFor[sonarrV4Statistics](): stats, reflect.TypeFor[sonarrV5Statistics](): stats,
 		reflect.TypeFor[sonarrV4Episode](): episode, reflect.TypeFor[sonarrV5Episode](): episode,
 		reflect.TypeFor[sonarrV4EpisodeFile](): file, reflect.TypeFor[sonarrV5EpisodeFile](): file,
 		reflect.TypeFor[sonarrV4History](): history, reflect.TypeFor[sonarrV5History](): history,
+		reflect.TypeFor[sonarrV4HistoryData](): historyData, reflect.TypeFor[sonarrV5HistoryData](): historyData,
 		reflect.TypeFor[sonarrV4Tag](): tag, reflect.TypeFor[sonarrV5Tag](): tag,
 		reflect.TypeFor[sonarrV4RootFolder](): root, reflect.TypeFor[sonarrV5RootFolder](): root,
+		reflect.TypeFor[sonarrV4Command](): command, reflect.TypeFor[sonarrV5Command](): command,
+		reflect.TypeFor[sonarrV4CommandBody](): commandBody, reflect.TypeFor[sonarrV5CommandBody](): commandBody,
+		reflect.TypeFor[sonarrV4QueueItem](): queue, reflect.TypeFor[sonarrV5QueueItem](): queue,
+		reflect.TypeFor[sonarrV4StatusMessage](): statusMessage, reflect.TypeFor[sonarrV5StatusMessage](): statusMessage,
 	}
 }()
 
@@ -227,6 +260,8 @@ func recordSonarrTarget(ctx context.Context, rec *fixturegen.Recording, tgt reco
 	r.Add("history-since.json", fixturegen.Sample(r.List(ctx, sinceQuery(sh.prefix, since)), "eventType", historySample), sh.types.history)
 	r.Read(ctx, "tags.json", sh.prefix+"/tag", transport.MaxListBytes, sh.types.tags)
 	r.Read(ctx, "rootfolders.json", sh.prefix+"/rootfolder", transport.MaxListBytes, sh.types.roots)
+	r.Read(ctx, "commands.json", sh.prefix+"/command", transport.MaxListBytes, sh.types.commands)
+	r.Read(ctx, "queue.json", sh.prefix+"/queue/details", transport.MaxListBytes, sh.types.queue)
 	// A header-less answer ends the detection it was read on, so those error reads
 	// come after every other read, each on a detection of its own.
 	for _, step := range sh.errors {
@@ -368,6 +403,7 @@ const (
 	plantedDate = "2031-07-09T13:57:11Z"
 	plantedSize = "7777777777"
 	plantedID   = "987654"
+	plantedHash = "0123456789abcdef0123456789abcdef01234567"
 )
 
 // library is a fake Sonarr's answers under prefix at version v, in that generation's
@@ -400,8 +436,21 @@ func library(v, prefix string, five bool) map[string]step {
 		{"id":12,"seriesId":987654,"episodeFileId":987654,"seasonNumber":1,"episodeNumber":2,"hasFile":true,"title":"The White Knight Awakens","airDate":"2006-10-13","episodeFile":` + file + `},
 		{"id":13,"seriesId":987654,"episodeFileId":600,"seasonNumber":1,"episodeNumber":3,"hasFile":true,"title":"The False Classmate","airDate":"2006-10-20","episodeFile":` + otherFile + `},
 		{"id":14,"seriesId":987654,"episodeFileId":0,"seasonNumber":1,"episodeNumber":4,"hasFile":false,"title":"Refrain","airDate":"2006-10-27"}]`
-	history := `[{"id":2,"seriesId":5,"episodeId":9,"date":"2031-07-09T10:00:00Z","eventType":"grabbed","data":{"downloadUrl":"https://indexer.invalid/api?apikey=CREDENTIAL-abc"}},
-		{"id":987654,"seriesId":987654,"episodeId":987654,"date":"` + plantedDate + `","eventType":"downloadFolderImported","data":{"droppedPath":"/downloads/x.mkv"}}]`
+	history := `[{"id":2,"seriesId":5,"episodeId":9,"date":"2031-07-09T10:00:00Z","eventType":"grabbed","downloadId":"` + plantedHash + `",
+		"sourceTitle":"Private.Release.S01E01","data":{"downloadUrl":"https://indexer.invalid/api?apikey=CREDENTIAL-abc",
+		"guid":"https://indexer.invalid/view/1?passkey=CREDENTIAL-abc","indexer":"Private Indexer","nzbInfoUrl":"https://indexer.invalid/view/1",
+		"releaseSource":"InteractiveSearch","torrentInfoHash":"` + plantedHash + `"}},
+		{"id":987654,"seriesId":987654,"episodeId":987654,"date":"` + plantedDate + `","eventType":"downloadFolderImported","downloadId":"` + plantedHash + `",
+		"data":{"droppedPath":"/downloads/x.mkv"}},
+		{"id":3,"seriesId":5,"episodeId":9,"date":"2031-07-09T11:00:00Z","eventType":"downloadFailed","downloadId":"` + plantedHash + `",
+		"data":{"message":"/downloads/x.mkv failed","indexer":"Private Indexer"}}]`
+	// A live list holds only what ran in the last minutes, so the fake plants the
+	// RefreshSeries a new series queues.
+	commands := `[{"id":987654,"name":"RefreshSeries","message":"Copying /downloads/x to /data/tv/Code Geass","status":"completed",
+		"body":{"seriesIds":[987654],"isNewSeries":true,"sendUpdatesToClient":true,"trigger":"manual"},
+		"queued":"` + plantedDate + `","started":"2031-07-09T13:57:12Z","ended":"2031-07-09T13:57:20Z",
+		"clientUserAgent":"Private Agent","exception":"at /app/sonarr","trigger":"manual","priority":"normal"},
+		{"id":2,"name":"RefreshMonitoredDownloads","status":"started","body":{},"queued":"2031-07-09T13:58:00Z"}]`
 	status := `{"appName":"Sonarr","version":"` + v + `","appData":"/config","startupPath":"/app/sonarr/bin","instanceName":"Example Sonarr","osName":"debian"}`
 	s := func(body string) step { return ans(http.StatusOK, v, body) }
 	routes := map[string]step{
@@ -414,6 +463,8 @@ func library(v, prefix string, five bool) map[string]step {
 		"GET " + sinceQuery(prefix, recordSince):         s(history),
 		"GET " + prefix + "/tag":                         s(`[{"id":3,"label":"private-label"}]`),
 		"GET " + prefix + "/rootfolder":                  s(`[{"id":1,"path":"/data/tv/","freeSpace":1}]`),
+		"GET " + prefix + "/command":                     s(commands),
+		"GET " + prefix + "/queue/details":               s(queueBody(five)),
 	}
 	if five {
 		routes["GET "+prefix+"/episode?seriesId=987654&includeSubresources=episodeFile"] = s(episodes)
@@ -428,6 +479,23 @@ func library(v, prefix string, five bool) map[string]step {
 			`{"type":"https://tools.ietf.org/html/rfc7231#section-6.5.4","title":"Not Found","status":404,"traceId":"00-b796a856f1a02fc5188b471b4de943ca-b5dc73fac4bb0cf9-00"}`)
 	}
 	return routes
+}
+
+// queueBody plants, in each generation's wire shape, a download that shares the planted
+// grab's download id and release, and an import-blocked one whose message names a
+// client path, each with members the DTO does not declare.
+func queueBody(five bool) string {
+	episode := func(id int) string { return fmt.Sprintf(`"episodeId":%d,"sizeleft"`, id) }
+	if five {
+		episode = func(id int) string { return fmt.Sprintf(`"episodeIds":[%d],"sizeLeft"`, id) }
+	}
+	return `[{"id":7,"title":"Private.Release.S01E01","downloadId":"` + plantedHash + `","downloadClient":"Private Client",
+		"trackedDownloadState":"downloading","statusMessages":[],"seriesId":987654,` + episode(987654) + `:8888888888,"size":7777777777,
+		"outputPath":"/downloads/Private.Release.S01E01","indexer":"Private Indexer","errorMessage":"at /app/sonarr",
+		"estimatedCompletionTime":"` + plantedDate + `"},
+		{"id":8,"title":"Private.Release.S01E02","downloadId":"SABnzbd_nzo_private","downloadClient":"Private Client",
+		"trackedDownloadState":"importBlocked","statusMessages":[{"title":"Private.Release.S01E02.mkv","messages":["/downloads/x.mkv is no video"]}],
+		"seriesId":987654,` + episode(12) + `:0,"size":9999999999,"outputPath":"/downloads/x.mkv"}]`
 }
 
 func mediaInfo(five bool) string {
@@ -455,19 +523,19 @@ func target(f http.RoundTripper, key arrapi.APIKey) recordTarget {
 
 // sonarrFixtureFiles is every file design section 11 names for testdata/sonarr.
 var sonarrFixtureFiles = []string{
-	"sonarr/v4-api-v3/api.json", "sonarr/v4-api-v3/episodefiles-codegeass.json",
+	"sonarr/v4-api-v3/api.json", "sonarr/v4-api-v3/commands.json", "sonarr/v4-api-v3/episodefiles-codegeass.json",
 	"sonarr/v4-api-v3/episodes-codegeass-files.json", "sonarr/v4-api-v3/episodes-codegeass.json",
-	"sonarr/v4-api-v3/history-since.json", "sonarr/v4-api-v3/rootfolders.json",
+	"sonarr/v4-api-v3/history-since.json", "sonarr/v4-api-v3/queue.json", "sonarr/v4-api-v3/rootfolders.json",
 	"sonarr/v4-api-v3/series-404.headers", "sonarr/v4-api-v3/series-404.json",
 	"sonarr/v4-api-v3/series-by-id-codegeass.json", "sonarr/v4-api-v3/series-codegeass.json",
 	"sonarr/v4-api-v3/system-status.json", "sonarr/v4-api-v3/tags.json",
 	"sonarr/v4-api-v3/v5-system-status-404.headers",
 	"sonarr/v5-api-v3-refusal/system-status.json",
-	"sonarr/v5-api-v5/api.json", "sonarr/v5-api-v5/episodefile-missing-parent.headers",
+	"sonarr/v5-api-v5/api.json", "sonarr/v5-api-v5/commands.json", "sonarr/v5-api-v5/episodefile-missing-parent.headers",
 	"sonarr/v5-api-v5/episodefile-missing-parent.json", "sonarr/v5-api-v5/episodefiles-codegeass.json",
 	"sonarr/v5-api-v5/episodefiles-firefly.json", "sonarr/v5-api-v5/episodes-codegeass-files.json",
 	"sonarr/v5-api-v5/episodes-codegeass.json", "sonarr/v5-api-v5/episodes-firefly.json",
-	"sonarr/v5-api-v5/history-since.json", "sonarr/v5-api-v5/rootfolders.json",
+	"sonarr/v5-api-v5/history-since.json", "sonarr/v5-api-v5/queue.json", "sonarr/v5-api-v5/rootfolders.json",
 	"sonarr/v5-api-v5/series-404.headers", "sonarr/v5-api-v5/series-by-id-codegeass.json",
 	"sonarr/v5-api-v5/series-codegeass.json", "sonarr/v5-api-v5/series-firefly.json",
 	"sonarr/v5-api-v5/series-haruhi.json", "sonarr/v5-api-v5/series-monogatari.json",
@@ -675,13 +743,20 @@ func TestRecordSonarrProjectsAwayDeploymentMembers(t *testing.T) {
 	}
 	for name, body := range files {
 		for _, p := range []string{
-			"CREDENTIAL", "apikey", "downloadUrl", `"data"`, "appData", "startupPath", "instanceName",
+			"Private Agent", "/app/sonarr", "CREDENTIAL", "apikey", "passkey", "downloadUrl", "torrentInfoHash", "droppedPath", plantedHash, "indexer.invalid",
+			"Private Indexer", "Private.Release", "appData", "startupPath", "instanceName",
 			"Example Sonarr", "/config", "/downloads", "traceId", "rfc7231", "sizeOnDisk", "debian", "description", "flac", "FLAC",
+			"Private Client", "SABnzbd_nzo_private", "x.mkv", "outputPath", "errorMessage", "estimatedCompletionTime", "8888888888", "9999999999",
 		} {
 			if strings.Contains(body, p) {
 				t.Errorf("%s holds %q", name, p)
 			}
 		}
+	}
+	for _, dir := range []string{dirSonarrV4APIv3, dirSonarrV5APIv5} {
+		wantRecordedHistoryData(t, dir, files[dir+"/history-since.json"])
+		wantRecordedCommands(t, dir, files[dir+"/commands.json"], files[dir+"/series-codegeass.json"])
+		wantRecordedQueue(t, dir, files)
 	}
 	status := map[string]any{}
 	if err := json.Unmarshal([]byte(files["sonarr/v4-api-v3/system-status.json"]), &status); err != nil {
@@ -759,7 +834,7 @@ func TestRecordSonarrSynthesizesPlantedValues(t *testing.T) {
 		decodeInto(t, files[dir+"/episodes-codegeass-files.json"], &eps)
 		decodeInto(t, files[dir+"/episodefiles-codegeass.json"], &efs)
 		decodeInto(t, files[dir+"/history-since.json"], &hist)
-		if len(series) != 1 || len(eps) != 4 || len(efs) != 2 || len(hist) != 2 {
+		if len(series) != 1 || len(eps) != 4 || len(efs) != 2 || len(hist) != 3 {
 			t.Fatalf("%s: counts %d %d %d %d", dir, len(series), len(eps), len(efs), len(hist))
 		}
 		s := series[0]
@@ -919,4 +994,141 @@ func TestRecordSonarrRefusesStaleFixtures(t *testing.T) {
 			}
 		})
 	}
+}
+
+// wantRecordedHistoryData checks the planted grabbed, import and failed records: one
+// synthetic download id shared by all three, the release source kept, the passkey
+// guid, indexer, info page and message replaced, and no other data member.
+func wantRecordedHistoryData(t *testing.T, dir, body string) {
+	t.Helper()
+	var hist []struct {
+		Data       map[string]any `json:"data"`
+		DownloadID string         `json:"downloadId"`
+		EventType  string         `json:"eventType"`
+	}
+	decodeInto(t, body, &hist)
+	if len(hist) != 3 {
+		t.Fatalf("%s: %d history records, want 3", dir, len(hist))
+	}
+	if hist[0].DownloadID != "download-1" || hist[1].DownloadID != hist[0].DownloadID || hist[2].DownloadID != hist[0].DownloadID {
+		t.Errorf("%s: downloadIds %q %q %q, want one synthetic id shared", dir, hist[0].DownloadID, hist[1].DownloadID, hist[2].DownloadID)
+	}
+	grab := map[string]any{"arrapiUnknownField": 1.0, "guid": "guid-1", "indexer": "indexer-1", "nzbInfoUrl": "infourl-1", "releaseSource": "InteractiveSearch"}
+	if !maps.Equal(hist[0].Data, grab) {
+		t.Errorf("%s: grabbed data = %v, want %v", dir, hist[0].Data, grab)
+	}
+	if !maps.Equal(hist[1].Data, map[string]any{"arrapiUnknownField": 1.0}) {
+		t.Errorf("%s: import data = %v, want only the unknown-field marker", dir, hist[1].Data)
+	}
+	if failed := map[string]any{"arrapiUnknownField": 1.0, "message": "message-1", "indexer": "indexer-1"}; !maps.Equal(hist[2].Data, failed) {
+		t.Errorf("%s: downloadFailed data = %v, want %v", dir, hist[2].Data, failed)
+	}
+}
+
+// wantRecordedCommands checks the planted RefreshSeries: its body names the synthetic id
+// of the series it refreshed and keeps its new flag, its message and dates are
+// replaced, and no member the DTO does not declare survives.
+func wantRecordedCommands(t *testing.T, dir, body, seriesBody string) {
+	t.Helper()
+	var cmds []map[string]any
+	decodeInto(t, body, &cmds)
+	var series []sonarrV5Series
+	decodeInto(t, seriesBody, &series)
+	if len(cmds) != 2 || len(series) != 1 {
+		t.Fatalf("%s: %d commands, %d series; want 2 and 1", dir, len(cmds), len(series))
+	}
+	refresh := cmds[0]
+	b, _ := refresh["body"].(map[string]any)
+	ids, _ := b["seriesIds"].([]any)
+	if len(ids) != 1 || ids[0] != float64(series[0].ID) || b["isNewSeries"] != true {
+		t.Errorf("%s: RefreshSeries body = %v, want the synthetic series id %d and isNewSeries", dir, b, series[0].ID)
+	}
+	if refresh["name"] != "RefreshSeries" || refresh["status"] != "completed" || !strings.HasPrefix(fmt.Sprint(refresh["message"]), "message-") {
+		t.Errorf("%s: RefreshSeries = %v, want its name and status kept and its message replaced", dir, refresh)
+	}
+	if q, _ := refresh["queued"].(string); !strings.HasPrefix(q, "2001-") {
+		t.Errorf("%s: queued = %v, want a synthetic date", dir, refresh["queued"])
+	}
+	for _, m := range []string{"clientUserAgent", "exception", "trigger", "priority"} {
+		if _, ok := refresh[m]; ok {
+			t.Errorf("%s: the command keeps %s", dir, m)
+		}
+	}
+	for _, m := range []string{"sendUpdatesToClient", "trigger"} {
+		if _, ok := b[m]; ok {
+			t.Errorf("%s: the command body keeps %s", dir, m)
+		}
+	}
+}
+
+// wantRecordedQueue checks the planted queue: the download shares the planted grab's
+// synthetic download id and release, each id names its synthetic target, the state is
+// kept, the client, sizes and status text are replaced, and no undeclared member survives.
+func wantRecordedQueue(t *testing.T, dir string, files map[string]string) {
+	t.Helper()
+	var queue []map[string]any
+	decodeInto(t, files[dir+"/queue.json"], &queue)
+	var hist []struct {
+		DownloadID  string `json:"downloadId"`
+		SourceTitle string `json:"sourceTitle"`
+	}
+	decodeInto(t, files[dir+"/history-since.json"], &hist)
+	var series []sonarrV5Series
+	decodeInto(t, files[dir+"/series-codegeass.json"], &series)
+	var eps []sonarrV5Episode
+	decodeInto(t, files[dir+"/episodes-codegeass.json"], &eps)
+	if len(queue) != 2 || len(hist) != 3 || len(series) != 1 || len(eps) != 4 {
+		t.Fatalf("%s: %d queue items, %d history records, %d series, %d episodes; want 2, 3, 1 and 4", dir, len(queue), len(hist), len(series), len(eps))
+	}
+	sizeLeft := map[string]string{dirSonarrV4APIv3: "sizeleft", dirSonarrV5APIv5: "sizeLeft"}[dir]
+	for i, want := range []struct {
+		state, download string
+		episode         int
+	}{{"downloading", hist[0].DownloadID, eps[0].ID}, {"importBlocked", "download-2", eps[1].ID}} {
+		q := queue[i]
+		if q["trackedDownloadState"] != want.state || q["downloadId"] != want.download || q["downloadClient"] != "client-1" {
+			t.Errorf("%s: queue[%d] = %v, want state %s, download id %s and client-1", dir, i, q, want.state, want.download)
+		}
+		if q["seriesId"] != float64(series[0].ID) || !slices.Equal(queueEpisodes(q), []float64{float64(want.episode)}) {
+			t.Errorf("%s: queue[%d] ids = %v %v, want series %d and episode %d", dir, i, q["seriesId"], queueEpisodes(q), series[0].ID, want.episode)
+		}
+		if size, _ := q["size"].(float64); size < 1e9 {
+			t.Errorf("%s: queue[%d] size = %v, want a synthetic size", dir, i, q["size"])
+		}
+		for _, m := range []string{"id", "outputPath", "indexer", "errorMessage", "estimatedCompletionTime"} {
+			if _, ok := q[m]; ok {
+				t.Errorf("%s: queue[%d] keeps %s", dir, i, m)
+			}
+		}
+	}
+	if hist[0].DownloadID != "download-1" || queue[0]["title"] != hist[0].SourceTitle || !strings.HasPrefix(fmt.Sprint(queue[1]["title"]), "release-") {
+		t.Errorf("%s: queue titles %v %v, want the grab's synthetic release and another", dir, queue[0]["title"], queue[1]["title"])
+	}
+	if left, _ := queue[0][sizeLeft].(float64); left < 1e9 || queue[1][sizeLeft] != 0.0 {
+		t.Errorf("%s: %s = %v %v, want a synthetic size and 0", dir, sizeLeft, queue[0][sizeLeft], queue[1][sizeLeft])
+	}
+	var group map[string]any
+	msgs, _ := queue[1]["statusMessages"].([]any)
+	if len(msgs) == 1 {
+		group, _ = msgs[0].(map[string]any)
+	}
+	lines, _ := group["messages"].([]any)
+	if !strings.HasPrefix(fmt.Sprint(group["title"]), "release-") || len(lines) != 1 || !strings.HasPrefix(fmt.Sprint(lines[0]), "message-") {
+		t.Errorf("%s: status messages = %v, want a synthetic title and message", dir, msgs)
+	}
+}
+
+// queueEpisodes is a recorded queue item's episode ids: Sonarr 4's one episodeId, or
+// Sonarr 5's episodeIds.
+func queueEpisodes(q map[string]any) []float64 {
+	if id, ok := q["episodeId"].(float64); ok {
+		return []float64{id}
+	}
+	ids, _ := q["episodeIds"].([]any)
+	out := make([]float64, 0, len(ids))
+	for _, id := range ids {
+		f, _ := id.(float64)
+		out = append(out, f)
+	}
+	return out
 }

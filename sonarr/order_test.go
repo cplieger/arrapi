@@ -44,6 +44,14 @@ func TestOrderFireflyDVD(t *testing.T) {
 	c, _ := replay(t, sonarrV5APIv5Shape(), "series-firefly.json")
 	s := onlySeries(t, c)
 	wantOrder(t, s, tvdbFirefly, Order{Type: "dvd", Name: "DVD Order"})
+	if s.Type != SeriesStandard || !s.Monitored {
+		t.Errorf("Firefly: Type %q, Monitored %t; want standard and monitored", s.Type, s.Monitored)
+	}
+	for _, se := range s.Seasons {
+		if se.Monitored != (se.Number == 1) {
+			t.Errorf("Firefly season %d: Monitored = %t, want only season 1 monitored", se.Number, se.Monitored)
+		}
+	}
 	eps, err := c.Episodes(t.Context(), s.ID)
 	if err != nil {
 		t.Fatal(err)
@@ -60,6 +68,9 @@ func TestOrderFireflyDVD(t *testing.T) {
 	at := map[[2]int]Episode{}
 	for _, e := range eps {
 		at[[2]int{e.Season, e.Number}] = e
+		if e.Monitored != (e.Season == 1) {
+			t.Errorf("S%02dE%02d: Monitored = %t, want only season 1 monitored", e.Season, e.Number, e.Monitored)
+		}
 		if e.Absolute != 0 {
 			t.Errorf("S%02dE%02d: Absolute = %d, want 0 under a non-official order", e.Season, e.Number, e.Absolute)
 		}
@@ -92,13 +103,17 @@ func TestOrderFireflyDVD(t *testing.T) {
 }
 
 func TestOrderOfficeSuperfan(t *testing.T) {
-	wantOrder(t, orderSeries(t, "series-office.json"), 73244, Order{Type: "alttwo", Name: "Superfan Order"})
+	s := orderSeries(t, "series-office.json")
+	wantOrder(t, s, 73244, Order{Type: "alttwo", Name: "Superfan Order"})
+	if s.Type != SeriesStandard || s.Monitored {
+		t.Errorf("The Office: Type %q, Monitored %t; want standard and unmonitored", s.Type, s.Monitored)
+	}
 }
 
 func TestOrderMonogatariBook(t *testing.T) {
 	s := orderSeries(t, "series-monogatari.json")
 	wantOrder(t, s, 102261, Order{Type: "alternate", Name: "Book Order"})
-	if len(s.Seasons) != 18 || s.Seasons[0] != (Season{Title: "Bakemonogatari", Number: 1}) || s.Seasons[1] != (Season{Title: "Kizumonogatari", Number: 2}) {
+	if len(s.Seasons) != 18 || s.Seasons[0] != (Season{Title: "Bakemonogatari", Number: 1, Monitored: true}) || s.Seasons[1] != (Season{Title: "Kizumonogatari", Number: 2, Monitored: true}) {
 		t.Errorf("Seasons = %+v, want 18 Book Order seasons led by Bakemonogatari and Kizumonogatari", s.Seasons)
 	}
 }
@@ -106,7 +121,7 @@ func TestOrderMonogatariBook(t *testing.T) {
 func TestOrderHaruhi2009Series(t *testing.T) {
 	s := orderSeries(t, "series-haruhi.json")
 	wantOrder(t, s, 79414, Order{Type: "alternate", Name: "2009 Series"})
-	if want := (Season{Title: "The Melancholy of Haruhi Suzumiya (2009)", Number: 1}); len(s.Seasons) != 1 || s.Seasons[0] != want {
+	if want := (Season{Title: "The Melancholy of Haruhi Suzumiya (2009)", Number: 1, Monitored: true}); len(s.Seasons) != 1 || s.Seasons[0] != want {
 		t.Errorf("Seasons = %+v, want [%+v]", s.Seasons, want)
 	}
 }

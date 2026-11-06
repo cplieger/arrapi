@@ -1,7 +1,9 @@
 package radarr
 
 import (
+	"errors"
 	"net/http"
+	"strings"
 	"testing"
 
 	"github.com/cplieger/arrapi/v3"
@@ -99,4 +101,81 @@ func TestMediaCoverURLAcrossARepoint(t *testing.T) {
 		t.Fatalf("after the Sonarr answered: MediaCoverURL = %q", got)
 	}
 	wantUnsupported(t, err, arrapi.ReasonWrongApp)
+}
+
+const jpeg = "\xff\xd8\xff"
+
+const coverRoute = "GET /api/v3/mediacover/41/poster-250.jpg"
+
+func TestMediaCoverReadsTheFile(t *testing.T) {
+	f := newFake().radarr(vRadarr)
+	f.on(coverRoute, file(200, vRadarr, "image/jpeg", jpeg))
+	got, found, err := newClient(t, f).MediaCover(t.Context(), 41, "poster-250.jpg", 2<<20)
+	if err != nil || !found {
+		t.Fatalf("MediaCover = (found %v, %v), want found", found, err)
+	}
+	if got.ContentType != "image/jpeg" || string(got.Data) != jpeg {
+		t.Errorf("MediaCover = %+v, want image/jpeg and the three bytes", got)
+	}
+	wantRequests(t, f, append(detectRadarr, coverRoute)...)
+}
+
+func TestMediaCoverAnswers(t *testing.T) {
+	for name, tc := range map[string]struct {
+		check func(*testing.T, error)
+		s     step
+	}{
+		"a missing file": {func(t *testing.T, err error) {
+			if err != nil {
+				t.Errorf("err = %v, want nil", err)
+			}
+		}, ans(404, vRadarr, "")},
+		"another media type": {func(t *testing.T, err error) {
+			if _, ok := errors.AsType[*arrapi.DecodeError](err); !ok {
+				t.Errorf("err = %v, want *arrapi.DecodeError", err)
+			}
+		}, file(200, vRadarr, "text/html", "<html></html>")},
+		"over the limit": {func(t *testing.T, err error) {
+			if e, ok := errors.AsType[*arrapi.ResponseTooLargeError](err); !ok || e.Limit != 2<<20 {
+				t.Errorf("err = %v, want *arrapi.ResponseTooLargeError with Limit 2 MiB", err)
+			}
+		}, file(200, vRadarr, "image/jpeg", strings.Repeat("x", 2<<20+1))},
+	} {
+		t.Run(name, func(t *testing.T) {
+			f := newFake().radarr(vRadarr)
+			f.on(coverRoute, tc.s)
+			got, found, err := newClient(t, f).MediaCover(t.Context(), 41, "poster-250.jpg", 2<<20)
+			tc.check(t, err)
+			if found || got.ContentType != "" || got.Data != nil {
+				t.Errorf("MediaCover = (%+v, found %v), want the zero Cover, not found", got, found)
+			}
+			if n := count(f, coverRoute); n != 1 {
+				t.Errorf("sent %d cover reads, want 1", n)
+			}
+		})
+	}
+}
+
+func TestMediaCoverRefusesBadInput(t *testing.T) {
+	for name, tc := range map[string]struct {
+		want  error
+		file  string
+		id    int
+		limit int64
+	}{
+		"id 0":              {errMediaCoverID, "poster.jpg", 0, 1},
+		"a parent segment":  {errMediaCoverFile, "../x.jpg", 41, 1},
+		"another extension": {errMediaCoverFile, "poster.webp", 41, 1},
+		"limit 0":           {errMediaCoverLimit, "poster.jpg", 41, 0},
+		"a negative limit":  {errMediaCoverLimit, "poster.jpg", 41, -1},
+	} {
+		t.Run(name, func(t *testing.T) {
+			f := newFake().radarr(vRadarr)
+			got, found, err := newClient(t, f).MediaCover(t.Context(), tc.id, tc.file, tc.limit)
+			if !errors.Is(err, tc.want) || found || got.Data != nil {
+				t.Errorf("MediaCover(%d, %q, %d) = (%+v, %v, %v), want %v", tc.id, tc.file, tc.limit, got, found, err, tc.want)
+			}
+			wantRequests(t, f)
+		})
+	}
 }

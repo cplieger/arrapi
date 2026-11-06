@@ -25,7 +25,7 @@ func internalClient(t *testing.T, key arrapi.APIKey) *Client {
 func captureBody(t *testing.T, body string, key arrapi.APIKey) *arrapi.StatusError {
 	t.Helper()
 	resp := &http.Response{StatusCode: http.StatusInternalServerError, Header: http.Header{}, Body: io.NopCloser(strings.NewReader(body))}
-	return internalClient(t, key).capture(500, resp, "/api/v3/series")
+	return internalClient(t, key).capture(500, resp, "/api/v3/series", false)
 }
 
 func TestStatusErrorBodySanitizedAtCapture(t *testing.T) {

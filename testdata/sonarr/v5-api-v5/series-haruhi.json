@@ -16,13 +16,14 @@
       7311
     ],
     "arrapiUnknownField": 1,
-    "id": 7,
+    "id": 8,
     "imdbId": "tt0816407",
     "language": {
       "arrapiUnknownField": 1,
       "id": 1,
       "name": "English"
     },
+    "monitored": false,
     "originalLanguage": {
       "arrapiUnknownField": 1,
       "id": 8,
@@ -50,10 +51,12 @@
     "seasons": [
       {
         "arrapiUnknownField": 1,
+        "monitored": true,
         "seasonNumber": 1,
         "title": "The Melancholy of Haruhi Suzumiya (2009)"
       }
     ],
+    "seriesType": "anime",
     "statistics": {
       "arrapiUnknownField": 1,
       "episodeFileCount": 1

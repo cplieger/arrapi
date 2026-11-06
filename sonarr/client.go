@@ -99,6 +99,21 @@ func (c *Client) HistorySince(ctx context.Context, since time.Time, types ...Eve
 	return readHistorySince(ctx, c.s.Read, since, types)
 }
 
+// Commands returns, in one request, every command Sonarr holds in memory: those queued
+// or running, and those that ended within the last 5 to 10 minutes, in Sonarr's order
+// (queued and running first, then by priority), not by time. A Sonarr restart empties
+// the list.
+func (c *Client) Commands(ctx context.Context) ([]Command, error) {
+	return readCommands(ctx, c.s.Read)
+}
+
+// Queue returns, in one request, Sonarr's whole queue: every download Sonarr tracks at
+// its download clients, matched to a series or not, and every release it holds back
+// (a delay profile, an unavailable client), which has no DownloadID. Each download is
+// one item on Sonarr 4 and on Sonarr 5 alike (a held-back release is not, QueueItem).
+// Sonarr refreshes it from its clients about once a minute, and 5 seconds after a grab.
+func (c *Client) Queue(ctx context.Context) ([]QueueItem, error) { return readQueue(ctx, c.s.Read) }
+
 // Tags returns every tag.
 func (c *Client) Tags(ctx context.Context) ([]arrapi.Tag, error) { return readTags(ctx, c.s.Read) }
 
@@ -147,6 +162,18 @@ func readHistorySince(ctx context.Context, v via, since time.Time, types []Event
 	return slices.DeleteFunc(recs, func(r HistoryRecord) bool {
 		return r.EventType == 0 || !slices.Contains(types, r.EventType)
 	}), nil
+}
+
+func readCommands(ctx context.Context, v via) ([]Command, error) {
+	return read(ctx, v, func(ctx context.Context, d *transport.Detection, e engine) ([]Command, transport.Result) {
+		return e.commands(ctx, d)
+	})
+}
+
+func readQueue(ctx context.Context, v via) ([]QueueItem, error) {
+	return read(ctx, v, func(ctx context.Context, d *transport.Detection, e engine) ([]QueueItem, transport.Result) {
+		return e.queue(ctx, d)
+	})
 }
 
 func readTags(ctx context.Context, v via) ([]arrapi.Tag, error) {

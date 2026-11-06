@@ -21,6 +21,11 @@ var (
 	errKeyAlphabet     = errors.New("arrapi: key may hold only letters, digits, '.', '_' and '-'")
 )
 
+// IsKeyInvalid reports whether err is New's refusal of the key rather than of the URL.
+func IsKeyInvalid(err error) bool {
+	return errors.Is(err, errKeyEmpty) || errors.Is(err, errKeyAlphabet)
+}
+
 // keyAlphabet is every byte that each encoder able to write the key into an answer
 // (Go's net/url and encoding/json, .NET's Uri.EscapeDataString, WebUtility.UrlEncode and
 // System.Text.Json) leaves as it is, and that no textsafe sanitizer writes or rewrites:

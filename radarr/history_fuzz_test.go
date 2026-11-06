@@ -5,7 +5,10 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
+	"slices"
 	"testing"
+
+	"github.com/cplieger/arrapi/v3"
 )
 
 // FuzzHistoryRecord_UnmarshalJSON feeds each input both as a whole history record and
@@ -23,6 +26,14 @@ func FuzzHistoryRecord_UnmarshalJSON(f *testing.F) {
 		`{"eventType":"\"quoted\\u0041"}`,
 		`{"eventType":"grabbed","EVENTTYPE":"someFutureEvent"}`,
 		`{"date":"2031-07-09T13:57:11Z","eventType":"downloadIgnored"}`,
+		`{"eventType":"grabbed","data":{"guid":"g","indexer":"i","nzbInfoUrl":"u","releaseSource":"InteractiveSearch"}}`,
+		`{"eventType":"downloadFailed","data":{"message":null,"releaseSource":null}}`,
+		`{"data":{"releaseSource":"Unknown"}}`,
+		`{"data":{"releaseSource":"rss"}}`,
+		`{"data":{"guid":7}}`,
+		`{"data":{"message":{"nested":"x"}}}`,
+		`{"data":null}`,
+		`{"data":"x"}`,
 		`{}`,
 		`1`, `1e999`, `99999999999999999999`, `-0.5`, `null`, `true`, `[]`, `""`, `"movieFileRenamed"`, `"\u0000"`,
 	} {
@@ -33,6 +44,9 @@ func FuzzHistoryRecord_UnmarshalJSON(f *testing.F) {
 		if err := json.Unmarshal(data, &w); err == nil {
 			if e := w.record().EventType; e != 0 && !defined(e) {
 				t.Errorf("record %q decoded EventType %d, want 0 or a defined event", data, int(e))
+			}
+			if src := w.record().Source; src != "" && !slices.Contains(releaseSources, src) {
+				t.Errorf("record %q decoded Source %q, want \"\" or a defined source", data, src)
 			}
 		}
 
@@ -75,6 +89,11 @@ func defined(e EventType) bool {
 		return true
 	}
 	return false
+}
+
+var releaseSources = []arrapi.ReleaseSource{
+	arrapi.SourceRSS, arrapi.SourceSearch,
+	arrapi.SourceUserInvokedSearch, arrapi.SourceInteractiveSearch, arrapi.SourceReleasePush,
 }
 
 // jsonKind names the kind of the single JSON value data holds, or reports false when

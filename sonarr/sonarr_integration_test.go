@@ -115,10 +115,12 @@ type reads interface {
 	HistorySince(ctx context.Context, since time.Time, types ...EventType) ([]HistoryRecord, error)
 	Tags(ctx context.Context) ([]arrapi.Tag, error)
 	RootFolders(ctx context.Context) ([]string, error)
+	Commands(ctx context.Context) ([]Command, error)
+	Queue(ctx context.Context) ([]QueueItem, error)
 }
 
 // readEverything runs every read method of the client, and of a Pin of it reporting
-// info, against Code Geass, then MediaCoverURL.
+// info, against Code Geass, then MediaCoverURL and MediaCover.
 func readEverything(t *testing.T, l liveSonarr, info Info, prefix string) {
 	t.Run("Client", func(t *testing.T) { readAll(t, l, l.c) })
 	t.Run("Pinned", func(t *testing.T) {
@@ -136,6 +138,16 @@ func readEverything(t *testing.T, l liveSonarr, info Info, prefix string) {
 	l.check(t, "MediaCoverURL", err)
 	if want := l.url + prefix + "/mediacover/" + strconv.Itoa(cg.ID) + "/poster.jpg"; cover != want {
 		t.Errorf("MediaCoverURL = %q, want %q", cover, want)
+	}
+	img, found, err := l.c.MediaCover(t.Context(), cg.ID, "poster-250.jpg", 2<<20)
+	l.check(t, "MediaCover", err)
+	if !found || img.ContentType != "image/jpeg" || len(img.Data) == 0 {
+		t.Errorf("MediaCover(%d, poster-250.jpg) = %q, %d bytes, found %v; want a JPEG found", cg.ID, img.ContentType, len(img.Data), found)
+	}
+	none, found, err := l.c.MediaCover(t.Context(), absentSeriesID, "poster.jpg", 2<<20)
+	l.check(t, "MediaCover absent", err)
+	if found || none.ContentType != "" || none.Data != nil {
+		t.Errorf("MediaCover(%d, poster.jpg) = %q, %d bytes, found %v; want (zero, false)", absentSeriesID, none.ContentType, len(none.Data), found)
 	}
 }
 
@@ -233,7 +245,84 @@ func readAll(t *testing.T, l liveSonarr, r reads) {
 	if len(roots) == 0 || slices.ContainsFunc(roots, func(p string) bool { return !strings.HasPrefix(p, "/") }) {
 		t.Errorf("RootFolders = %d paths, want absolute paths", len(roots))
 	}
+	cmds, err := r.Commands(ctx)
+	l.check(t, "Commands", err)
+	for _, c := range cmds {
+		if c.ID <= 0 || c.Name == "" {
+			t.Errorf("command %+v has no id or name", c)
+		}
+	}
+	t.Logf("commands: %d held", len(cmds))
+	queue, err := r.Queue(ctx)
+	l.check(t, "Queue", err)
+	for i, q := range queue {
+		if q.Size < 0 || q.SizeLeft < 0 {
+			t.Errorf("queue item %d has a negative size: %d, %d left", i, q.Size, q.SizeLeft)
+		}
+	}
+	t.Logf("queue: %d items", len(queue))
+}
 
+// requestLog records each request's method and path before sending it on.
+type requestLog struct {
+	base http.RoundTripper
+	mu   sync.Mutex
+	sent []string
+}
+
+func (r *requestLog) RoundTrip(req *http.Request) (*http.Response, error) {
+	r.mu.Lock()
+	r.sent = append(r.sent, req.Method+" "+req.URL.Path)
+	r.mu.Unlock()
+	return r.base.RoundTrip(req)
+}
+
+func (r *requestLog) requests() []string {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	return slices.Clone(r.sent)
+}
+
+func newRequestLog(t *testing.T) *requestLog {
+	tr := http.DefaultTransport.(*http.Transport).Clone()
+	t.Cleanup(tr.CloseIdleConnections)
+	return &requestLog{base: tr}
+}
+
+// TestIntegrationCheck runs Check against both live servers with their right key:
+// it returns what New then Info returns and sends only Info's probes. No row sends a
+// wrong key, since repeated 401s from one address can trip a ban in a proxy in front.
+func TestIntegrationCheck(t *testing.T) {
+	for _, c := range []struct {
+		prefix string
+		api    arrapi.API
+		major  int
+		label  string
+	}{
+		{"ARRAPI_SONARR_V4", arrapi.APIv3, 4, "Sonarr v4 (API v3)"},
+		{"ARRAPI_SONARR_V5", arrapi.APIv5, 5, "Sonarr v5 (API v5)"},
+	} {
+		t.Run(c.label, func(t *testing.T) {
+			l := sonarrLive(t, c.prefix)
+			l.wantShape(t, c.prefix+"_URL", c.api, c.major, c.label)
+			viaInfo := newRequestLog(t)
+			nc, err := New(l.url, arrapi.APIKey(l.key), WithHTTPClient(&http.Client{Transport: viaInfo}))
+			l.check(t, "New", err)
+			t.Cleanup(nc.Close)
+			want, err := nc.Info(t.Context())
+			l.check(t, "Info", err)
+			viaCheck := newRequestLog(t)
+			got, err := Check(t.Context(), l.url, arrapi.APIKey(l.key), WithHTTPClient(&http.Client{Transport: viaCheck}))
+			l.check(t, "Check", err)
+			if got != want {
+				t.Errorf("Check = %+v, want Info's %+v", got, want)
+			}
+			sent := viaCheck.requests()
+			if !slices.Equal(sent, viaInfo.requests()) || slices.ContainsFunc(sent, func(r string) bool { return !strings.HasPrefix(r, "GET ") }) {
+				t.Errorf("Check sent %q, want Info's GETs %q", sent, viaInfo.requests())
+			}
+		})
+	}
 }
 
 // liveCodeGeass reads what the engine of l reads of Code Geass, live.
@@ -324,6 +413,60 @@ func TestIntegrationSonarrV5EpisodeTVDBIDs(t *testing.T) {
 	t.Fatalf("no series of the first %d reads a TVDB id on every episode (%d read none, %d some)", maxSeries, unrefreshed, mixed)
 }
 
+// TestIntegrationMissingParentAttributed reads the files of a series the server does
+// not have: Sonarr's exception pipeline answers 404, with the version header only from
+// Sonarr 5.0.0.2701 (Sonarr#9161), so Attributed is false on Sonarr 4 and true there.
+func TestIntegrationMissingParentAttributed(t *testing.T) {
+	for _, c := range []struct {
+		prefix string
+		api    arrapi.API
+		major  int
+		label  string
+	}{
+		{"ARRAPI_SONARR_V4", arrapi.APIv3, 4, "Sonarr v4 (API v3)"},
+		{"ARRAPI_SONARR_V5", arrapi.APIv5, 5, "Sonarr v5 (API v5)"},
+	} {
+		t.Run(c.label, func(t *testing.T) {
+			l := sonarrLive(t, c.prefix)
+			info := l.wantShape(t, c.prefix+"_URL", c.api, c.major, c.label)
+			want := c.major == 5
+			if want && !versionAtLeast(info.Version, 5, 0, 0, 2701) {
+				t.Skipf("Sonarr %s predates 5.0.0.2701, which sends no version header on this answer", info.Version)
+			}
+			_, err := l.c.EpisodeFiles(t.Context(), absentSeriesID)
+			if err != nil && strings.Contains(fmt.Sprintf("%v %+v", err, err), l.key) {
+				t.Fatal("the error text carries the API key")
+			}
+			e, ok := errors.AsType[*arrapi.StatusError](err)
+			if !ok || e.Code != http.StatusNotFound {
+				t.Fatalf("EpisodeFiles(%d) = %v, want a 404 *arrapi.StatusError", absentSeriesID, err)
+			}
+			if e.Attributed != want {
+				t.Errorf("Sonarr %s: Attributed = %v, want %v", info.Version, e.Attributed, want)
+			}
+		})
+	}
+}
+
+// versionAtLeast reports whether the dotted version v is at least want, part by part;
+// a part that is not a number fails the comparison.
+func versionAtLeast(v string, want ...int) bool {
+	parts := strings.Split(v, ".")
+	for i, w := range want {
+		if i >= len(parts) {
+			return false
+		}
+		n, err := strconv.Atoi(parts[i])
+		if err != nil || n < w {
+			return false
+		}
+		if n > w {
+			return true
+		}
+	}
+	return true
+}
+
 // TestIntegrationSonarrV5OverAPIv3Refused puts a proxy in front of the Sonarr 5.0 that
 // hides /api and every /api/v5 path and forwards only GET /api/v3/system/status, so
 // no other /api/v3 path of it is reached; Info must refuse it (requirement 3).
@@ -334,7 +477,9 @@ func TestIntegrationSonarrV5OverAPIv3Refused(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	forward := httputil.NewSingleHostReverseProxy(target)
+	// SetURL sends the target's Host; NewSingleHostReverseProxy would keep the test
+	// server's, which a server routed by host name answers with a web page.
+	forward := &httputil.ReverseProxy{Rewrite: func(r *httputil.ProxyRequest) { r.SetURL(target) }}
 	var (
 		mu  sync.Mutex
 		log []string

@@ -71,6 +71,12 @@ func (p *Pinned) HistorySince(ctx context.Context, since time.Time, types ...Eve
 	return readHistorySince(ctx, p.read, since, types)
 }
 
+// Commands is Client.Commands on the pinned version.
+func (p *Pinned) Commands(ctx context.Context) ([]Command, error) { return readCommands(ctx, p.read) }
+
+// Queue is Client.Queue on the pinned version.
+func (p *Pinned) Queue(ctx context.Context) ([]QueueItem, error) { return readQueue(ctx, p.read) }
+
 // Tags is Client.Tags on the pinned version.
 func (p *Pinned) Tags(ctx context.Context) ([]arrapi.Tag, error) { return readTags(ctx, p.read) }
 

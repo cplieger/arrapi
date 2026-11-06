@@ -12,13 +12,14 @@
     ],
     "aniListIds": [],
     "arrapiUnknownField": 1,
-    "id": 8,
+    "id": 9,
     "imdbId": "tt0386676",
     "language": {
       "arrapiUnknownField": 1,
       "id": 1,
       "name": "English"
     },
+    "monitored": false,
     "originalLanguage": {
       "arrapiUnknownField": 1,
       "id": 1,
@@ -61,41 +62,51 @@
     "seasons": [
       {
         "arrapiUnknownField": 1,
+        "monitored": true,
         "seasonNumber": 1
       },
       {
         "arrapiUnknownField": 1,
+        "monitored": true,
         "seasonNumber": 2
       },
       {
         "arrapiUnknownField": 1,
+        "monitored": true,
         "seasonNumber": 3
       },
       {
         "arrapiUnknownField": 1,
+        "monitored": true,
         "seasonNumber": 4
       },
       {
         "arrapiUnknownField": 1,
+        "monitored": true,
         "seasonNumber": 5
       },
       {
         "arrapiUnknownField": 1,
+        "monitored": true,
         "seasonNumber": 6
       },
       {
         "arrapiUnknownField": 1,
+        "monitored": true,
         "seasonNumber": 7
       },
       {
         "arrapiUnknownField": 1,
+        "monitored": true,
         "seasonNumber": 8
       },
       {
         "arrapiUnknownField": 1,
+        "monitored": true,
         "seasonNumber": 9
       }
     ],
+    "seriesType": "standard",
     "statistics": {
       "arrapiUnknownField": 1,
       "episodeFileCount": 1

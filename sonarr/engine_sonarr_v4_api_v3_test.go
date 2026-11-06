@@ -68,11 +68,13 @@ func TestSonarrV4APIv3SeriesMapping(t *testing.T) {
 		IDs:              ExternalIDs{IMDb: "tt0000004", TVDB: 900001, TMDB: 800003},
 		Order:            Order{Type: "official", Official: true},
 		AlternateTitles:  []string{"Example Alt", "Second Alt"},
-		Seasons:          []Season{{Number: 0}, {Number: 1}, {Number: 2}},
+		Seasons:          []Season{{Number: 0}, {Number: 1, Monitored: true}, {Number: 2, Monitored: true}},
 		Tags:             []int{3, 1},
+		Type:             SeriesAnime,
 		ID:               41,
 		Year:             2011,
 		FileCount:        12,
+		Monitored:        true,
 	})
 }
 
@@ -206,16 +208,17 @@ const sonarrV4EpisodeBody = `{
 
 func TestSonarrV4APIv3EpisodeMapping(t *testing.T) {
 	want := Episode{
-		Title:    "The Second One",
-		AirDate:  "2011-04-10",
-		ID:       301,
-		SeriesID: 41,
-		Season:   1,
-		Number:   2,
-		Absolute: 14,
-		TVDBID:   700101,
-		FileID:   55,
-		HasFile:  true,
+		Title:     "The Second One",
+		AirDate:   "2011-04-10",
+		ID:        301,
+		SeriesID:  41,
+		Season:    1,
+		Number:    2,
+		Absolute:  14,
+		TVDBID:    700101,
+		FileID:    55,
+		HasFile:   true,
+		Monitored: true,
 	}
 	w := decodeWire[sonarrV4Episode](t, sonarrV4EpisodeBody)
 
@@ -269,12 +272,14 @@ func codeGeassSonarrV4APIv3() Series {
 		TitleSlug:        "code-geass-lelouch-of-the-rebellion",
 		AlternateTitles:  codeGeassAlternateTitles(),
 		Seasons:          []Season{{Number: 0}, {Number: 1}, {Number: 2}},
+		Type:             SeriesAnime,
 		Tags:             []int{},
 		Order:            Order{Type: "official", Official: true},
 		IDs:              ExternalIDs{IMDb: "tt0994314", TVDB: 79525, TMDB: 31724},
 		ID:               1,
 		Year:             2006,
 		FileCount:        51,
+		Monitored:        true,
 	}
 }
 
@@ -312,7 +317,10 @@ func TestSonarrV4APIv3Fixtures(t *testing.T) {
 		}
 	})
 	recordedReads(t, c, sh, map[int]int{1: 328515, 26: 359905, 54: 6915211, 63: 7607145, 102: 7737005},
-		HistoryRecord{Date: fixtureSince.Add(4 * time.Hour), EventType: EventGrabbed, ID: 8, SeriesID: 3})
+		HistoryRecord{
+			Date: fixtureSince.Add(6 * time.Hour), EventType: EventGrabbed, ID: 8, SeriesID: 2, EpisodeID: 105,
+			DownloadID: "download-4", SourceTitle: "release-8", GUID: "guid-4", Indexer: "indexer-2", InfoURL: "infourl-4", Source: arrapi.SourceRSS,
+		})
 }
 
 // TestSonarrV4APIv3FixtureDetectionBehindHiddenAPI hides /api, so detection reads the
@@ -327,5 +335,68 @@ func TestSonarrV4APIv3FixtureDetectionBehindHiddenAPI(t *testing.T) {
 	assertFields(t, got, Info{Version: "4.0.20.3014", API: arrapi.APIv3, Features: Features{}})
 	if want := []string{"GET /api/v5/system/status", "GET /api/v3/system/status"}; !slices.Equal(p.Requests(), want) {
 		t.Errorf("replayed requests = %q, want %q", p.Requests(), want)
+	}
+}
+
+// v4Row is one Sonarr 4 queue row of a download at client, matched to episode.
+func v4Row(client, download string, episode int) *sonarrV4QueueItem {
+	return &sonarrV4QueueItem{Title: "Rel." + download, DownloadClient: client, DownloadID: download, EpisodeID: episode, SeriesID: 41}
+}
+
+func v4Item(client, download string, episodes ...int) QueueItem {
+	return QueueItem{Title: "Rel." + download, DownloadClient: client, DownloadID: download, EpisodeIDs: episodes, SeriesID: 41}
+}
+
+// Sonarr 4 writes one queue row per episode of a download (v4-develop
+// NzbDrone.Core/Queue/QueueService.cs), and one per episode of a held-back release
+// (Download/Pending/PendingReleaseService.cs), which has no downloadId.
+func TestGroupV4Queue(t *testing.T) {
+	for _, tc := range []struct {
+		name string
+		rows []*sonarrV4QueueItem
+		want []QueueItem
+	}{
+		{
+			"one download at three rows",
+			[]*sonarrV4QueueItem{v4Row("SAB", "d1", 3), v4Row("SAB", "d1", 1), v4Row("SAB", "d1", 3)},
+			[]QueueItem{v4Item("SAB", "d1", 3, 1)},
+		},
+		{
+			"one download id at two clients",
+			[]*sonarrV4QueueItem{v4Row("qbit", "h1", 3), v4Row("deluge", "h1", 3)},
+			[]QueueItem{v4Item("qbit", "h1", 3), v4Item("deluge", "h1", 3)},
+		},
+		{
+			"held-back rows stay apart",
+			[]*sonarrV4QueueItem{v4Row("", "", 3), v4Row("", "", 4)},
+			[]QueueItem{v4Item("", "", 3), v4Item("", "", 4)},
+		},
+		{
+			"interleaved downloads in first-row order",
+			[]*sonarrV4QueueItem{v4Row("SAB", "d2", 5), v4Row("SAB", "d1", 1), v4Row("SAB", "d2", 6), v4Row("SAB", "d1", 2)},
+			[]QueueItem{v4Item("SAB", "d2", 5, 6), v4Item("SAB", "d1", 1, 2)},
+		},
+		{
+			"a null episodeId is left out",
+			[]*sonarrV4QueueItem{v4Row("SAB", "d1", 0), v4Row("SAB", "d1", 5)},
+			[]QueueItem{v4Item("SAB", "d1", 5)},
+		},
+		{
+			"a download at no episode",
+			[]*sonarrV4QueueItem{v4Row("SAB", "d1", 0)},
+			[]QueueItem{v4Item("SAB", "d1")},
+		},
+		{
+			"a held-back row at no episode",
+			[]*sonarrV4QueueItem{v4Row("", "", 0)},
+			[]QueueItem{v4Item("", "")},
+		},
+		{"no rows", nil, []QueueItem{}},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := groupV4Queue(tc.rows); !reflect.DeepEqual(got, tc.want) {
+				t.Errorf("groupV4Queue =\n%#v\nwant\n%#v", got, tc.want)
+			}
+		})
 	}
 }

@@ -1,6 +1,10 @@
 package transport
 
-import "net/http"
+import (
+	"net/http"
+
+	"github.com/cplieger/go/httpclient"
+)
 
 // Call is what a request asks for, which decides what its answer may mean.
 type Call int
@@ -11,6 +15,7 @@ const (
 	CallRead                     // a list or query GET
 	CallReadByID                 // a GET of one resource by id: its attributed 404 means absent
 	CallMutation                 // a command POST, sent once
+	CallSearch                   // a GET sent once whose 200 is decoded: an interactive search, which queries the server's indexers each time
 )
 
 // End is how one attempt ended, as endAttempt selected it.
@@ -95,7 +100,7 @@ func Decide(sent Identity, call Call, e End) (Verdict, Next) {
 
 func decideTransport(call Call, read bool, e End) Next {
 	switch {
-	case !e.Transient || call == CallMutation:
+	case !e.Transient || sentOnce(call):
 		return NextDone
 	case e.HopFailed && read:
 		return NextFresh
@@ -109,7 +114,7 @@ func decideAnswer(sent Identity, call Call, read bool, e End) (Verdict, Next) {
 	v, _, wellFormed := ParseAppVersion(e.Header)
 	unanchoredProbe := call == CallProbe && sent.AppVersion == ""
 	success := isSuccess(call, e.Code)
-	transient := e.Code == http.StatusTooManyRequests || (e.Code >= 500 && e.Code <= 599)
+	transient := httpclient.IsRetryableStatus(e.Code)
 	switch {
 	case !wellFormed:
 		return decideHeaderless(call, read, unanchoredProbe, success, transient)
@@ -131,8 +136,10 @@ func decideAttributed(call Call, success, transient bool, code int) (Verdict, Ne
 	case call == CallReadByID && code == http.StatusNotFound:
 		return VerdictAbsent, NextDone
 	}
-	return VerdictStatus, retryWhen(transient && call != CallMutation)
+	return VerdictStatus, retryWhen(transient && !sentOnce(call))
 }
+
+func sentOnce(call Call) bool { return call == CallMutation || call == CallSearch }
 
 // decideHeaderless is rows 4 to 7: the answer carries no well-formed header.
 // Sonarr 4, and Sonarr 5 before 5.0.0.2701, send exception-built errors without

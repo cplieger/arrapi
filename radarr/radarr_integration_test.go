@@ -4,10 +4,12 @@ package radarr
 
 import (
 	"fmt"
+	"net/http"
 	"os"
 	"slices"
 	"strconv"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -105,4 +107,74 @@ func TestIntegrationRadarrAPIv3(t *testing.T) {
 	if want := strings.TrimSuffix(u, "/") + "/api/v3/mediacover/" + strconv.Itoa(m.ID) + "/poster.jpg"; cover != want {
 		t.Errorf("MediaCoverURL = %q, want %q", cover, want)
 	}
+	img, found, err := c.MediaCover(ctx, m.ID, "poster-250.jpg", 2<<20)
+	check("MediaCover", err)
+	if !found || img.ContentType != "image/jpeg" || len(img.Data) == 0 {
+		t.Errorf("MediaCover(%d, poster-250.jpg) = %q, %d bytes, found %v; want a JPEG found", m.ID, img.ContentType, len(img.Data), found)
+	}
+	none, found, err := c.MediaCover(ctx, absentMovieID, "poster.jpg", 2<<20)
+	check("MediaCover absent", err)
+	if found || none.ContentType != "" || none.Data != nil {
+		t.Errorf("MediaCover(%d, poster.jpg) = %q, %d bytes, found %v; want (zero, false)", absentMovieID, none.ContentType, len(none.Data), found)
+	}
+
+	cmds, err := c.Commands(ctx)
+	check("Commands", err)
+	for _, cmd := range cmds {
+		if cmd.ID <= 0 || cmd.Name == "" {
+			t.Errorf("command %+v has no id or name", cmd)
+		}
+	}
+	t.Logf("commands: %d held", len(cmds))
+	queue, err := c.Queue(ctx)
+	check("Queue", err)
+	for i, q := range queue {
+		if q.Size < 0 || q.SizeLeft < 0 {
+			t.Errorf("queue item %d has a negative size: %d, %d left", i, q.Size, q.SizeLeft)
+		}
+	}
+	t.Logf("queue: %d items", len(queue))
+
+	// Check with the right key only: repeated 401s from one address can trip a ban in a
+	// proxy in front of the server.
+	viaCheck, viaInfo := newRequestLog(t), newRequestLog(t)
+	nc, err := New(u, arrapi.APIKey(key), WithHTTPClient(&http.Client{Transport: viaInfo}))
+	check("New", err)
+	t.Cleanup(nc.Close)
+	want, err := nc.Info(ctx)
+	check("Info", err)
+	got, err := Check(ctx, u, arrapi.APIKey(key), WithHTTPClient(&http.Client{Transport: viaCheck}))
+	check("Check", err)
+	if got != want {
+		t.Errorf("Check = %+v, want Info's %+v", got, want)
+	}
+	if sent := viaCheck.requests(); !slices.Equal(sent, viaInfo.requests()) || slices.ContainsFunc(sent, func(r string) bool { return !strings.HasPrefix(r, "GET ") }) {
+		t.Errorf("Check sent %q, want Info's GETs %q", sent, viaInfo.requests())
+	}
+}
+
+// requestLog records each request's method and path before sending it on.
+type requestLog struct {
+	base http.RoundTripper
+	mu   sync.Mutex
+	sent []string
+}
+
+func (r *requestLog) RoundTrip(req *http.Request) (*http.Response, error) {
+	r.mu.Lock()
+	r.sent = append(r.sent, req.Method+" "+req.URL.Path)
+	r.mu.Unlock()
+	return r.base.RoundTrip(req)
+}
+
+func (r *requestLog) requests() []string {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	return slices.Clone(r.sent)
+}
+
+func newRequestLog(t *testing.T) *requestLog {
+	tr := http.DefaultTransport.(*http.Transport).Clone()
+	t.Cleanup(tr.CloseIdleConnections)
+	return &requestLog{base: tr}
 }

@@ -48,6 +48,7 @@
       "id": 1,
       "name": "English"
     },
+    "monitored": true,
     "originalLanguage": {
       "arrapiUnknownField": 1,
       "id": 8,
@@ -70,18 +71,22 @@
     "seasons": [
       {
         "arrapiUnknownField": 1,
+        "monitored": false,
         "seasonNumber": 0
       },
       {
         "arrapiUnknownField": 1,
+        "monitored": false,
         "seasonNumber": 1
       },
       {
         "arrapiUnknownField": 1,
+        "monitored": false,
         "seasonNumber": 2,
         "title": "R2"
       }
     ],
+    "seriesType": "anime",
     "statistics": {
       "arrapiUnknownField": 1,
       "episodeFileCount": 51

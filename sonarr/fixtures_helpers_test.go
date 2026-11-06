@@ -62,6 +62,8 @@ func sonarrRoutes(t *testing.T, sh sonarrShape, seriesFile string) map[string]fi
 		"GET " + sinceQuery(p, fixtureSince):                   {File: "history-since.json"},
 		"GET " + p + "/tag":                                    {File: "tags.json"},
 		"GET " + p + "/rootfolder":                             {File: "rootfolders.json"},
+		"GET " + p + "/command":                                {File: "commands.json"},
+		"GET " + p + "/queue/details":                          {File: "queue.json"},
 	}
 	switch sh.api {
 	case arrapi.APIv3:
@@ -172,14 +174,42 @@ func recordedTags() []arrapi.Tag {
 func recordedHistory(last HistoryRecord) []HistoryRecord {
 	at := func(h int) time.Time { return fixtureSince.Add(time.Duration(h) * time.Hour) }
 	return []HistoryRecord{
-		{Date: at(0), EventType: EventGrabbed, ID: 1, SeriesID: 2},
-		{Date: at(1), EventType: EventDownloadImported, ID: 2, SeriesID: 2},
-		{Date: at(2), EventType: EventGrabbed, ID: 3, SeriesID: 2},
-		{Date: at(3), EventType: EventFileDeleted, ID: 4, SeriesID: 2},
-		{Date: at(3), EventType: EventDownloadImported, ID: 5, SeriesID: 2},
-		{Date: at(4), EventType: EventGrabbed, ID: 6, SeriesID: 3},
-		{Date: at(4), EventType: EventGrabbed, ID: 7, SeriesID: 3},
+		{
+			Date: at(0), EventType: EventGrabbed, ID: 1, SeriesID: 3, EpisodeID: 104, DownloadID: "download-1", SourceTitle: "release-7",
+			GUID: "guid-1", Indexer: "indexer-1", InfoURL: "infourl-1", Source: arrapi.SourceRSS,
+		},
+		{Date: at(1), EventType: EventDownloadImported, ID: 2, SeriesID: 3, EpisodeID: 104, DownloadID: "download-1", SourceTitle: "release-6"},
+		{
+			Date: at(2), EventType: EventGrabbed, ID: 3, SeriesID: 3, EpisodeID: 104, DownloadID: "download-2", SourceTitle: "release-5",
+			GUID: "guid-2", Indexer: "indexer-3", InfoURL: "infourl-2", Source: arrapi.SourceRSS,
+		},
+		{Date: at(3), EventType: EventFileDeleted, ID: 4, SeriesID: 3, EpisodeID: 104, SourceTitle: "release-2"},
+		{Date: at(3), EventType: EventDownloadImported, ID: 5, SeriesID: 3, EpisodeID: 104, DownloadID: "download-2", SourceTitle: "release-5"},
+		{
+			Date: at(4), EventType: EventGrabbed, ID: 6, SeriesID: 4, EpisodeID: 103, DownloadID: "download-3", SourceTitle: "release-3",
+			GUID: "guid-3", Indexer: "indexer-2", InfoURL: "infourl-3", Source: arrapi.SourceRSS,
+		},
+		{Date: at(5), EventType: EventDownloadImported, ID: 7, SeriesID: 4, EpisodeID: 103, DownloadID: "download-3", SourceTitle: "release-4"},
 		last,
+	}
+}
+
+func withoutDate(r HistoryRecord) HistoryRecord {
+	r.Date = time.Time{}
+	return r
+}
+
+// wantGrabFields holds over whatever a recording's window held, so a renamed data key
+// fails on the next re-record even where the wants are rewritten from it.
+func wantGrabFields(t *testing.T, got []HistoryRecord) {
+	t.Helper()
+	for _, r := range got {
+		switch {
+		case r.EventType == EventGrabbed && (r.GUID == "" || r.Indexer == "" || r.DownloadID == "" || r.Source == ""):
+			t.Errorf("grabbed record %d lacks a grab field: %+v", r.ID, r)
+		case r.EventType == EventDownloadFailed && r.Message == "":
+			t.Errorf("downloadFailed record %d has no Message", r.ID)
+		}
 	}
 }
 
@@ -288,10 +318,11 @@ func recordedReads(t *testing.T, c *Client, sh sonarrShape, tvdb map[int]int, la
 			t.Fatalf("history = %+v, want %+v", got, want)
 		}
 		for i, w := range want {
-			if g := got[i]; !g.Date.Equal(w.Date) || g.EventType != w.EventType || g.ID != w.ID || g.SeriesID != w.SeriesID {
+			if g := got[i]; !g.Date.Equal(w.Date) || withoutDate(g) != withoutDate(w) {
 				t.Errorf("history[%d] = %+v, want %+v", i, g, w)
 			}
 		}
+		wantGrabFields(t, got)
 		grabbed, err := c.HistorySince(t.Context(), fixtureSince, EventGrabbed)
 		if err != nil {
 			t.Fatal(err)
@@ -321,12 +352,71 @@ func recordedReads(t *testing.T, c *Client, sh sonarrShape, tvdb map[int]int, la
 			t.Errorf("RootFolders = %q, %v; want %q", got, err, want)
 		}
 	})
+	t.Run("Commands", func(t *testing.T) {
+		got, err := c.Commands(t.Context())
+		if err != nil {
+			t.Fatal(err)
+		}
+		want := recordedCommands(t, sh.dir)
+		if len(got) != len(want) {
+			t.Fatalf("Commands returned %d commands, want the %d recorded", len(got), len(want))
+		}
+		for i, w := range want {
+			if g := got[i]; g.ID != w.id || g.Name != w.name || !knownCommandStatus(g.Status) {
+				t.Errorf("command %d = %+v, want id %d, name %q and a known status", i, g, w.id, w.name)
+			}
+		}
+	})
+	t.Run("Queue", func(t *testing.T) {
+		got, err := c.Queue(t.Context())
+		if err != nil {
+			t.Fatal(err)
+		}
+		checkReplayedQueue(t, got, recordedDownloadIDs(t, fixtureDir(sh.dir)))
+	})
 	t.Run("MediaCoverURL", func(t *testing.T) {
 		got, err := c.MediaCoverURL(t.Context(), 1, "poster.jpg")
 		if want := c.t.BaseURL() + sh.prefix + "/mediacover/1/poster.jpg"; err != nil || got != want {
 			t.Errorf("MediaCoverURL = %q, %v; want %q", got, err, want)
 		}
 	})
+}
+
+// recordedCommand is one item of a recorded commands.json, read without the engine.
+type recordedCommand struct {
+	name string
+	id   int
+}
+
+func recordedCommands(t *testing.T, dir string) []recordedCommand {
+	t.Helper()
+	b, err := os.ReadFile(filepath.Join(fixtureDir(dir), "commands.json"))
+	if err != nil {
+		t.Fatalf("%v; %s", err, reRecord)
+	}
+	v, err := fixturegen.Decode(b)
+	items, ok := v.([]any)
+	if err != nil || !ok || len(items) == 0 {
+		t.Fatalf("%s/commands.json is not a non-empty JSON list; %s", dir, reRecord)
+	}
+	out := make([]recordedCommand, 0, len(items))
+	for _, it := range items {
+		obj, _ := it.(map[string]any)
+		id, okID := fixturegen.Int(obj["id"])
+		name, okName := obj["name"].(string)
+		if !okID || !okName {
+			t.Fatalf("%s/commands.json holds an item without an integer id and a name; %s", dir, reRecord)
+		}
+		out = append(out, recordedCommand{name: name, id: int(id)})
+	}
+	return out
+}
+
+func knownCommandStatus(s arrapi.CommandStatus) bool {
+	return slices.Contains([]arrapi.CommandStatus{
+		arrapi.CommandQueued, arrapi.CommandStarted, arrapi.CommandCompleted, arrapi.CommandFailed,
+		arrapi.CommandAborted, arrapi.CommandCancelled, arrapi.CommandOrphaned,
+	}, s)
 }
 
 // hideAPI answers GET /api with a header-less 404, as a proxy that does not forward it.
@@ -338,4 +428,52 @@ func hideAPI(next http.Handler) http.Handler {
 		}
 		next.ServeHTTP(w, r)
 	})
+}
+
+// recordedDownloadIDs is the sorted set of non-empty downloadIds in dir's recorded
+// queue.json, read without the engine.
+func recordedDownloadIDs(t *testing.T, dir string) []string {
+	t.Helper()
+	b, err := os.ReadFile(filepath.Join(dir, "queue.json"))
+	if err != nil {
+		t.Fatalf("%v; %s", err, reRecord)
+	}
+	v, err := fixturegen.Decode(b)
+	items, ok := v.([]any)
+	if err != nil || !ok {
+		t.Fatalf("%s/queue.json is not a JSON list; %s", dir, reRecord)
+	}
+	var out []string
+	for _, it := range items {
+		obj, _ := it.(map[string]any)
+		if id, _ := obj["downloadId"].(string); id != "" {
+			out = append(out, id)
+		}
+	}
+	slices.Sort(out)
+	return slices.Compact(out)
+}
+
+// checkReplayedQueue checks a queue read over a recording: every recorded download is
+// listed, and each item's state is "" or a known one and its sizes are not negative.
+func checkReplayedQueue(t *testing.T, got []QueueItem, wantIDs []string) {
+	t.Helper()
+	var ids []string
+	for i, q := range got {
+		if q.State != "" && !slices.Contains(knownDownloadStates, q.State) || q.Size < 0 || q.SizeLeft < 0 {
+			t.Errorf("queue item %d = %+v, want a known state and sizes of 0 or more", i, q)
+		}
+		if q.DownloadID != "" {
+			ids = append(ids, q.DownloadID)
+		}
+	}
+	slices.Sort(ids)
+	if ids = slices.Compact(ids); !slices.Equal(ids, wantIDs) {
+		t.Errorf("queue download ids = %q, want the recorded %q", ids, wantIDs)
+	}
+}
+
+var knownDownloadStates = []arrapi.DownloadState{
+	arrapi.DownloadDownloading, arrapi.DownloadImportBlocked, arrapi.DownloadImportPending, arrapi.DownloadImporting,
+	arrapi.DownloadImported, arrapi.DownloadFailedPending, arrapi.DownloadFailed, arrapi.DownloadIgnored,
 }

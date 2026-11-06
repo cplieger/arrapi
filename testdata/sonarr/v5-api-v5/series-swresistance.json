@@ -3,13 +3,14 @@
     "alternateTitles": [],
     "aniListIds": [],
     "arrapiUnknownField": 1,
-    "id": 9,
+    "id": 10,
     "imdbId": "tt8336340",
     "language": {
       "arrapiUnknownField": 1,
       "id": 1,
       "name": "English"
     },
+    "monitored": true,
     "originalLanguage": {
       "arrapiUnknownField": 1,
       "id": 1,
@@ -37,13 +38,16 @@
     "seasons": [
       {
         "arrapiUnknownField": 1,
+        "monitored": true,
         "seasonNumber": 1
       },
       {
         "arrapiUnknownField": 1,
+        "monitored": true,
         "seasonNumber": 2
       }
     ],
+    "seriesType": "standard",
     "statistics": {
       "arrapiUnknownField": 1,
       "episodeFileCount": 1

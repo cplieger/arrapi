@@ -5,8 +5,9 @@
 // this repository's schema-mirror copy with a logged WARNING (shown under -v or when a
 // test fails); CheckDTO pins tag presence and wire kind, recursing through each $ref;
 // CheckRequest pins path, method, query keys and enum values; CheckMirrored pins the
-// workflow line refreshing each mirror copy. Only the service packages' drift tests
-// import it.
+// workflow line refreshing each mirror copy. A dictionary schema declares no keys, so
+// against one CheckDTO pins only the value kind; a renamed key is caught by the fixture
+// assertions. Only the service packages' drift tests import it.
 package specdrift
 
 import (
@@ -92,8 +93,9 @@ func CheckMirrored(workflow string, contracts ...*Contract) []string {
 }
 
 // Kinds names the JSON kind each type that decodes through its own UnmarshalJSON reads,
-// since its Go kind says nothing about the wire. time.Time and json.RawMessage need no
-// entry.
+// since its Go kind says nothing about the wire, or a struct whose members the document
+// does not declare, such as a command body; a named struct is not descended into.
+// time.Time and json.RawMessage need no entry.
 type Kinds map[reflect.Type]string
 
 // Doc is the slice of an OpenAPI 3.0 document the checks read.
@@ -131,10 +133,12 @@ type schema struct {
 	Properties map[string]*schema `json:"properties"`
 	Ref        string             `json:"$ref"`
 	Type       string             `json:"type"`
-	Enum       []any              `json:"enum"`
-	AllOf      []*schema          `json:"allOf"`
-	OneOf      []*schema          `json:"oneOf"`
-	AnyOf      []*schema          `json:"anyOf"`
+	// AdditionalProperties is raw because the documents write it as a schema or a bool.
+	AdditionalProperties json.RawMessage `json:"additionalProperties"`
+	Enum                 []any           `json:"enum"`
+	AllOf                []*schema       `json:"allOf"`
+	OneOf                []*schema       `json:"oneOf"`
+	AnyOf                []*schema       `json:"anyOf"`
 }
 
 var cache = struct {
@@ -485,10 +489,37 @@ func (c *checker) descend(where, inline string, prop *schema, ft reflect.Type) {
 		name = inline
 	}
 	if len(target.Properties) == 0 {
+		if values, ok := dictionaryValues(target); ok {
+			c.checkValues(where, name, values, elem)
+			return
+		}
 		c.fail("%s: %s declares no properties to check %s against", where, name, elem.Name())
 		return
 	}
 	c.check(where, name, target, elem)
+}
+
+// dictionaryValues returns the value schema of an object schema whose
+// additionalProperties is a schema, not a bool.
+func dictionaryValues(s *schema) (*schema, bool) {
+	var values schema
+	if len(s.AdditionalProperties) == 0 || s.AdditionalProperties[0] != '{' ||
+		json.Unmarshal(s.AdditionalProperties, &values) != nil {
+		return nil, false
+	}
+	return &values, true
+}
+
+// checkValues reports every JSON tag of typ, a struct decoding some keys of a
+// dictionary, whose kind is not the dictionary's value kind.
+func (c *checker) checkValues(at, name string, values *schema, typ reflect.Type) {
+	spec := c.d.kind(values, map[string]bool{})
+	fields := jsonFields(typ)
+	for _, tag := range slices.Sorted(maps.Keys(fields)) {
+		if local := c.wireKind(fields[tag]); !compatible(local, spec) {
+			c.fail("%s.%s decodes JSON %s but %s's values are %s", at, tag, local, name, spec)
+		}
+	}
 }
 
 // object resolves prop through array items and $ref to the object schema a nested DTO

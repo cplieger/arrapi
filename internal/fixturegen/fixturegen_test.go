@@ -35,6 +35,7 @@ type series struct {
 	Language   *language `json:"language"`
 	Title      string    `json:"title"`
 	Overview   string    `json:"overview"`
+	SeriesType string    `json:"seriesType"`
 	Seasons    []season  `json:"seasons"`
 	Tags       []int     `json:"tags"`
 	Statistics stats     `json:"statistics"`
@@ -355,6 +356,51 @@ func TestWritePseudonymizesStringsOffTheAllowlist(t *testing.T) {
 	}
 }
 
+// A closed server enum names no deployment, so it is kept as recorded.
+func TestWriteKeepsClosedServerEnums(t *testing.T) {
+	r := fixturegen.NewRecording(rules)
+	r.AddJSON("a/series.json", decode(t, `{"title": "Kept", "seriesType": "anime"}`), reflect.TypeFor[series]())
+	if got := written(t, r)["a/series.json"]; !strings.Contains(got, `"seriesType": "anime"`) {
+		t.Fatalf("series = %s", got)
+	}
+}
+
+func TestWriteKeepsTheReleaseSource(t *testing.T) {
+	type grab struct {
+		ReleaseSource string `json:"releaseSource"`
+	}
+	r := fixturegen.NewRecording(rules)
+	r.AddJSON("a/grab.json", decode(t, `{"releaseSource": "InteractiveSearch"}`), reflect.TypeFor[grab]())
+	if got := written(t, r)["a/grab.json"]; !strings.Contains(got, `"releaseSource": "InteractiveSearch"`) {
+		t.Fatalf("grab = %s", got)
+	}
+}
+
+func TestWriteKeepsTheCommandStatus(t *testing.T) {
+	type command struct {
+		Status  string `json:"status"`
+		Started string `json:"started"`
+	}
+	r := fixturegen.NewRecording(rules)
+	r.AddJSON("a/commands.json", decode(t, `[{"status": "started"}, {"status": "completed"}]`), reflect.TypeFor[[]command]())
+	got := written(t, r)["a/commands.json"]
+	if !strings.Contains(got, `"status": "started"`) || !strings.Contains(got, `"status": "completed"`) {
+		t.Fatalf("commands = %s", got)
+	}
+}
+
+func TestWriteKeepsTheDownloadState(t *testing.T) {
+	type item struct {
+		State string `json:"trackedDownloadState"`
+	}
+	r := fixturegen.NewRecording(rules)
+	r.AddJSON("a/queue.json", decode(t, `[{"trackedDownloadState": "importBlocked"}, {"trackedDownloadState": "downloading"}]`), reflect.TypeFor[[]item]())
+	got := written(t, r)["a/queue.json"]
+	if !strings.Contains(got, `"trackedDownloadState": "importBlocked"`) || !strings.Contains(got, `"trackedDownloadState": "downloading"`) {
+		t.Fatalf("queue = %s", got)
+	}
+}
+
 // An error answer's message and title are server-provided free text, so whatever they
 // hold is replaced, whatever rules the recorder passes.
 func TestWriteReplacesErrorText(t *testing.T) {
@@ -471,6 +517,8 @@ func TestCheck(t *testing.T) {
 	clean := map[string][]byte{
 		"v4/system-status.json": []byte(`{"appName":"Sonarr","version":"4.0.20.3014","arrapiUnknownField":1}`),
 		"v4/history-since.json": []byte(`[{"date":"2001-01-01T02:00:00Z","id":1,"eventType":"grabbed"}]`),
+		"v5/history-since.json": []byte(`[{"date":"2001-01-01T02:00:00Z","data":{"guid":"guid-1","indexer":"indexer-1","nzbInfoUrl":"infourl-1",
+			"releaseSource":"Rss","message":"message-1","arrapiUnknownField":"text-1"}},{"date":"2001-01-01T03:00:00Z","data":null}]`),
 		"v4/files.json":         []byte(`[{"size":0,"path":"/tv/folder-1/Season 01/x.mkv"},{"size":1003000000,"path":"/movies/folder-1/x.mkv"}]`),
 		"v4/series.json":        []byte(`[{"title":"Fate/Zero","relativePath":"Season 01/x.mkv","audioLanguages":"English / Japanese","t":"a /"}]`),
 		"v4/series-404.headers": []byte("X-Application-Version: 4.0.20.3014\n"),
@@ -483,7 +531,10 @@ func TestCheck(t *testing.T) {
 		"planted URL":         {"v4/series.json": []byte(`[{"title":"http://host.invalid"}]`)},
 		"real-looking date":   {"v4/history-since.json": []byte(`[{"date":"2026-10-16T12:00:00Z"}]`)},
 		"extra status field":  {"v4/system-status.json": []byte(`{"appName":"Sonarr","version":"4.0","instanceName":"x"}`)},
-		"history data":        {"v4/history-since.json": []byte(`[{"date":"2001-01-01T00:00:00Z","data":{}}]`)},
+		"history data":        {"v4/history-since.json": []byte(`[{"date":"2001-01-01T00:00:00Z","data":{"downloadUrl":"x"}}]`)},
+		"history data hash":   {"v4/history-since.json": []byte(`[{"date":"2001-01-01T00:00:00Z","data":{"torrentInfoHash":"x"}}]`)},
+		"history data array":  {"v4/history-since.json": []byte(`[{"date":"2001-01-01T00:00:00Z","data":["x"]}]`)},
+		"history data string": {"v4/history-since.json": []byte(`[{"date":"2001-01-01T00:00:00Z","data":"x"}]`)},
 		"non-synthetic size":  {"v4/files.json": []byte(`[{"size":1234567}]`)},
 		"absolute path":       {"v4/files.json": []byte(`[{"path":"/data/x.mkv"}]`)},
 		"40-hex":              {"v4/files.json": []byte(`[{"sceneName":"x-0123456789abcdef0123456789abcdef01234567"}]`)},
@@ -498,6 +549,11 @@ func TestCheck(t *testing.T) {
 				t.Fatalf("Check accepted %s", name)
 			}
 		})
+	}
+	err := fixturegen.Check(bad["history data"])
+	if refused, ok := errors.AsType[*fixturegen.RefusedError](err); !ok || !slices.Equal(refused.Findings,
+		[]string{"v4/history-since.json: a history data member beyond the grab fields"}) {
+		t.Errorf("Check(history data) = %v, want the one finding naming the grab fields", err)
 	}
 }
 

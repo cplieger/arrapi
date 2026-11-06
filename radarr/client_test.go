@@ -360,6 +360,28 @@ func TestHeaderless404IsStatusAndNextCallDetects(t *testing.T) {
 	}
 }
 
+func TestReadStatusAttributedByItsHeader(t *testing.T) {
+	for name, tc := range map[string]struct {
+		header     string
+		attributed bool
+	}{
+		"with the detected version": {vRadarr, true},
+		"without the header":        {"", false},
+	} {
+		t.Run(name, func(t *testing.T) {
+			f := newFake().radarr(vRadarr)
+			c := newClient(t, f)
+			cached(t, c, f)
+			f.on(movies, ans(404, tc.header, `{"message":"Not Found"}`))
+			_, err := c.Movies(t.Context())
+			if e := wantStatus(t, err, 404); e.Attributed != tc.attributed {
+				t.Errorf("Attributed = %v, want %v", e.Attributed, tc.attributed)
+			}
+			wantRequests(t, f, movies)
+		})
+	}
+}
+
 func TestHeaderless200IsRefused(t *testing.T) {
 	f := newFake().radarr(vRadarr)
 	c := newClient(t, f)
@@ -817,5 +839,30 @@ func TestNestedNullItemIsRejected(t *testing.T) {
 				t.Errorf("err = %v, want %q", err, want)
 			}
 		})
+	}
+}
+
+// monitored is non-nullable on the wire (MovieResource.cs), so an absent member reads false.
+func TestMovieMonitored(t *testing.T) {
+	f := newFake().radarr(vRadarr)
+	c := newClient(t, f)
+	cached(t, c, f)
+	f.on(movies, ans(200, vRadarr, `[{"id":1,"monitored":true},{"id":2,"monitored":false},{"id":3}]`))
+	got, err := c.Movies(t.Context())
+	if err != nil {
+		t.Fatalf("Movies: %v", err)
+	}
+	if len(got) != 3 {
+		t.Fatalf("Movies returned %d movies, want 3", len(got))
+	}
+	for i, want := range []bool{true, false, false} {
+		if got[i].Monitored != want {
+			t.Errorf("movie %d Monitored = %v, want %v", got[i].ID, got[i].Monitored, want)
+		}
+	}
+
+	f.on("GET /api/v3/movie/9", ans(200, vRadarr, `{"id":9,"monitored":true}`))
+	if m, found, err := c.MovieByID(t.Context(), 9); err != nil || !found || !m.Monitored {
+		t.Errorf("MovieByID = (Monitored %v, %v, %v), want true", m.Monitored, found, err)
 	}
 }

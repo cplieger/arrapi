@@ -53,6 +53,14 @@ func TestDecideTable(t *testing.T) {
 		{"row 3 read 599 retried", sonarr4, transport.CallRead, answer(599, v4), transport.VerdictStatus, transport.NextRetry},
 		{"row 3 read 499 not retried", sonarr4, transport.CallRead, answer(499, v4), transport.VerdictStatus, transport.NextDone},
 		{"row 3 read 600 not retried", sonarr4, transport.CallRead, answer(600, v4), transport.VerdictStatus, transport.NextDone},
+		{"row 3 read 408 retried", sonarr4, transport.CallRead, answer(408, v4), transport.VerdictStatus, transport.NextRetry},
+		{"row 3 by-id 408 retried", sonarr4, transport.CallReadByID, answer(408, v4), transport.VerdictStatus, transport.NextRetry},
+		{"row 3 read 501 not retried", sonarr4, transport.CallRead, answer(501, v4), transport.VerdictStatus, transport.NextDone},
+		{"row 3 read 505 not retried", sonarr4, transport.CallRead, answer(505, v4), transport.VerdictStatus, transport.NextDone},
+		{"row 3 by-id 501 not retried", sonarr4, transport.CallReadByID, answer(501, v4), transport.VerdictStatus, transport.NextDone},
+		{"row 3 by-id 505 not retried", sonarr4, transport.CallReadByID, answer(505, v4), transport.VerdictStatus, transport.NextDone},
+		{"row 3 unanchored probe 408 retried", unanchored, transport.CallProbe, answer(408, v4), transport.VerdictStatus, transport.NextRetry},
+		{"row 3 mutation 408 not retried", sonarr4, transport.CallMutation, answer(408, v4), transport.VerdictStatus, transport.NextDone},
 		{"row 3 read 404 is a status", sonarr4, transport.CallRead, answer(404, v4), transport.VerdictStatus, transport.NextDone},
 		{"row 3 by-id 404 is absent", sonarr4, transport.CallReadByID, answer(404, v4), transport.VerdictAbsent, transport.NextDone},
 		{"row 3 anchored probe 503 retried", sonarr4, transport.CallProbe, answer(503, v4), transport.VerdictStatus, transport.NextRetry},
@@ -61,6 +69,14 @@ func TestDecideTable(t *testing.T) {
 		{"row 3 mutation 302 is a failure", sonarr4, transport.CallMutation, answer(302, v4), transport.VerdictStatus, transport.NextDone},
 		{"row 4 read header-less 502 goes fresh", sonarr4, transport.CallRead, answer(502, ""), transport.VerdictUnidentified, transport.NextFresh},
 		{"row 4 read header-less 429 goes fresh", sonarr4, transport.CallRead, answer(429, ""), transport.VerdictUnidentified, transport.NextFresh},
+		{"row 4 read header-less 408 goes fresh", sonarr4, transport.CallRead, answer(408, ""), transport.VerdictUnidentified, transport.NextFresh},
+		{"row 4 by-id header-less 408 goes fresh", sonarr4, transport.CallReadByID, answer(408, ""), transport.VerdictUnidentified, transport.NextFresh},
+		{"row 4 read header-less 501 is done", sonarr4, transport.CallRead, answer(501, ""), transport.VerdictUnidentified, transport.NextDone},
+		{"row 4 read header-less 505 is done", sonarr4, transport.CallRead, answer(505, ""), transport.VerdictUnidentified, transport.NextDone},
+		{"row 4 by-id header-less 501 is done", sonarr4, transport.CallReadByID, answer(501, ""), transport.VerdictUnidentified, transport.NextDone},
+		{"row 4 by-id header-less 505 is done", sonarr4, transport.CallReadByID, answer(505, ""), transport.VerdictUnidentified, transport.NextDone},
+		{"row 4 unanchored probe header-less 408 retried", unanchored, transport.CallProbe, answer(408, ""), transport.VerdictStatus, transport.NextRetry},
+		{"row 4 unanchored probe header-less 501 done", unanchored, transport.CallProbe, answer(501, ""), transport.VerdictStatus, transport.NextDone},
 		{"row 4 read header-less 404 is done", sonarr4, transport.CallRead, answer(404, ""), transport.VerdictUnidentified, transport.NextDone},
 		{"row 4 by-id header-less 404 is never absent", sonarr4, transport.CallReadByID, answer(404, ""), transport.VerdictUnidentified, transport.NextDone},
 		{"row 4 unanchored probe header-less 502 retried", unanchored, transport.CallProbe, answer(502, ""), transport.VerdictStatus, transport.NextRetry},
@@ -84,6 +100,16 @@ func TestDecideTable(t *testing.T) {
 		{"row 11 mutation 201 from another version", sonarr4, transport.CallMutation, answer(201, v5), transport.VerdictUnconfirmed, transport.NextDone},
 		{"row 12 anchored probe 200 from another version", sonarr4, transport.CallProbe, answer(200, v5), transport.VerdictChanged, transport.NextDone},
 		{"row 12 anchored probe 500 from another version", sonarr4, transport.CallProbe, answer(500, v5), transport.VerdictChanged, transport.NextDone},
+		{"search 200 equal", sonarr4, transport.CallSearch, answer(200, v4), transport.VerdictAccept, transport.NextDone},
+		{"search 204 is a failure", sonarr4, transport.CallSearch, answer(204, v4), transport.VerdictStatus, transport.NextDone},
+		{"search 500 not retried", sonarr4, transport.CallSearch, answer(500, v4), transport.VerdictStatus, transport.NextDone},
+		{"search 429 not retried", sonarr4, transport.CallSearch, answer(429, v4), transport.VerdictStatus, transport.NextDone},
+		{"search 404 is a status", sonarr4, transport.CallSearch, answer(404, v4), transport.VerdictStatus, transport.NextDone},
+		{"search header-less 503 is done", sonarr4, transport.CallSearch, answer(503, ""), transport.VerdictUnidentified, transport.NextDone},
+		{"search header-less 200", sonarr4, transport.CallSearch, answer(200, ""), transport.VerdictNoHeader, transport.NextDone},
+		{"search 200 from another version", sonarr4, transport.CallSearch, answer(200, v5), transport.VerdictChanged, transport.NextDone},
+		{"search 503 from another version", sonarr4, transport.CallSearch, answer(503, v5), transport.VerdictChanged, transport.NextDone},
+		{"search not sent", sonarr4, transport.CallSearch, transport.End{Kind: transport.EndNotSent}, transport.VerdictRefused, transport.NextDone},
 	}
 	transportEnd := func(transient, hop bool) transport.End {
 		return transport.End{Kind: transport.EndTransport, Transient: transient, HopFailed: hop}
@@ -98,9 +124,10 @@ func TestDecideTable(t *testing.T) {
 		{"anchored probe", transport.CallProbe, sonarr4},
 		{"unanchored probe", transport.CallProbe, unanchored},
 		{"mutation", transport.CallMutation, sonarr4},
+		{"search", transport.CallSearch, sonarr4},
 	} {
 		retry := transport.NextRetry
-		if call.call == transport.CallMutation {
+		if call.call == transport.CallMutation || call.call == transport.CallSearch {
 			retry = transport.NextDone
 		}
 		rows = append(rows,
@@ -113,6 +140,7 @@ func TestDecideTable(t *testing.T) {
 		row{"row 14 by-id transient goes fresh", sonarr4, transport.CallReadByID, transportEnd(true, true), transport.VerdictTransport, transport.NextFresh},
 		row{"row 14 read not transient done", sonarr4, transport.CallRead, transportEnd(false, true), transport.VerdictTransport, transport.NextDone},
 		row{"row 14 anchored probe done", sonarr4, transport.CallProbe, transportEnd(true, true), transport.VerdictTransport, transport.NextDone},
+		row{"row 14 search done", sonarr4, transport.CallSearch, transportEnd(true, true), transport.VerdictTransport, transport.NextDone},
 	)
 	for _, tc := range rows {
 		t.Run(tc.name, func(t *testing.T) {

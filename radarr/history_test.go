@@ -4,8 +4,11 @@ import (
 	"encoding/json"
 	"errors"
 	"reflect"
+	"strings"
 	"testing"
 	"time"
+
+	"github.com/cplieger/arrapi/v3"
 )
 
 func TestEventTypeValues(t *testing.T) {
@@ -117,5 +120,53 @@ func TestHistoryRecordMapping(t *testing.T) {
 	}
 	if got.EventType != EventFileRenamed || got.ID != 9001 || got.MovieID != 41 {
 		t.Errorf("record() = %+v, want EventFileRenamed, ID 9001, MovieID 41", got)
+	}
+}
+
+func TestHistoryGrabFieldsOverTheWire(t *testing.T) {
+	f := newFake().radarr(vRadarr)
+	c := newClient(t, f)
+	cached(t, c, f)
+	f.on("GET /api/v3/history/since", ans(200, vRadarr, `[
+		{"id":1,"movieId":4,"eventType":"grabbed","downloadId":"DL-1","sourceTitle":"Example.Movie.2005.1080p",
+		 "data":{"guid":"guid-at-indexer","indexer":"Indexer A","nzbInfoUrl":"info-page","releaseSource":"InteractiveSearch",
+		         "downloadUrl":"ignored","torrentInfoHash":"ignored","arrapiUnknownField":"x"}},
+		{"id":2,"movieId":4,"eventType":"downloadFailed","downloadId":"DL-1","sourceTitle":"Example.Movie.2005.1080p",
+		 "data":{"message":"the client removed it","indexer":"Indexer A"}},
+		{"id":3,"movieId":4,"eventType":"grabbed","data":null},
+		{"id":4,"movieId":4,"eventType":"grabbed"},
+		{"id":5,"movieId":4,"eventType":"grabbed","data":{"releaseSource":"Unknown","message":null,"guid":null}},
+		{"id":6,"movieId":4,"eventType":"grabbed","data":{"releaseSource":"Search"}}]`))
+	got, err := c.HistorySince(t.Context(), time.Unix(0, 0))
+	if err != nil {
+		t.Fatalf("HistorySince: %v", err)
+	}
+	if len(got) != 6 {
+		t.Fatalf("HistorySince returned %d records, want 6", len(got))
+	}
+	want := []HistoryRecord{
+		{
+			ID: 1, MovieID: 4, EventType: EventGrabbed, DownloadID: "DL-1", SourceTitle: "Example.Movie.2005.1080p",
+			GUID: "guid-at-indexer", Indexer: "Indexer A", InfoURL: "info-page", Source: arrapi.SourceInteractiveSearch,
+		},
+		{
+			ID: 2, MovieID: 4, EventType: EventDownloadFailed, DownloadID: "DL-1", SourceTitle: "Example.Movie.2005.1080p",
+			Indexer: "Indexer A", Message: "the client removed it",
+		},
+		{ID: 3, MovieID: 4, EventType: EventGrabbed},
+		{ID: 4, MovieID: 4, EventType: EventGrabbed},
+		{ID: 5, MovieID: 4, EventType: EventGrabbed},
+		{ID: 6, MovieID: 4, EventType: EventGrabbed, Source: arrapi.SourceSearch},
+	}
+	for i := range want {
+		if got[i] != want[i] {
+			t.Errorf("record %d =\n  %+v\nwant\n  %+v", want[i].ID, got[i], want[i])
+		}
+	}
+
+	f.on("GET /api/v3/history/since", ans(200, vRadarr, `[{"id":1,"eventType":"grabbed","data":{"guid":7}}]`))
+	_, err = c.HistorySince(t.Context(), time.Unix(0, 0))
+	if _, ok := errors.AsType[*arrapi.DecodeError](err); !ok || !strings.Contains(err.Error(), "field data.guid") {
+		t.Errorf("HistorySince over a numeric data.guid = %v, want a *DecodeError naming field data.guid", err)
 	}
 }

@@ -38,6 +38,8 @@ const testDoc = `{
       "token": {"$ref": "#/components/schemas/Tok"},
       "raw": {"type": "string"},
       "loose": {"type": "object"},
+      "dict": {"type": "object", "additionalProperties": {"type": "string", "nullable": true}, "nullable": true},
+      "closed": {"type": "object", "additionalProperties": false},
       "mixed": {"allOf": [{"$ref": "#/components/schemas/Child"}]}
     }},
     "Child": {"type": "object", "properties": {"n": {"type": "integer"}}},
@@ -141,6 +143,34 @@ func TestCheckDTO(t *testing.T) {
 		wantProblems(t, d.CheckDTO("Thing", reflect.TypeFor[dto](), nil),
 			`dto.loose: Thing.loose declares no properties`)
 	})
+	t.Run("a struct against a string dictionary", func(t *testing.T) {
+		type values struct {
+			A string `json:"a"`
+			B string `json:"b"`
+		}
+		type dto struct {
+			Dict values `json:"dict"`
+		}
+		wantProblems(t, d.CheckDTO("Thing", reflect.TypeFor[dto](), nil))
+	})
+	t.Run("a struct field of another kind than a dictionary's values", func(t *testing.T) {
+		type values struct {
+			A    string `json:"a"`
+			Flag bool   `json:"flag"`
+		}
+		type dto struct {
+			Dict *values `json:"dict"`
+		}
+		wantProblems(t, d.CheckDTO("Thing", reflect.TypeFor[dto](), nil),
+			`Example v9 (API v9): dto.dict.flag decodes JSON boolean but Thing.dict's values are string`)
+	})
+	t.Run("a struct against additionalProperties false", func(t *testing.T) {
+		type dto struct {
+			Closed child `json:"closed"`
+		}
+		wantProblems(t, d.CheckDTO("Thing", reflect.TypeFor[dto](), nil),
+			`dto.closed: Thing.closed declares no properties`)
+	})
 	t.Run("a composed schema", func(t *testing.T) {
 		type dto struct {
 			Mixed child `json:"mixed"`
@@ -164,6 +194,21 @@ func TestCheckDTO(t *testing.T) {
 		kinds[reflect.TypeFor[tok]()] = "number"
 		wantProblems(t, d.CheckDTO("Thing", reflect.TypeFor[dto](), kinds),
 			`dto.token decodes JSON number but Thing.token is string`)
+	})
+	t.Run("a struct named in Kinds as an object", func(t *testing.T) {
+		type undeclared struct {
+			X int `json:"x"`
+		}
+		type onRef struct {
+			Child undeclared `json:"child"`
+		}
+		type onString struct {
+			Raw undeclared `json:"raw"`
+		}
+		kinds := Kinds{reflect.TypeFor[undeclared](): "object"}
+		wantProblems(t, d.CheckDTO("Thing", reflect.TypeFor[onRef](), kinds))
+		wantProblems(t, d.CheckDTO("Thing", reflect.TypeFor[onString](), kinds),
+			`onString.raw decodes JSON object but Thing.raw is string`)
 	})
 	t.Run("a schema the document does not declare", func(t *testing.T) {
 		wantProblems(t, d.CheckDTO("Gone", reflect.TypeFor[thing](), nil),

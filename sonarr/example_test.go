@@ -92,3 +92,26 @@ func ExampleClient_HistorySince() {
 	}
 	fmt.Println(len(recs), "imports in the last day")
 }
+
+func ExampleCheck() {
+	info, err := sonarr.Check(context.Background(), "http://sonarr:8989", "your-api-key")
+	if ce, ok := errors.AsType[*arrapi.CheckError](err); ok {
+		switch ce.Reason {
+		case arrapi.CheckKey:
+			fmt.Println("api_key:", ce)
+		case arrapi.CheckURL, arrapi.CheckBasePath, arrapi.CheckWrongApp, arrapi.CheckNotArrAPI:
+			fmt.Println("url:", ce)
+		default:
+			if se, ok := errors.AsType[*arrapi.StatusError](ce); ok {
+				fmt.Println("Sonarr answered HTTP", se.Code)
+			} else {
+				fmt.Println(ce)
+			}
+		}
+		return
+	}
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Printf("Connected: Sonarr %s over API %s\n", info.Version, info.API)
+}
