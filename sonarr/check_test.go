@@ -30,8 +30,8 @@ func checkVia(t *testing.T, f *fake, base string, key arrapi.APIKey) (Info, erro
 	return Check(t.Context(), base, key, opts...)
 }
 
-// wantCheck returns err as an *arrapi.CheckError with reason, failing the test otherwise.
-func wantCheck(t *testing.T, err error, reason arrapi.CheckReason) *arrapi.CheckError {
+// wantCheck fails the test unless err is an *arrapi.CheckError with reason.
+func wantCheck(t *testing.T, err error, reason arrapi.CheckReason) {
 	t.Helper()
 	ce, ok := errors.AsType[*arrapi.CheckError](err)
 	if !ok {
@@ -40,7 +40,6 @@ func wantCheck(t *testing.T, err error, reason arrapi.CheckReason) *arrapi.Check
 	if ce.Reason != reason {
 		t.Fatalf("Reason = %d (%v), want %d", ce.Reason, err, reason)
 	}
-	return ce
 }
 
 func wantNoStatus(t *testing.T, err error) {

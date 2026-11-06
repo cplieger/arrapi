@@ -10,9 +10,10 @@ import (
 	"github.com/cplieger/arrapi/v3"
 )
 
-func checkVia(t *testing.T, f *fake, base string, key arrapi.APIKey) (Info, error) {
+func checkVia(t *testing.T, f *fake, base string, key arrapi.APIKey) error {
 	t.Helper()
-	return Check(t.Context(), base, key, WithHTTPClient(&http.Client{Transport: f}), WithLogger(slog.New(slog.DiscardHandler)))
+	_, err := Check(t.Context(), base, key, WithHTTPClient(&http.Client{Transport: f}), WithLogger(slog.New(slog.DiscardHandler)))
+	return err
 }
 
 func wantCheck(t *testing.T, err error, reason arrapi.CheckReason) {
@@ -27,13 +28,13 @@ func TestCheckReasons(t *testing.T) {
 	t.Run("api answers 401", func(t *testing.T) {
 		f := newFake().radarr(vRadarr)
 		f.on("GET /api", ans(401, "", ""))
-		_, err := checkVia(t, f, fakeBase, testKey)
+		err := checkVia(t, f, fakeBase, testKey)
 		wantCheck(t, err, arrapi.CheckKey)
 		wantStatus(t, err, 401)
 	})
 	t.Run("a key outside the alphabet", func(t *testing.T) {
 		f := newFake().radarr(vRadarr)
-		_, err := checkVia(t, f, fakeBase, "a+b")
+		err := checkVia(t, f, fakeBase, "a+b")
 		wantCheck(t, err, arrapi.CheckKey)
 		if got := f.requests(); len(got) != 0 {
 			t.Errorf("requests = %q, want none", got)
@@ -43,19 +44,19 @@ func TestCheckReasons(t *testing.T) {
 		f := newFake().radarr(vRadarr)
 		f.on("GET /api", ans(404, "", ""))
 		f.on("GET /api/v3/system/status", ans(404, "", ""))
-		_, err := checkVia(t, f, fakeBase, testKey)
+		err := checkVia(t, f, fakeBase, testKey)
 		wantCheck(t, err, arrapi.CheckBasePath)
 		wantStatus(t, err, 404)
 	})
 	t.Run("a Sonarr answers", func(t *testing.T) {
-		_, err := checkVia(t, newFake().sonarr4("4.0.20.3014"), fakeBase, testKey)
+		err := checkVia(t, newFake().sonarr4("4.0.20.3014"), fakeBase, testKey)
 		wantCheck(t, err, arrapi.CheckWrongApp)
 		wantUnsupported(t, err, arrapi.ReasonWrongApp)
 	})
 	t.Run("a 502", func(t *testing.T) {
 		f := newFake().radarr(vRadarr)
 		f.on("GET /api/v3/system/status", ans(502, "", ""))
-		_, err := checkVia(t, f, fakeBase, testKey)
+		err := checkVia(t, f, fakeBase, testKey)
 		wantCheck(t, err, arrapi.CheckServer)
 		wantStatus(t, err, 502)
 	})
