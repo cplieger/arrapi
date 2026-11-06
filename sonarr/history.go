@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"reflect"
 	"time"
+
+	"github.com/cplieger/arrapi/v3"
 )
 
 // EventType is a Sonarr history event, valued as Sonarr's EpisodeHistoryEventType.
@@ -41,44 +43,64 @@ func (e EventType) String() string {
 	return fmt.Sprintf("EventType(%d)", int(e))
 }
 
-// HistoryRecord is one history event.
+// HistoryRecord is one history event. The string fields hold the server's text as it
+// recorded it; arrapi checks none, so a caller renders them through textsafe or an
+// escaping template. GUID and InfoURL are the indexer's own values, and a GUID can be a
+// link carrying the indexer's passkey, so log neither.
 type HistoryRecord struct {
-	Date      time.Time
-	EventType EventType // 0 for a token arrapi does not know
-	ID        int
-	SeriesID  int
+	Date        time.Time
+	DownloadID  string               // the download client's id for the release, shared by its queue item and its later import, failed and ignored records; "" when the record has none
+	SourceTitle string               // the release title; on episodeFileDeleted and episodeFileRenamed, the file path Sonarr recorded
+	GUID        string               // grabbed: the release's guid at its indexer; "" on other events
+	Indexer     string               // the indexer's name in Sonarr: on grabbed, and on downloadFailed and downloadIgnored from Sonarr 5; "" otherwise
+	InfoURL     string               // grabbed: the release's information page at its indexer; "" on other events and when the indexer gives none
+	Source      arrapi.ReleaseSource // grabbed: what made Sonarr grab it; "" on other events, for "Unknown", and for a value arrapi does not know
+	Message     string               // downloadFailed and downloadIgnored: Sonarr's reason; "" otherwise
+	EventType   EventType            // 0 for a token arrapi does not know
+	ID          int
+	SeriesID    int
+	EpisodeID   int // the episode the record is about; Sonarr writes one record per episode, so a season pack's grab is several records sharing one DownloadID
 }
 
 // eventToken is a wire eventType: its string token, else 0.
 type eventToken EventType
 
-// UnmarshalJSON maps an unknown token, a number and null to 0. Sonarr registers
-// JsonStringEnumConverter with allowIntegerValues (NzbDrone.Common/Serializer/
-// System.Text.Json/STJson.cs), so a value outside the enum is written as a number, and
-// one such record must not fail the whole read. No server writes another kind.
+// UnmarshalJSON maps an unknown token, a number and null to 0.
 func (e *eventToken) UnmarshalJSON(b []byte) error {
 	*e = 0
+	s, err := stringToken(b, "eventType", reflect.TypeFor[EventType]())
+	if s == "" {
+		return err
+	}
+	for v, tok := range eventTokens {
+		if v > 0 && tok == s {
+			*e = eventToken(v)
+			break
+		}
+	}
+	return nil
+}
+
+// stringToken reads a closed server enum's wire value b: a string as sent, "" for a
+// number or null. Sonarr registers JsonStringEnumConverter with allowIntegerValues
+// (NzbDrone.Common/Serializer/System.Text.Json/STJson.cs), so a value outside the enum
+// is written as a number, and one such item must not fail the whole read. No server
+// writes another kind, which is refused naming field and typ: encoding/json returns an
+// UnmarshalJSON method's error with no field path of its own.
+func stringToken(b []byte, field string, typ reflect.Type) (string, error) {
 	switch c := b[0]; {
 	case c == '"':
 		var s string
-		if err := json.Unmarshal(b, &s); err != nil {
-			return err
-		}
-		for v, tok := range eventTokens {
-			if v > 0 && tok == s {
-				*e = eventToken(v)
-				break
-			}
-		}
-		return nil
+		err := json.Unmarshal(b, &s)
+		return s, err
 	case c == 'n', c == '-', c >= '0' && c <= '9':
-		return nil
+		return "", nil
 	default:
-		return &json.UnmarshalTypeError{Value: tokenKind(c), Type: reflect.TypeFor[EventType](), Field: "eventType"}
+		return "", &json.UnmarshalTypeError{Value: tokenKind(c), Type: typ, Field: field}
 	}
 }
 
-// tokenKind names the JSON kind a value opening with c has, among those eventToken refuses.
+// tokenKind names the JSON kind a value opening with c has, among those stringToken refuses.
 func tokenKind(c byte) string {
 	switch c {
 	case '{':

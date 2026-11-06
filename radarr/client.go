@@ -89,6 +89,27 @@ func (c *Client) HistorySince(ctx context.Context, since time.Time, types ...Eve
 	}), nil
 }
 
+// Commands returns, in one request, every command Radarr holds in memory: those queued
+// or running, and those that ended within the last 5 to 10 minutes, in Radarr's order
+// (queued and running first, then by priority), not by time. A Radarr restart empties
+// the list.
+func (c *Client) Commands(ctx context.Context) ([]Command, error) {
+	return read(ctx, c, func(ctx context.Context, d *transport.Detection, e radarrAPIv3) ([]Command, transport.Result) {
+		return e.commands(ctx, d)
+	})
+}
+
+// Queue returns, in one request, Radarr's whole queue: every download Radarr tracks at
+// its download clients, matched to a movie or not, and every release it holds back (a
+// delay profile, an unavailable client), which has no DownloadID. Each download is one
+// item. Radarr refreshes it from its clients about once a minute, and 5 seconds after a
+// grab.
+func (c *Client) Queue(ctx context.Context) ([]QueueItem, error) {
+	return read(ctx, c, func(ctx context.Context, d *transport.Detection, e radarrAPIv3) ([]QueueItem, transport.Result) {
+		return e.queue(ctx, d)
+	})
+}
+
 // Tags returns every tag.
 func (c *Client) Tags(ctx context.Context) ([]arrapi.Tag, error) {
 	return read(ctx, c, func(ctx context.Context, d *transport.Detection, e radarrAPIv3) ([]arrapi.Tag, transport.Result) {

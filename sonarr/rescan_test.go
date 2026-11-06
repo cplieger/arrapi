@@ -2,11 +2,9 @@ package sonarr
 
 import (
 	"context"
-	"errors"
 	"log/slog"
 	"net/http"
-	"net/http/httptest"
-	"strconv"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -16,166 +14,29 @@ import (
 	"github.com/cplieger/arrapi/v3"
 )
 
-const (
-	v4Command = "POST /api/v3/command"
-	v5Command = "POST /api/v5/command"
-)
-
-func TestRescanBodyAndFreshDetection(t *testing.T) {
-	for name, tc := range map[string]struct {
-		serve   func(*fake) *fake
-		version string
-		detect  []string
-		command string
-		code    int
-	}{
-		"Sonarr v4 (API v3)": {func(f *fake) *fake { return f.sonarr4(v4) }, v4, detectV4, v4Command, 201},
-		"Sonarr v5 (API v5)": {func(f *fake) *fake { return f.sonarr5(v5) }, v5, detectV5, v5Command, 201},
-	} {
-		t.Run(name, func(t *testing.T) {
-			f := tc.serve(newFake())
+func TestRescanDetectionProbeFollowsTheStatusRule(t *testing.T) {
+	t.Run("a header-less 408 is probed again before the command", func(t *testing.T) {
+		synctest.Test(t, func(t *testing.T) {
+			f := newFake().sonarr4(v4)
 			c := newClient(t, f)
 			cached(t, c, f)
-			var got string
-			f.on(tc.command, body(&got, ans(tc.code, tc.version, "not a command resource")))
-			if err := c.RescanSeries(t.Context(), 41); err != nil {
+			f.on("GET /api", ans(408, "", ""), ans(200, v4, apiBody("v3")))
+			if err := c.RescanSeries(t.Context(), 1); err != nil {
 				t.Fatalf("RescanSeries: %v", err)
 			}
-			if want := `{"name":"RescanSeries","seriesId":41}`; got != want {
-				t.Errorf("command body = %s, want %s", got, want)
-			}
-			wantRequests(t, f, join(tc.detect, []string{tc.command})...)
+			wantRequests(t, f, "GET /api", "GET /api", "GET /api/v3/system/status", v4Command)
 		})
-	}
-}
-
-func TestRescanSentOnceOn503(t *testing.T) {
-	f := newFake().sonarr4(v4)
-	c := newClient(t, f)
-	f.on(v4Command, ans(503, v4, ""))
-	wantStatus(t, c.RescanSeries(t.Context(), 1), 503)
-	if n := count(f, v4Command); n != 1 {
-		t.Errorf("sent %d commands, want 1", n)
-	}
-}
-
-func TestRescanAnswered200IsSuccess(t *testing.T) {
-	f := newFake().sonarr4(v4)
-	f.on(v4Command, ans(200, v4, "{}"))
-	if err := newClient(t, f).RescanSeries(t.Context(), 1); err != nil {
-		t.Errorf("RescanSeries on a 200 carrying the sent version: %v", err)
-	}
-}
-
-func TestRescanRedirectIsStatusAndNeverFollowed(t *testing.T) {
-	codes := []int{301, 302, 303, 307, 308}
-	clients := map[string]func(t *testing.T, f *fake) *Client{
-		"the default client": func(t *testing.T, f *fake) *Client {
-			srv := httptest.NewServer(f)
-			t.Cleanup(srv.Close)
-			c, err := New(srv.URL, testKey, WithLogger(slog.New(slog.DiscardHandler)))
-			if err != nil {
-				t.Fatalf("New: %v", err)
-			}
-			t.Cleanup(c.Close)
-			return c
-		},
-		"a client following every redirect": func(t *testing.T, f *fake) *Client {
-			follow := &http.Client{Transport: f, CheckRedirect: func(*http.Request, []*http.Request) error { return nil }}
-			return newClient(t, f, WithHTTPClient(follow))
-		},
-	}
-	for clientName, newC := range clients {
-		t.Run(clientName, func(t *testing.T) {
-			for _, code := range codes {
-				for _, location := range []string{"/target", "http://[::1"} {
-					t.Run(strconv.Itoa(code)+" to "+location, func(t *testing.T) {
-						f := newFake().sonarr4(v4)
-						c := newC(t, f)
-						f.on(v4Command, redirectCode(code, v4, location))
-						err := c.RescanSeries(t.Context(), 1)
-						wantStatus(t, err, code)
-						if errors.Is(err, arrapi.ErrCommandOutcomeUnknown) {
-							t.Error("a redirected command reads as outcome unknown")
-						}
-						if n := count(f, "GET /target") + count(f, "POST /target"); n != 0 {
-							t.Errorf("the redirect target received %d requests", n)
-						}
-						if n := count(f, v4Command); n != 1 {
-							t.Errorf("sent %d commands, want 1", n)
-						}
-					})
-				}
-			}
+	})
+	t.Run("a header-less 501 fails the run and sends no command", func(t *testing.T) {
+		synctest.Test(t, func(t *testing.T) {
+			f := newFake().sonarr4(v4)
+			c := newClient(t, f)
+			cached(t, c, f)
+			f.on("GET /api", ans(501, "", ""), ans(200, v4, apiBody("v3")))
+			wantStatus(t, c.RescanSeries(t.Context(), 1), 501)
+			wantRequests(t, f, "GET /api")
 		})
-	}
-}
-
-func TestRescanAcrossUpgradeNeverReachesAPIv3(t *testing.T) {
-	f := newFake().sonarr4(v4)
-	c := newClient(t, f)
-	cached(t, c, f)
-	f.sonarr5(v5)
-	if err := c.RescanSeries(t.Context(), 1); err != nil {
-		t.Fatalf("RescanSeries: %v", err)
-	}
-	wantRequests(t, f, join(detectV5, []string{v5Command})...)
-}
-
-func TestRescanAnswerFromSonarr5IsOutcomeUnknown(t *testing.T) {
-	f := newFake().sonarr4(v4)
-	c := newClient(t, f)
-	f.on(v4Command, ans(201, v5, "{}"))
-	err := c.RescanSeries(t.Context(), 1)
-	if !errors.Is(err, arrapi.ErrCommandOutcomeUnknown) {
-		t.Fatalf("err = %v, want ErrCommandOutcomeUnknown", err)
-	}
-	wantChanged(t, err)
-	if n := count(f, v4Command); n != 1 {
-		t.Errorf("sent %d commands, want 1", n)
-	}
-}
-
-func TestRescanHeaderless2xxIsOutcomeUnknown(t *testing.T) {
-	f := newFake().sonarr4(v4)
-	c := newClient(t, f)
-	f.on(v4Command, ans(201, "", "{}"))
-	err := c.RescanSeries(t.Context(), 1)
-	if !errors.Is(err, arrapi.ErrCommandOutcomeUnknown) {
-		t.Fatalf("err = %v, want ErrCommandOutcomeUnknown", err)
-	}
-	wantUnsupported(t, err, arrapi.ReasonNoVersionHeader)
-	if n := count(f, v4Command); n != 1 {
-		t.Errorf("sent %d commands, want 1", n)
-	}
-}
-
-func TestRescanSwitchToSonarr5Headerless2xxIsOutcomeUnknown(t *testing.T) {
-	f := newFake().sonarr4(v4)
-	c := newClient(t, f)
-	f.on("GET /api/v3/system/status", then(func() {
-		f.sonarr5(v5)
-		f.on(v4Command, ans(201, "", "{}"))
-	}, ans(200, v4, statusBody("Sonarr", v4))))
-	err := c.RescanSeries(t.Context(), 1)
-	if !errors.Is(err, arrapi.ErrCommandOutcomeUnknown) {
-		t.Fatalf("err = %v, want ErrCommandOutcomeUnknown", err)
-	}
-	wantRequests(t, f, join(detectV4, []string{v4Command})...)
-}
-
-func TestRescanNon2xxFromOtherServerKeepsCode(t *testing.T) {
-	f := newFake().sonarr4(v4)
-	c := newClient(t, f)
-	f.on(v4Command, ans(404, v5, `{"message":"NotFound"}`))
-	err := c.RescanSeries(t.Context(), 1)
-	if e := wantChanged(t, err); e.Status == nil || e.Status.Code != 404 {
-		t.Errorf("ServerChangedError.Status = %+v, want the 404", e.Status)
-	}
-	wantStatus(t, err, 404)
-	if n := count(f, v4Command); n != 1 {
-		t.Errorf("sent %d commands, want 1", n)
-	}
+	})
 }
 
 // failedDetections are detections that fail after an answer, each against a server
@@ -220,8 +81,10 @@ var failedDetections = map[string]struct {
 
 func TestFailedDetectionAfterAnswerMarksUnknown(t *testing.T) {
 	calls := map[string]func(context.Context, *Client) error{
-		"Info":         func(ctx context.Context, c *Client) error { _, err := c.Info(ctx); return err },
-		"RescanSeries": func(ctx context.Context, c *Client) error { return c.RescanSeries(ctx, 1) },
+		"Info": func(ctx context.Context, c *Client) error { _, err := c.Info(ctx); return err },
+	}
+	for name, cmd := range commands {
+		calls[name] = sendErr(cmd)
 	}
 	for armName, arm := range failedDetections {
 		for callName, call := range calls {
@@ -238,7 +101,7 @@ func TestFailedDetectionAfterAnswerMarksUnknown(t *testing.T) {
 					t.Errorf("the next Series sent %q, want a detection first", got)
 				}
 				for _, r := range got {
-					if r == v4Series || r == v4Command || r == v5Command {
+					if r == v4Series || strings.HasPrefix(r, "POST ") {
 						t.Errorf("a request went out on the failed server: %q", got)
 					}
 				}
@@ -254,8 +117,10 @@ func TestFailedDetectionAfterAnswerMarksUnknown(t *testing.T) {
 			if err := call(t.Context(), c); err == nil {
 				t.Fatal("the call succeeded with /api failing at dial")
 			}
-			if n := count(f, v4Command); n != 0 {
-				t.Errorf("sent %d commands after a failed detection", n)
+			for _, r := range f.requests() {
+				if strings.HasPrefix(r, "POST ") {
+					t.Errorf("sent %s after a failed detection", r)
+				}
 			}
 			f.clearLog()
 			if _, err := c.Series(t.Context()); err != nil {

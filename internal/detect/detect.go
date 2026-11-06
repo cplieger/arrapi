@@ -170,7 +170,7 @@ func (p *prober) status(o *probeOutcome, st StatusDoc, path string, ev evidence)
 	}
 	switch {
 	case o.err != nil || st.AppName == "" || st.Version == "":
-		return nil, &arrapi.UnsupportedAPIError{Reason: arrapi.ReasonNotAPI, Want: p.app, Path: path}
+		return nil, &arrapi.UnsupportedAPIError{Reason: arrapi.ReasonNotAPI, Want: p.app, Path: path, Err: o.err}
 	case !asciiEqualFold(st.AppName, p.app):
 		return nil, refuse(arrapi.ReasonWrongApp)
 	case o.meta.AppVersion == "":

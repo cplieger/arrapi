@@ -53,6 +53,11 @@ func TestStatusErrorError(t *testing.T) {
 			&arrapi.StatusError{Code: 500, Path: "/api/v3/movie"},
 			"arrapi: /api/v3/movie: HTTP 500",
 		},
+		{
+			"attributed adds no text",
+			&arrapi.StatusError{Code: 500, Path: "/api/v3/movie", Attributed: true},
+			"arrapi: /api/v3/movie: HTTP 500",
+		},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
@@ -73,29 +78,31 @@ func TestStatusErrorErrorIsOneLine(t *testing.T) {
 	}
 }
 
-func TestStatusErrorIsTransient(t *testing.T) {
-	tests := []struct {
-		code int
-		want bool
-	}{
-		{400, false},
-		{404, false},
-		{408, false},
-		{429, true},
-		{499, false},
-		{500, true},
-		{503, true},
-		{599, true},
-		{600, false},
+// retryableByStatusRule is the status rule as the defining RFCs (9110, 6585, 2295, 5842,
+// 2774) define the codes: 408 and 429 ask for a later retry, and a 5xx may succeed on
+// one except those that repeat (501 Not Implemented, 505 HTTP Version Not Supported,
+// 506 Variant Also Negotiates, 508 Loop Detected, 510 Not Extended, 511 Network
+// Authentication Required).
+func retryableByStatusRule(code int) bool {
+	switch code {
+	case 408, 429:
+		return true
+	case 501, 505, 506, 508, 510, 511:
+		return false
 	}
-	for _, tc := range tests {
-		t.Run(fmt.Sprintf("HTTP %d", tc.code), func(t *testing.T) {
-			e := &arrapi.StatusError{Code: tc.code}
-			if got := e.IsTransient(); got != tc.want {
-				t.Errorf("IsTransient() = %v, want %v", got, tc.want)
+	return code >= 500 && code <= 599
+}
+
+func TestStatusErrorIsTransient(t *testing.T) {
+	for code := 100; code <= 699; code++ {
+		want := retryableByStatusRule(code)
+		t.Run(fmt.Sprintf("HTTP %d", code), func(t *testing.T) {
+			e := &arrapi.StatusError{Code: code}
+			if got := e.IsTransient(); got != want {
+				t.Errorf("IsTransient() = %v, want %v", got, want)
 			}
-			if got := httpclient.IsTransient(fmt.Errorf("wrapped: %w", e)); got != tc.want {
-				t.Errorf("httpclient.IsTransient(wrapped) = %v, want %v", got, tc.want)
+			if got := httpclient.IsTransient(fmt.Errorf("wrapped: %w", e)); got != want {
+				t.Errorf("httpclient.IsTransient(wrapped) = %v, want %v", got, want)
 			}
 		})
 	}
@@ -350,5 +357,96 @@ func TestDecodeErrorCallerBuilt(t *testing.T) {
 	}
 	if errors.Unwrap(&arrapi.DecodeError{}) != nil {
 		t.Error("zero DecodeError unwraps to a cause")
+	}
+}
+
+// TestCheckErrorError pins Error for caller-built values: the *DecodeError's text only
+// under CheckServer, the cause's text otherwise, a fixed sentence without a cause, and
+// one line whatever the cause renders.
+func TestCheckErrorError(t *testing.T) {
+	decode := &arrapi.DecodeError{Path: "/api/v3/system/status", ContentType: "application/json"}
+	notAPI := &arrapi.UnsupportedAPIError{Reason: arrapi.ReasonNotAPI, Want: "Sonarr", Path: "/api/v3/system/status", Err: decode}
+	const notAPIText = "arrapi: /api/v3/system/status answered with a web page or other content, not the Sonarr API: check the URL's base path"
+	tests := []struct {
+		name string
+		e    *arrapi.CheckError
+		want string
+	}{
+		{"server over a decode error", &arrapi.CheckError{Reason: arrapi.CheckServer, Err: notAPI}, decode.Error()},
+		{"not the API over a decode error", &arrapi.CheckError{Reason: arrapi.CheckNotArrAPI, Err: notAPI}, notAPIText},
+		{
+			"server without a decode error",
+			&arrapi.CheckError{Reason: arrapi.CheckServer, Err: &arrapi.UnsupportedAPIError{Reason: arrapi.ReasonNotAPI, Want: "Sonarr", Path: "/api/v3/system/status"}},
+			notAPIText,
+		},
+		{"no cause", &arrapi.CheckError{Reason: arrapi.CheckURL}, "arrapi: connection check failed"},
+		{"a cause on two lines", &arrapi.CheckError{Reason: arrapi.CheckURL, Err: errors.New("first\nsecond")}, "first second"},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := tc.e.Error(); got != tc.want {
+				t.Errorf("Error() = %q, want %q", got, tc.want)
+			}
+		})
+	}
+}
+
+func TestCheckErrorUnwrap(t *testing.T) {
+	cause := &arrapi.StatusError{Code: 502}
+	e := &arrapi.CheckError{Reason: arrapi.CheckServer, Err: fmt.Errorf("wrapped: %w", cause)}
+	if got, ok := errors.AsType[*arrapi.StatusError](e); !ok || got != cause {
+		t.Errorf("errors.As(*StatusError) = %v, %v; want the cause", got, ok)
+	}
+	if errors.Unwrap(&arrapi.CheckError{}) != nil {
+		t.Error("a CheckError without a cause unwraps to one")
+	}
+}
+
+func TestUnsupportedAPIErrorUnwrap(t *testing.T) {
+	decode := &arrapi.DecodeError{Path: "/api/v3/system/status"}
+	e := &arrapi.UnsupportedAPIError{Reason: arrapi.ReasonNotAPI, Err: decode}
+	if got, ok := errors.AsType[*arrapi.DecodeError](e); !ok || got != decode {
+		t.Errorf("errors.As(*DecodeError) = %v, %v; want Err", got, ok)
+	}
+	if errors.Unwrap(&arrapi.UnsupportedAPIError{Reason: arrapi.ReasonNotAPI}) != nil {
+		t.Error("an UnsupportedAPIError without Err unwraps to a cause")
+	}
+}
+
+func TestGrabErrorError(t *testing.T) {
+	se := &arrapi.StatusError{Code: 404, Path: "/api/v3/release", Message: "Couldn't find requested release in cache, try searching again"}
+	const seText = "arrapi: /api/v3/release: HTTP 404: Couldn't find requested release in cache, try searching again"
+	tests := []struct {
+		name string
+		e    *arrapi.GrabError
+		want string
+	}{
+		{"not cached", &arrapi.GrabError{Err: se, Reason: arrapi.GrabNotCached}, "arrapi: grab refused (not in the search cache): " + seText},
+		{"unmapped", &arrapi.GrabError{Err: se, Reason: arrapi.GrabUnmapped}, "arrapi: grab refused (not mapped): " + seText},
+		{"unavailable", &arrapi.GrabError{Err: se, Reason: arrapi.GrabUnavailable}, "arrapi: grab refused (unavailable from the indexer): " + seText},
+		{"a reason outside the three", &arrapi.GrabError{Err: se, Reason: 9}, "arrapi: grab refused (refused): " + seText},
+		{"the zero reason", &arrapi.GrabError{Err: se}, "arrapi: grab refused (refused): " + seText},
+		{"no status", &arrapi.GrabError{Reason: arrapi.GrabNotCached}, "arrapi: grab refused"},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := tc.e.Error(); got != tc.want {
+				t.Errorf("Error() = %q, want %q", got, tc.want)
+			}
+		})
+	}
+}
+
+func TestGrabErrorUnwrap(t *testing.T) {
+	se := &arrapi.StatusError{Code: 409, Message: "Getting release from indexer failed"}
+	var err error = &arrapi.GrabError{Err: se, Reason: arrapi.GrabUnavailable}
+	if got, ok := errors.AsType[*arrapi.StatusError](err); !ok || got != se {
+		t.Errorf("errors.As(*StatusError) = %v, %v; want Err", got, ok)
+	}
+	if got, ok := errors.AsType[*arrapi.GrabError](fmt.Errorf("wrapped: %w", err)); !ok || got.Reason != arrapi.GrabUnavailable {
+		t.Errorf("errors.As(*GrabError) through a wrap = %v, %v; want the GrabError", got, ok)
+	}
+	if u := (&arrapi.GrabError{Reason: arrapi.GrabNotCached}).Unwrap(); u != nil {
+		t.Errorf("Unwrap() without Err = %#v, want an untyped nil", u)
 	}
 }

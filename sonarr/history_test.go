@@ -4,8 +4,11 @@ import (
 	"encoding/json"
 	"errors"
 	"reflect"
+	"strings"
 	"testing"
 	"time"
+
+	"github.com/cplieger/arrapi/v3"
 )
 
 func TestEventTypeString(t *testing.T) {
@@ -108,5 +111,55 @@ func TestHistoryRecordMapping(t *testing.T) {
 	}
 	if got.EventType != want.EventType || got.ID != want.ID || got.SeriesID != want.SeriesID {
 		t.Errorf("record() = %+v, want %+v", got, want)
+	}
+}
+
+func TestHistoryGrabFieldsOverTheWire(t *testing.T) {
+	for name, ec := range engineCases() {
+		t.Run(name, func(t *testing.T) {
+			c, f := engineClient(t, ec)
+			f.on("GET "+ec.prefix+"/history/since", ans(200, ec.version, `[
+				{"id":1,"seriesId":4,"episodeId":301,"eventType":"grabbed","downloadId":"DL-1","sourceTitle":"Example.Show.S01E02.1080p",
+				 "data":{"guid":"guid-at-indexer","indexer":"Indexer A","nzbInfoUrl":"info-page","releaseSource":"InteractiveSearch",
+				         "downloadUrl":"ignored","torrentInfoHash":"ignored","arrapiUnknownField":"x"}},
+				{"id":2,"seriesId":4,"episodeId":301,"eventType":"downloadFailed","downloadId":"DL-1","sourceTitle":"Example.Show.S01E02.1080p",
+				 "data":{"message":"the client removed it","indexer":"Indexer A"}},
+				{"id":3,"seriesId":4,"eventType":"grabbed","data":null},
+				{"id":4,"seriesId":4,"eventType":"grabbed"},
+				{"id":5,"seriesId":4,"eventType":"grabbed","data":{"releaseSource":"Unknown","message":null,"guid":null}},
+				{"id":6,"seriesId":4,"eventType":"grabbed","data":{"releaseSource":"Rss"}}]`))
+			got, err := c.HistorySince(t.Context(), time.Unix(0, 0))
+			if err != nil {
+				t.Fatalf("HistorySince: %v", err)
+			}
+			if len(got) != 6 {
+				t.Fatalf("HistorySince returned %d records, want 6", len(got))
+			}
+			want := []HistoryRecord{
+				{
+					ID: 1, SeriesID: 4, EventType: EventGrabbed, EpisodeID: 301, DownloadID: "DL-1", SourceTitle: "Example.Show.S01E02.1080p",
+					GUID: "guid-at-indexer", Indexer: "Indexer A", InfoURL: "info-page", Source: arrapi.SourceInteractiveSearch,
+				},
+				{
+					ID: 2, SeriesID: 4, EventType: EventDownloadFailed, EpisodeID: 301, DownloadID: "DL-1", SourceTitle: "Example.Show.S01E02.1080p",
+					Indexer: "Indexer A", Message: "the client removed it",
+				},
+				{ID: 3, SeriesID: 4, EventType: EventGrabbed},
+				{ID: 4, SeriesID: 4, EventType: EventGrabbed},
+				{ID: 5, SeriesID: 4, EventType: EventGrabbed},
+				{ID: 6, SeriesID: 4, EventType: EventGrabbed, Source: arrapi.SourceRSS},
+			}
+			for i := range want {
+				if got[i] != want[i] {
+					t.Errorf("record %d =\n  %+v\nwant\n  %+v", want[i].ID, got[i], want[i])
+				}
+			}
+
+			f.on("GET "+ec.prefix+"/history/since", ans(200, ec.version, `[{"id":1,"eventType":"grabbed","data":{"guid":7}}]`))
+			_, err = c.HistorySince(t.Context(), time.Unix(0, 0))
+			if _, ok := errors.AsType[*arrapi.DecodeError](err); !ok || !strings.Contains(err.Error(), "field data.guid") {
+				t.Errorf("HistorySince over a numeric data.guid = %v, want a *DecodeError naming field data.guid", err)
+			}
+		})
 	}
 }

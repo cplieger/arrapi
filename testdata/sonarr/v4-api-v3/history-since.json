@@ -1,58 +1,121 @@
 [
   {
     "arrapiUnknownField": 1,
+    "data": {
+      "arrapiUnknownField": 1,
+      "guid": "guid-1",
+      "indexer": "indexer-1",
+      "nzbInfoUrl": "infourl-1",
+      "releaseSource": "Rss"
+    },
     "date": "2001-01-01T00:00:00Z",
+    "downloadId": "download-1",
+    "episodeId": 104,
     "eventType": "grabbed",
     "id": 1,
-    "seriesId": 2
+    "seriesId": 3,
+    "sourceTitle": "release-7"
   },
   {
     "arrapiUnknownField": 1,
+    "data": {
+      "arrapiUnknownField": 1
+    },
     "date": "2001-01-01T01:00:00Z",
+    "downloadId": "download-1",
+    "episodeId": 104,
     "eventType": "downloadFolderImported",
     "id": 2,
-    "seriesId": 2
+    "seriesId": 3,
+    "sourceTitle": "release-6"
   },
   {
     "arrapiUnknownField": 1,
+    "data": {
+      "arrapiUnknownField": 1,
+      "guid": "guid-2",
+      "indexer": "indexer-3",
+      "nzbInfoUrl": "infourl-2",
+      "releaseSource": "Rss"
+    },
     "date": "2001-01-01T02:00:00Z",
+    "downloadId": "download-2",
+    "episodeId": 104,
     "eventType": "grabbed",
     "id": 3,
-    "seriesId": 2
+    "seriesId": 3,
+    "sourceTitle": "release-5"
   },
   {
     "arrapiUnknownField": 1,
+    "data": {
+      "arrapiUnknownField": 1
+    },
     "date": "2001-01-01T03:00:00Z",
+    "episodeId": 104,
     "eventType": "episodeFileDeleted",
     "id": 4,
-    "seriesId": 2
+    "seriesId": 3,
+    "sourceTitle": "release-2"
   },
   {
     "arrapiUnknownField": 1,
+    "data": {
+      "arrapiUnknownField": 1
+    },
     "date": "2001-01-01T03:00:00Z",
+    "downloadId": "download-2",
+    "episodeId": 104,
     "eventType": "downloadFolderImported",
     "id": 5,
-    "seriesId": 2
+    "seriesId": 3,
+    "sourceTitle": "release-5"
   },
   {
     "arrapiUnknownField": 1,
+    "data": {
+      "arrapiUnknownField": 1,
+      "guid": "guid-3",
+      "indexer": "indexer-2",
+      "nzbInfoUrl": "infourl-3",
+      "releaseSource": "Rss"
+    },
     "date": "2001-01-01T04:00:00Z",
+    "downloadId": "download-3",
+    "episodeId": 103,
     "eventType": "grabbed",
     "id": 6,
-    "seriesId": 3
+    "seriesId": 4,
+    "sourceTitle": "release-3"
   },
   {
     "arrapiUnknownField": 1,
-    "date": "2001-01-01T04:00:00Z",
-    "eventType": "grabbed",
+    "data": {
+      "arrapiUnknownField": 1
+    },
+    "date": "2001-01-01T05:00:00Z",
+    "downloadId": "download-3",
+    "episodeId": 103,
+    "eventType": "downloadFolderImported",
     "id": 7,
-    "seriesId": 3
+    "seriesId": 4,
+    "sourceTitle": "release-4"
   },
   {
     "arrapiUnknownField": 1,
-    "date": "2001-01-01T04:00:00Z",
+    "data": {
+      "arrapiUnknownField": 1,
+      "guid": "guid-4",
+      "indexer": "indexer-2",
+      "nzbInfoUrl": "infourl-4",
+      "releaseSource": "Rss"
+    },
+    "date": "2001-01-01T06:00:00Z",
+    "downloadId": "download-4",
+    "episodeId": 105,
     "eventType": "grabbed",
     "id": 8,
-    "seriesId": 3
+    "seriesId": 2,
+    "sourceTitle": "release-8"
   }
 ]

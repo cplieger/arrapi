@@ -1,0 +1,139 @@
+[
+  {
+    "id": 0,
+    "parsedInfo": {
+      "quality": {
+        "quality": {"id": 7, "name": "Bluray-1080p", "source": "bluray", "resolution": 1080},
+        "revision": {"version": 1, "real": 0, "isRepack": false}
+      },
+      "releaseGroup": "GRP",
+      "fullSeason": true,
+      "seasonNumbers": [1],
+      "seriesTitle": "Code Geass",
+      "episodeNumbers": [],
+      "absoluteEpisodeNumbers": [],
+      "isDaily": false,
+      "isAbsoluteNumbering": false,
+      "isPossibleSpecialEpisode": false,
+      "special": false
+    },
+    "release": {
+      "guid": "g-1",
+      "age": 3,
+      "size": 1001000000,
+      "indexerId": 3,
+      "indexer": "indexer-1",
+      "title": "Code.Geass.S01.1080p.BluRay.x264-GRP",
+      "tvdbId": 0,
+      "publishDate": "2001-01-01T00:00:00Z",
+      "commentUrl": "comment-1",
+      "downloadUrl": "LINKSECRET0451",
+      "infoUrl": "info-1",
+      "magnetUrl": "LINKSECRET0451",
+      "infoHash": "hash-1",
+      "seeders": 12,
+      "leechers": 1,
+      "protocol": "torrent",
+      "indexerFlags": 80
+    },
+    "decision": {"approved": true, "temporarilyRejected": false, "rejected": false, "rejections": []},
+    "history": null,
+    "qualityWeight": 1601,
+    "languages": [{"id": 8, "name": "Japanese"}],
+    "mappedSeasonNumber": 1,
+    "mappedEpisodeNumbers": [1, 2],
+    "mappedAbsoluteEpisodeNumbers": [1, 2],
+    "mappedSeriesId": 41,
+    "mappedEpisodeInfo": [
+      {"id": 411, "seasonNumber": 1, "episodeNumber": 1, "absoluteEpisodeNumber": 1, "title": "The Day a New Demon Was Born"},
+      {"id": 412, "seasonNumber": 1, "episodeNumber": 2, "absoluteEpisodeNumber": 2, "title": "The White Knight Awakens"}
+    ],
+    "episodeRequested": true,
+    "downloadAllowed": true,
+    "releaseWeight": 0,
+    "customFormats": [],
+    "customFormatScore": 150
+  },
+  {
+    "id": 0,
+    "parsedInfo": {
+      "quality": {
+        "quality": {"id": 4, "name": "HDTV-720p", "source": "television", "resolution": 720},
+        "revision": {"version": 1, "real": 0, "isRepack": false}
+      },
+      "fullSeason": false,
+      "seasonNumbers": [1],
+      "episodeNumbers": [1]
+    },
+    "release": {
+      "guid": "g-2",
+      "age": 40,
+      "size": 1002000000,
+      "indexerId": 4,
+      "indexer": "indexer-2",
+      "title": "Code.Geass.S01E01.720p.HDTV.x264-OTHER",
+      "publishDate": "2001-01-01T00:00:00Z",
+      "commentUrl": "comment-2",
+      "downloadUrl": "LINKSECRET0451",
+      "infoUrl": null,
+      "magnetUrl": null,
+      "infoHash": null,
+      "protocol": "usenet",
+      "indexerFlags": 0
+    },
+    "decision": {
+      "approved": false,
+      "temporarilyRejected": false,
+      "rejected": true,
+      "rejections": [
+        {"message": "Quality not wanted in profile", "reason": "qualityNotWanted", "type": "permanent"},
+        {"message": "Not an upgrade for existing episode file(s)", "reason": "diskNotUpgrade", "type": "permanent"}
+      ]
+    },
+    "mappedSeasonNumber": 1,
+    "mappedEpisodeNumbers": [1],
+    "mappedAbsoluteEpisodeNumbers": [],
+    "mappedSeriesId": 41,
+    "mappedEpisodeInfo": [
+      {"id": 411, "seasonNumber": 1, "episodeNumber": 1, "absoluteEpisodeNumber": null, "title": "The Day a New Demon Was Born"}
+    ],
+    "releaseWeight": 1,
+    "customFormatScore": -10
+  },
+  {
+    "id": 0,
+    "parsedInfo": {
+      "quality": {
+        "quality": {"id": 3, "name": "WEBDL-1080p", "source": "web", "resolution": 1080},
+        "revision": {"version": 1, "real": 0, "isRepack": false}
+      }
+    },
+    "release": {
+      "guid": "g-3",
+      "size": 0,
+      "indexerId": 3,
+      "indexer": "indexer-1",
+      "title": "Unknown.Show.S01E01.1080p.WEB-DL",
+      "publishDate": "2001-01-01T00:00:00Z",
+      "commentUrl": null,
+      "downloadUrl": "LINKSECRET0451",
+      "infoUrl": null,
+      "magnetUrl": "LINKSECRET0451",
+      "infoHash": "hash-3",
+      "protocol": "torrent",
+      "indexerFlags": 1
+    },
+    "decision": {
+      "approved": false,
+      "temporarilyRejected": true,
+      "rejected": false,
+      "rejections": [
+        {"message": "Waiting for better quality release", "reason": "minimumAgeDelay", "type": "temporary"}
+      ]
+    },
+    "mappedSeriesId": null,
+    "mappedEpisodeInfo": [],
+    "releaseWeight": 2,
+    "customFormatScore": 0
+  }
+]

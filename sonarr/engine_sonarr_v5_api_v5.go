@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/cplieger/arrapi/v3"
+	"github.com/cplieger/arrapi/v3/internal/arrenum"
 	"github.com/cplieger/arrapi/v3/internal/joinedmedia"
 	"github.com/cplieger/arrapi/v3/internal/transport"
 )
@@ -65,12 +66,36 @@ func (e sonarrV5APIv5) rootFolders(ctx context.Context, d *transport.Detection) 
 	return transport.GetList(ctx, e.t, d, sonarrV5Prefix+"/rootfolder", (*sonarrV5RootFolder).path)
 }
 
+func (e sonarrV5APIv5) commands(ctx context.Context, d *transport.Detection) ([]Command, transport.Result) {
+	return transport.GetList(ctx, e.t, d, sonarrV5Prefix+"/command", (*sonarrV5Command).command)
+}
+
+func (e sonarrV5APIv5) queue(ctx context.Context, d *transport.Detection) ([]QueueItem, transport.Result) {
+	return transport.GetList(ctx, e.t, d, sonarrV5Prefix+"/queue/details", (*sonarrV5QueueItem).item)
+}
+
+func (e sonarrV5APIv5) releases(ctx context.Context, d *transport.Detection, q releaseQuery) ([]Release, transport.Result) {
+	return transport.GetListOnce(ctx, e.t, d, q.path(sonarrV5Prefix), (*sonarrV5Release).release)
+}
+
+func (e sonarrV5APIv5) grab(ctx context.Context, d *transport.Detection, g releaseGrab) transport.Result {
+	return e.t.Post(ctx, d, sonarrV5Prefix+"/release", g)
+}
+
 func (e sonarrV5APIv5) rescan(ctx context.Context, d *transport.Detection, seriesID int) transport.Result {
 	return postRescan(ctx, e.t, d, sonarrV5Prefix, seriesID)
 }
 
+func (e sonarrV5APIv5) search(ctx context.Context, d *transport.Detection, cmd searchCommand) (int, transport.Result) {
+	return e.t.PostCommand(ctx, d, sonarrV5Prefix+"/command", cmd)
+}
+
 func (sonarrV5APIv5) mediaCoverPath(id int, file string) string {
 	return mediaCoverPath(sonarrV5Prefix, id, file)
+}
+
+func (e sonarrV5APIv5) mediaCover(ctx context.Context, d *transport.Detection, id int, file string, limit int64) (arrapi.Cover, transport.Result) {
+	return getCover(ctx, e.t, d, sonarrV5Prefix, id, file, limit)
 }
 
 type sonarrV5Series struct {
@@ -81,6 +106,7 @@ type sonarrV5Series struct {
 	TitleSlug        string                   `json:"titleSlug"`
 	IMDbID           string                   `json:"imdbId"`
 	SeasonType       string                   `json:"seasonType"`
+	SeriesType       seriesTypeToken          `json:"seriesType"`
 	Translations     []sonarrV5Translation    `json:"translations"`
 	AlternateTitles  []sonarrV5AlternateTitle `json:"alternateTitles"`
 	Seasons          []sonarrV5Season         `json:"seasons"`
@@ -92,6 +118,7 @@ type sonarrV5Series struct {
 	Year             int                      `json:"year"`
 	TVDBID           int                      `json:"tvdbId"`
 	TMDBID           int                      `json:"tmdbId"`
+	Monitored        bool                     `json:"monitored"`
 }
 
 type sonarrV5Language struct {
@@ -111,6 +138,7 @@ type sonarrV5AlternateTitle struct {
 type sonarrV5Season struct {
 	Title        string `json:"title"`
 	SeasonNumber int    `json:"seasonNumber"`
+	Monitored    bool   `json:"monitored"`
 }
 
 type sonarrV5SeasonType struct {
@@ -134,6 +162,7 @@ type sonarrV5Episode struct {
 	EpisodeNumber         int                  `json:"episodeNumber"`
 	AbsoluteEpisodeNumber int                  `json:"absoluteEpisodeNumber"`
 	HasFile               bool                 `json:"hasFile"`
+	Monitored             bool                 `json:"monitored"`
 }
 
 type sonarrV5EpisodeFile struct {
@@ -167,10 +196,100 @@ type sonarrV5AudioStream struct {
 }
 
 type sonarrV5History struct {
-	Date      time.Time  `json:"date"`
-	EventType eventToken `json:"eventType"`
-	ID        int        `json:"id"`
-	SeriesID  int        `json:"seriesId"`
+	Date        time.Time           `json:"date"`
+	DownloadID  string              `json:"downloadId"`
+	SourceTitle string              `json:"sourceTitle"`
+	Data        sonarrV5HistoryData `json:"data"`
+	EventType   eventToken          `json:"eventType"`
+	ID          int                 `json:"id"`
+	SeriesID    int                 `json:"seriesId"`
+	EpisodeID   int                 `json:"episodeId"`
+}
+
+// sonarrV5HistoryData is the record's data dictionary, of which only the grab fields are read.
+type sonarrV5HistoryData struct {
+	GUID          string `json:"guid"`
+	Indexer       string `json:"indexer"`
+	InfoURL       string `json:"nzbInfoUrl"`
+	ReleaseSource string `json:"releaseSource"`
+	Message       string `json:"message"`
+}
+
+// sonarrV5Command is a CommandResource; its body is the command class's own members.
+type sonarrV5Command struct {
+	Queued  time.Time           `json:"queued"`
+	Started time.Time           `json:"started"`
+	Ended   time.Time           `json:"ended"`
+	Name    string              `json:"name"`
+	Message string              `json:"message"`
+	Status  commandStatusToken  `json:"status"`
+	Body    sonarrV5CommandBody `json:"body"`
+	ID      int                 `json:"id"`
+}
+
+type sonarrV5CommandBody struct {
+	SeriesIDs   []int `json:"seriesIds"`
+	SeriesID    int   `json:"seriesId"`
+	IsNewSeries bool  `json:"isNewSeries"`
+}
+
+// sonarrV5QueueItem is a QueueResource: one row per download, listing its episodes.
+type sonarrV5QueueItem struct {
+	Title                string                  `json:"title"`
+	DownloadID           string                  `json:"downloadId"`
+	DownloadClient       string                  `json:"downloadClient"`
+	TrackedDownloadState downloadStateToken      `json:"trackedDownloadState"`
+	StatusMessages       []sonarrV5StatusMessage `json:"statusMessages"`
+	EpisodeIDs           []int                   `json:"episodeIds"`
+	SeriesID             int                     `json:"seriesId"`
+	Size                 float64                 `json:"size"`
+	SizeLeft             float64                 `json:"sizeLeft"`
+}
+
+type sonarrV5StatusMessage struct {
+	Title    string   `json:"title"`
+	Messages []string `json:"messages"`
+}
+
+// sonarrV5Release is a ReleaseResource, which nests the indexer's release, Sonarr's
+// decision and the parsed title; any of the three can be null.
+type sonarrV5Release struct {
+	ParsedInfo        sonarrV5ParsedInfo      `json:"parsedInfo"`
+	MappedEpisodeInfo []sonarrReleaseEpisode  `json:"mappedEpisodeInfo"`
+	Decision          sonarrV5ReleaseDecision `json:"decision"`
+	Release           sonarrV5ReleaseInfo     `json:"release"`
+	MappedSeriesID    int                     `json:"mappedSeriesId"`
+	ReleaseWeight     int                     `json:"releaseWeight"`
+	CustomFormatScore int                     `json:"customFormatScore"`
+}
+
+type sonarrV5ParsedInfo struct {
+	Quality sonarrReleaseQuality `json:"quality"`
+}
+
+// sonarrV5ReleaseInfo is a ReleaseInfoResource. Its downloadUrl and magnetUrl are not
+// declared, so neither link is ever decoded.
+type sonarrV5ReleaseInfo struct {
+	GUID         string       `json:"guid"`
+	Indexer      string       `json:"indexer"`
+	Title        string       `json:"title"`
+	InfoHash     string       `json:"infoHash"`
+	InfoURL      string       `json:"infoUrl"`
+	CommentURL   string       `json:"commentUrl"`
+	Size         int64        `json:"size"`
+	IndexerID    int          `json:"indexerId"`
+	IndexerFlags IndexerFlags `json:"indexerFlags"`
+}
+
+type sonarrV5ReleaseDecision struct {
+	Rejections          []sonarrV5Rejection `json:"rejections"`
+	Approved            bool                `json:"approved"`
+	TemporarilyRejected bool                `json:"temporarilyRejected"`
+	Rejected            bool                `json:"rejected"`
+}
+
+type sonarrV5Rejection struct {
+	Message string `json:"message"`
 }
 
 type sonarrV5Tag struct {
@@ -197,7 +316,7 @@ func (w *sonarrV5Series) series() Series {
 	if w.Seasons != nil {
 		seasons = make([]Season, len(w.Seasons))
 		for i, s := range w.Seasons {
-			seasons[i] = Season{Title: s.Title, Number: s.SeasonNumber}
+			seasons[i] = Season{Title: s.Title, Number: s.SeasonNumber, Monitored: s.Monitored}
 		}
 	}
 	var titles []string
@@ -223,9 +342,11 @@ func (w *sonarrV5Series) series() Series {
 		Tags:             w.Tags,
 		Order:            w.order(),
 		IDs:              ExternalIDs{IMDb: w.IMDbID, AniList: aniList, TVDB: w.TVDBID, TMDB: w.TMDBID},
+		Type:             seriesType(string(w.SeriesType)),
 		ID:               w.ID,
 		Year:             w.Year,
 		FileCount:        w.Statistics.EpisodeFileCount,
+		Monitored:        w.Monitored,
 	}
 }
 
@@ -260,17 +381,18 @@ func (w *sonarrV5Episode) episode(withFile bool) Episode {
 		file = &f
 	}
 	return Episode{
-		File:     file,
-		Title:    w.Title,
-		AirDate:  w.AirDate,
-		ID:       w.ID,
-		SeriesID: w.SeriesID,
-		Season:   w.SeasonNumber,
-		Number:   w.EpisodeNumber,
-		Absolute: w.AbsoluteEpisodeNumber,
-		TVDBID:   w.TVDBID,
-		FileID:   w.EpisodeFileID,
-		HasFile:  w.HasFile,
+		File:      file,
+		Title:     w.Title,
+		AirDate:   w.AirDate,
+		ID:        w.ID,
+		SeriesID:  w.SeriesID,
+		Season:    w.SeasonNumber,
+		Number:    w.EpisodeNumber,
+		Absolute:  w.AbsoluteEpisodeNumber,
+		TVDBID:    w.TVDBID,
+		FileID:    w.EpisodeFileID,
+		HasFile:   w.HasFile,
+		Monitored: w.Monitored,
 	}
 }
 
@@ -308,7 +430,86 @@ func (m *sonarrV5MediaInfo) audioLanguages() []string {
 }
 
 func (w *sonarrV5History) record() HistoryRecord {
-	return HistoryRecord{Date: w.Date, EventType: EventType(w.EventType), ID: w.ID, SeriesID: w.SeriesID}
+	return HistoryRecord{
+		Date:        w.Date,
+		DownloadID:  w.DownloadID,
+		SourceTitle: w.SourceTitle,
+		GUID:        w.Data.GUID,
+		Indexer:     w.Data.Indexer,
+		InfoURL:     w.Data.InfoURL,
+		Source:      arrenum.ReleaseSource(w.Data.ReleaseSource),
+		Message:     w.Data.Message,
+		EventType:   EventType(w.EventType),
+		ID:          w.ID,
+		SeriesID:    w.SeriesID,
+		EpisodeID:   w.EpisodeID,
+	}
+}
+
+func (w *sonarrV5Command) command() Command {
+	return Command{
+		Queued:    w.Queued,
+		Started:   w.Started,
+		Ended:     w.Ended,
+		Name:      w.Name,
+		Message:   w.Message,
+		SeriesIDs: idsOf(w.Body.SeriesIDs, w.Body.SeriesID),
+		ID:        w.ID,
+		Status:    arrenum.CommandStatus(string(w.Status)),
+		NewSeries: w.Body.IsNewSeries,
+	}
+}
+
+func (w *sonarrV5QueueItem) item() QueueItem {
+	var msgs []arrapi.StatusMessage
+	if len(w.StatusMessages) > 0 {
+		msgs = make([]arrapi.StatusMessage, len(w.StatusMessages))
+		for i, m := range w.StatusMessages {
+			msgs[i] = arrapi.StatusMessage{Title: m.Title, Messages: m.Messages}
+		}
+	}
+	return QueueItem{
+		Title:          w.Title,
+		DownloadID:     w.DownloadID,
+		DownloadClient: w.DownloadClient,
+		State:          arrenum.DownloadState(string(w.TrackedDownloadState)),
+		Messages:       msgs,
+		EpisodeIDs:     idsOf(w.EpisodeIDs, 0),
+		SeriesID:       w.SeriesID,
+		Size:           queueBytes(w.Size),
+		SizeLeft:       queueBytes(w.SizeLeft),
+	}
+}
+
+func (w *sonarrV5Release) release() Release {
+	var rejections []string
+	if len(w.Decision.Rejections) > 0 {
+		rejections = make([]string, len(w.Decision.Rejections))
+		for i, r := range w.Decision.Rejections {
+			rejections[i] = r.Message
+		}
+	}
+	info := &w.Release
+	return Release{
+		GUID:                info.GUID,
+		Indexer:             info.Indexer,
+		Title:               info.Title,
+		Quality:             w.ParsedInfo.Quality.Quality.Name,
+		InfoHash:            info.InfoHash,
+		InfoURL:             info.InfoURL,
+		CommentURL:          info.CommentURL,
+		Rejections:          rejections,
+		MappedEpisodes:      releaseEpisodes(w.MappedEpisodeInfo),
+		Size:                info.Size,
+		IndexerID:           info.IndexerID,
+		CustomFormatScore:   w.CustomFormatScore,
+		MappedSeriesID:      w.MappedSeriesID,
+		Weight:              w.ReleaseWeight,
+		Flags:               info.IndexerFlags,
+		Approved:            w.Decision.Approved,
+		TemporarilyRejected: w.Decision.TemporarilyRejected,
+		Rejected:            w.Decision.Rejected,
+	}
 }
 
 func (w *sonarrV5Tag) tag() arrapi.Tag { return arrapi.Tag{Label: w.Label, ID: w.ID} }

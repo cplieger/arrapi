@@ -35,9 +35,33 @@ A detection fails with an `*arrapi.UnsupportedAPIError` when the server answers 
 | `ReasonUnsupportedVersion` | a Sonarr below 4, or one announcing API v3 at another major | run Sonarr 4 or 5 |
 | `ReasonUnknownGeneration` | the server announces an API arrapi does not read | update arrapi |
 
+With `ReasonNotAPI`, `Err` holds the status answer's `*arrapi.DecodeError`, or its `*arrapi.ResponseTooLargeError` when the body was over the cap, and `errors.As` reaches it. It is nil when the body decoded but named no application or version.
+
 Any other answer to a detection request is returned as it came. A 401 is a 401 `*arrapi.StatusError`, and a URL where every detection request answers 404 gives a 404 `*arrapi.StatusError`.
 
 `Info` runs a fresh detection every time, sends one attempt per request and takes at most 5 seconds, so it suits a connection test. `Pin` also detects fresh, under the read budget ([Reads from one server version](#reads-from-one-server-version)). Every other call uses the client's current detection, or detects first when it has none.
+
+## Connection check
+
+`sonarr.Check` and `radarr.Check` test a URL and key a setup form has not saved. Each validates them as `New` does, runs the detection `Info` runs (one attempt per request, at most 5 seconds) and returns the same `Info`. It sends nothing beyond the detection, keeps no client, and closes its connections unless you passed `WithHTTPClient`. `WithMaxAttempts`, `WithBaseDelay` and `WithTimeout` have no effect on it.
+
+A failure is an `*arrapi.CheckError`. Its `Reason` says what to fix, and `errors.Is` and `errors.As` reach the failure it met. The first matching row wins:
+
+| Outcome | `Reason` |
+| --- | --- |
+| `New` refuses the key | `CheckKey` |
+| the status answer names another application | `CheckWrongApp` |
+| a status path answers 200 with JSON that is cut or malformed | `CheckServer` |
+| a status path answers 200 with anything else that is not a status (a web page, another API's JSON, an over-cap body) | `CheckNotArrAPI` |
+| any other `*arrapi.UnsupportedAPIError` | `CheckUnsupported` |
+| an answer from another server version during the check, even one that is a 401, 403 or 404 | `CheckServer` |
+| an answer is 401 or 403 | `CheckKey` |
+| the last status path detection tries answers 404 | `CheckBasePath` |
+| a 400, which a TLS port sends to a plain `http://` request | `CheckURL` |
+| any other status | `CheckServer`, with its `*arrapi.StatusError` |
+| `New` refuses the URL, or a dial, DNS, TLS or redirect failure, or the 5-second bound | `CheckURL` |
+
+A 401 from a sign-in proxy also reads as `CheckKey`, since no header tells it from Sonarr's own. A forward-auth proxy that redirects to a sign-in page on another origin is refused before the key leaves the origin, so it reads as `CheckURL`, and the error names that origin. `CheckError.Error` renders the cause's text, except under `CheckServer` over a cut JSON answer, where it renders the `*arrapi.DecodeError`'s text instead of the base-path advice. When your context ends before the check finishes, `Check` returns `ctx.Err()`, not a `CheckError`.
 
 ## Why every answer needs `X-Application-Version`
 
@@ -45,7 +69,7 @@ Sonarr and Radarr put an `X-Application-Version` header on the answers their API
 
 - An answer from another version is never decoded, and it ends the client's detection. When its attempt and detection budgets allow, the read then goes on within the same call with a detection that names the new server, as [Retries](#retries) describes. Otherwise it returns an `*arrapi.ServerChangedError`, and a later call detects. After an in-place upgrade from Sonarr 4 to Sonarr 5, the next answer carries the 5.x header and the read can move to `/api/v5`.
 - A successful answer without the header is refused with `ReasonNoVersionHeader`, because it cannot show that the server changed.
-- An error answer without the header becomes an `*arrapi.StatusError`, and it ends the client's detection. A 429 or a 5xx without the header is retried within the same call while the budgets allow, as [Retries](#retries) describes. Any other such error is returned at once, and a later call detects.
+- An error answer without the header becomes an `*arrapi.StatusError`, and it ends the client's detection. A 408, a 429, or a 5xx other than 501, 505, 506, 508, 510 and 511 without the header is retried within the same call while the budgets allow, as [Retries](#retries) describes. Any other such error is returned at once, and a later call detects.
 
 A detection stays in use until an answer shows another version or no header, or until a detection that reached the server fails. A failed `Info` that got an answer makes the next call detect again. A failed `Info` that reached nothing, such as a refused connection, changes nothing.
 
@@ -55,11 +79,11 @@ A different server that sends the identical version string cannot be told apart 
 
 One call sends at most `WithMaxAttempts` attempts (default 3) for its own request, wherever they go, and runs at most one detection.
 
-- A 429 or a 5xx that carries the header is retried on the same detection.
-- A 429 or a 5xx without the header, Sonarr's own 500s among them, is retried after one fresh detection when the call used a stored detection. So is a transport error on the hop of a redirect without the header. When the call already detected, both retry on that detection.
+- A 408, a 429, or a 5xx other than 501, 505, 506, 508, 510 and 511 that carries the header is retried on the same detection.
+- A 408, a 429, or a 5xx other than 501, 505, 506, 508, 510 and 511 without the header, Sonarr's own 500s among them, is retried after one fresh detection when the call used a stored detection. So is a transport error on the hop of a redirect without the header. When the call already detected, both retry on that detection.
 - Any other transient transport error, such as a refused connection, a reset or a per-attempt `WithTimeout` expiry, is retried on the same detection.
 - When an answer shows another server version, or another call's answer did so before this attempt left, a read moves to a detection installed since, or detects when the call has not detected yet. Otherwise it returns an `*arrapi.ServerChangedError`.
-- Any other 4xx, and a transport error that is not transient, fail at once.
+- Any other 4xx, a 501, 505, 506, 508, 510 or 511, and a transport error that is not transient, fail at once.
 - The wait before a retry is the answer's `Retry-After`, capped at 60 seconds. Without one it starts at `WithBaseDelay` (default 1s), doubles after each retry and is drawn at random between half and all of the current delay. A move to another server version waits nothing.
 
 arrapi writes these `slog` records, each labeled `arrapi`:
@@ -81,14 +105,36 @@ Without `WithLogger`, the records go to `slog.Default()`. arrapi writes no other
 - A zero or negative `WithTimeout` or `WithBaseDelay` falls back to its default.
 - `Info` sets its own 5-second bound. A shorter deadline on your context wins.
 
-## Rescans
+## Commands
 
-`RescanSeries` and `RescanMovie` run a fresh detection, then send their command once. They never retry and never follow a redirect, because Go turns a `POST` answered with a 301, 302 or 303 into a `GET`, whose 2xx would read as the command's success.
+The commands are `RescanSeries`, `SeriesSearch`, `SeasonSearch` and `EpisodeSearch` on `sonarr.Client`, `RescanMovie` and `MoviesSearch` on `radarr.Client`, and `Grab` on both. Each runs a fresh detection, then sends its command once. They never retry and never follow a redirect, because Go turns a `POST` answered with a 301, 302 or 303 into a `GET`, whose 2xx would read as the command's success.
 
 - Any 2xx that carries the detected version is success.
 - A 2xx from another version, or without the header, returns an error that satisfies `errors.Is(err, arrapi.ErrCommandOutcomeUnknown)`. The server may have run the command, and arrapi does not send it again.
-- A redirect answer is an `*arrapi.StatusError` with its 3xx code. Sonarr answers 307 to a URL that lacks its base path, so a rescan through such a URL fails while reads follow the redirect.
+- A redirect answer is an `*arrapi.StatusError` with its 3xx code. Sonarr answers 307 to a URL that lacks its base path, so a command through such a URL fails while reads follow the redirect.
 - When an answer after the detection showed another server version or carried no header, the command is not sent, and the call returns an `*arrapi.ServerChangedError`.
+- An argument a search refuses, such as a series id below 1 or an empty id list, returns an error before any request, the detection included.
+
+A search command returns the id of the command that runs it, read from the server's answer. When an equal command is already queued or running, the server answers with that command, so you get its id. The id is best-effort: once the server has accepted the command, an answer arrapi cannot read, one over 1 MiB, or one with no id of 1 or more returns id 0 with a nil error, and logs one `Warn` record, `arrapi: command accepted; its answer was not read`, with the path and the cause. An error there could make you send a search, and the grab it can make, twice.
+
+A 2xx says the server queued the command, not that the item exists. Sonarr accepts a series id it does not hold and fails that command when it runs; Radarr skips a movie id it does not hold. Sonarr records a grab a search makes with the release source `arrapi.SourceUserInvokedSearch`.
+
+`Grab(ctx, guid, indexerID)` asks the server to grab one release from an interactive search it ran in the last 30 minutes, through its own download client and history. A refusal the server explains in its own words is an `*arrapi.GrabError` whose `Reason` says why:
+
+- `arrapi.GrabNotCached`: a 404, the release left the server's 30-minute search cache. Search again.
+- `arrapi.GrabUnmapped`: a 404, the server could not map the release onto a series and its episodes, or onto a movie.
+- `arrapi.GrabUnavailable`: a 409, the server could not get the release from the indexer.
+
+A `*GrabError` wraps the refusal's `*arrapi.StatusError`, so `errors.As` reaches its code and message. Sonarr 5 follows the 409 sentence with its download error, which can quote the release's magnet link, so arrapi replaces a grab refusal's `Message` and `Body` from the first magnet link to the end with `[***]`: the link's tracker URL can carry a passkey, and the refused link can hold a space, a quote or a line break, so no character reliably marks where it ends. Any other refusal, such as a proxy's 404 or a 409 the server gives for another cause, is a plain `*arrapi.StatusError`. Sonarr 4 and Radarr send these refusals without the version header, so `Attributed` is false on them, and the server's sentence is what classifies them. A refusal from another server version is an `*arrapi.ServerChangedError`, never a `*GrabError`.
+
+## Release searches
+
+`SeasonReleases` and `EpisodeReleases` on `sonarr.Client`, and `MovieReleases` on `radarr.Client`, run the server's interactive search, which queries every indexer the server has enabled. Each runs a fresh detection, then sends the search once. No answer is retried, and an answer from another server version is an `*arrapi.ServerChangedError`, not a search sent again there. Call again to search again.
+
+- A search can take minutes. Each attempt ends at your context's deadline, else at `WithTimeout` (default 120s), so pass a deadline when the server's indexers are slow.
+- The answer is read up to the list cap ([Size limits](#size-limits)).
+- The server keeps each result for 30 minutes, the window in which `Grab` can name it by its `GUID` and `IndexerID`.
+- An argument a search refuses, such as a movie id below 1, returns an error before any request.
 
 ## Your own HTTP client
 
@@ -121,10 +167,15 @@ Each response body is read up to a cap before it is decoded:
 | --- | --- |
 | A list, such as series, movies, episodes or `HistorySince` | 64 MiB |
 | A single object, such as a series by ID, or a detection answer | 1 MiB |
+| A cover file from `MediaCover` | the `limit` you pass |
 | The body kept on a `*StatusError` | 64 KiB |
 | A body arrapi discards, read only to reuse the connection | 2 KiB |
 
+`Queue` reads `/queue/details`, which answers the whole queue as one list under the list cap. The paged `/queue` is not used, because the server re-sorts the queue between pages as downloads progress, so a paged read can miss an item.
+
 A body over its cap returns an `*arrapi.ResponseTooLargeError` with the request path and the limit. It is never truncated and decoded.
+
+`MediaCover` accepts a file only when its `Content-Type` is the media type its extension names, parameters and case aside. Sonarr and Radarr pick that type from the extension, so any other type, such as a proxy's HTML page, returns an `*arrapi.DecodeError` naming the type arrapi expected. An empty file is a `*arrapi.DecodeError` too. When a resized file such as `poster-250.jpg` is missing or empty, the server answers with the full-size `poster.jpg`, which can be larger than the limit you chose for the resized one.
 
 ## Errors
 
@@ -134,8 +185,9 @@ A GET succeeds only on 200, and a command on any 2xx. Any other answer returns a
 - `Path` is the request path.
 - `Message` is the server's one-line message, at most 512 bytes, or `""` when it sent none.
 - `Body` is the response body, made safe to log as described below, at most 64 KiB. A body that was cut ends in `...`.
+- `Attributed` is true when the answer to a read or a command carried the `X-Application-Version` of the detection the request was sent on, so it came from that server and not from a proxy in front of it. It is false for a detection probe's answer, for the status inside a `*ServerChangedError`, and for an answer without the header. False means unknown, not "a proxy": Sonarr 4, Sonarr 5 before 5.0.0.2701 and Radarr send their exception-built errors without the header. `Error()` does not render it.
 
-`Error()` renders `arrapi: <path>: HTTP <code>`, then the message, else the body, on one line. `IsTransient()` reports true for a 429 or a 500 through 599. `*StatusError` implements httpclient's `Transient` and `RetryAfterHint` interfaces.
+`Error()` renders `arrapi: <path>: HTTP <code>`, then the message, else the body, on one line. `IsTransient()` reports true for a 408, a 429, or a 5xx other than 501, 505, 506, 508, 510 and 511, the statuses a read retries. `*StatusError` implements httpclient's `Transient` and `RetryAfterHint` interfaces.
 
 A by-ID read such as `SeriesByID` returns `(zero, false, nil)` for a 404 that carries the detected version. A 404 without the header is a proxy's page, not Sonarr's answer, so it is a 404 `*StatusError`.
 
@@ -148,7 +200,7 @@ A body that does not decode returns an `*arrapi.DecodeError` naming the path, th
 - `ContentType` is the answer's `Content-Type` media type as the server sent it: parameters dropped, case kept, the API key redacted, one line, at most 64 bytes, or `""` when the answer had none. Compare it with `strings.EqualFold` or `mime.ParseMediaType`.
 - `Unwrap` returns the decoder's error: the `*json.SyntaxError` as it came, a `*json.UnmarshalTypeError` holding only the JSON kind, the declared field path and the Go types, or nil for a date that is not RFC 3339, any other shape mismatch, and a `null` answer or item. It is also nil whenever its text would render the API key.
 
-An error answer, a body over its cap, a body the network cut and a command's answer are never a `*DecodeError`.
+An error answer, a body over its cap and a body the network cut are never a `*DecodeError`, and arrapi never returns one for a command's answer.
 
 Every error is safe to log:
 
@@ -172,7 +224,7 @@ A detection serves one server version, so the values you hold from calls made be
 
 Radarr has one API, so `radarr.Client` has no `Pin`.
 
-A URL from `MediaCoverURL` keeps the API path of the detection it was built from. After an upgrade it names `/api/v3` until another call's answer ends that detection. `Info` and the rescans detect fresh, so either one ends it.
+A URL from `MediaCoverURL` keeps the API path of the detection it was built from. After an upgrade it names `/api/v3` until another call's answer ends that detection. `Info` and the commands detect fresh, so any of them ends it.
 
 ## Concurrency
 

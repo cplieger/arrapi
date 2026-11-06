@@ -1,6 +1,7 @@
 package sonarr
 
 import (
+	"log/slog"
 	"net/http"
 	"os"
 	"reflect"
@@ -11,6 +12,7 @@ import (
 
 	"github.com/cplieger/arrapi/v3/internal/detect"
 	"github.com/cplieger/arrapi/v3/internal/specdrift"
+	"github.com/cplieger/arrapi/v3/internal/transport"
 )
 
 var (
@@ -32,7 +34,11 @@ var (
 )
 
 // wireKinds names the JSON kind each custom decoder in the DTOs reads.
-var wireKinds = specdrift.Kinds{reflect.TypeFor[eventToken](): "string"}
+var wireKinds = specdrift.Kinds{
+	reflect.TypeFor[eventToken](): "string", reflect.TypeFor[seriesTypeToken](): "string",
+	reflect.TypeFor[commandStatusToken](): "string", reflect.TypeFor[downloadStateToken](): "string",
+	reflect.TypeFor[sonarrV4CommandBody](): "object", reflect.TypeFor[sonarrV5CommandBody](): "object",
+}
 
 type dtoRoot struct {
 	dto    reflect.Type
@@ -62,6 +68,11 @@ func driftCases() []driftCase {
 				{reflect.TypeFor[sonarrV4Tag](), "TagResource"},
 				{reflect.TypeFor[sonarrV4RootFolder](), "RootFolderResource"},
 				{reflect.TypeFor[detect.StatusDoc](), "SystemResource"},
+				{reflect.TypeFor[transport.CommandAnswer](), "CommandResource"},
+				{reflect.TypeFor[sonarrV4Command](), "CommandResource"},
+				{reflect.TypeFor[sonarrV4QueueItem](), "QueueResource"},
+				{reflect.TypeFor[sonarrV4Release](), "ReleaseResource"},
+				{reflect.TypeFor[releaseGrab](), "ReleaseResource"},
 			},
 		},
 		{
@@ -74,6 +85,11 @@ func driftCases() []driftCase {
 				{reflect.TypeFor[sonarrV5Tag](), "TagResource"},
 				{reflect.TypeFor[sonarrV5RootFolder](), "RootFolderResource"},
 				{reflect.TypeFor[detect.StatusDoc](), "SystemResource"},
+				{reflect.TypeFor[transport.CommandAnswer](), "CommandResource"},
+				{reflect.TypeFor[sonarrV5Command](), "CommandResource"},
+				{reflect.TypeFor[sonarrV5QueueItem](), "QueueResource"},
+				{reflect.TypeFor[sonarrV5Release](), "ReleaseResource"},
+				{reflect.TypeFor[releaseGrab](), "ReleaseGrabResource"},
 				{reflect.TypeFor[detect.APIDoc](), "ApiInfoResource"},
 			},
 		},
@@ -105,9 +121,15 @@ func TestUpstreamRequestDrift(t *testing.T) {
 			doc := specdrift.Load(t, &dc.contract)
 			f := dc.serve(newFake())
 			f.on("GET "+dc.prefix+"/series/41", ans(200, dc.version, `{"id":41}`))
+			f.on("GET "+dc.prefix+"/mediacover/41/poster-250.jpg", file(200, dc.version, "image/jpeg", "\xff\xd8\xff"))
+			f.on("POST "+dc.prefix+"/release", ans(200, dc.version, `{"guid":"g-1","indexerId":3}`))
 			c := newClient(t, f)
 			for name, call := range map[string]func() ([]string, error){
-				"Info":              func() ([]string, error) { _, err := c.Info(t.Context()); return nil, err },
+				"Info": func() ([]string, error) { _, err := c.Info(t.Context()); return nil, err },
+				"Check": func() ([]string, error) {
+					_, err := Check(t.Context(), fakeBase, testKey, WithHTTPClient(&http.Client{Transport: f}), WithLogger(slog.New(slog.DiscardHandler)))
+					return nil, err
+				},
 				"Series":            func() ([]string, error) { _, err := c.Series(t.Context()); return nil, err },
 				"SeriesByID":        func() ([]string, error) { _, _, err := c.SeriesByID(t.Context(), 41); return nil, err },
 				"Episodes":          func() ([]string, error) { _, err := c.Episodes(t.Context(), 41); return nil, err },
@@ -120,6 +142,24 @@ func TestUpstreamRequestDrift(t *testing.T) {
 				"Tags":         func() ([]string, error) { _, err := c.Tags(t.Context()); return nil, err },
 				"RootFolders":  func() ([]string, error) { _, err := c.RootFolders(t.Context()); return nil, err },
 				"RescanSeries": func() ([]string, error) { return nil, c.RescanSeries(t.Context(), 41) },
+				"Commands":     func() ([]string, error) { _, err := c.Commands(t.Context()); return nil, err },
+				"Queue":        func() ([]string, error) { _, err := c.Queue(t.Context()); return nil, err },
+				"SeriesSearch": func() ([]string, error) { _, err := c.SeriesSearch(t.Context(), 41); return nil, err },
+				"SeasonSearch": func() ([]string, error) {
+					_, err := c.SeasonSearch(t.Context(), SeasonRef{SeriesID: 41, Number: 1})
+					return nil, err
+				},
+				"EpisodeSearch": func() ([]string, error) { _, err := c.EpisodeSearch(t.Context(), []int{41}); return nil, err },
+				"SeasonReleases": func() ([]string, error) {
+					_, err := c.SeasonReleases(t.Context(), SeasonRef{SeriesID: 41, Number: 1})
+					return nil, err
+				},
+				"EpisodeReleases": func() ([]string, error) { _, err := c.EpisodeReleases(t.Context(), 41); return nil, err },
+				"Grab":            func() ([]string, error) { return nil, c.Grab(t.Context(), "g-1", 3) },
+				"MediaCover": func() ([]string, error) {
+					_, _, err := c.MediaCover(t.Context(), 41, "poster-250.jpg", 1<<20)
+					return nil, err
+				},
 				"MediaCoverURL": func() ([]string, error) {
 					u, err := c.MediaCoverURL(t.Context(), 41, "poster-250.jpg")
 					return []string{http.MethodGet + " " + u}, err

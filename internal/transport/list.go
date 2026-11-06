@@ -11,6 +11,17 @@ func (r Result) Accepted() bool { return r.Verdict == VerdictAccept && r.Err == 
 func GetList[W, T any](ctx context.Context, c *Client, d *Detection, path string, m func(*W) T) ([]T, Result) {
 	var wire []*W
 	r := c.GetJSON(ctx, d, path, MaxListBytes, &wire)
+	return mapList(r, wire, m)
+}
+
+// GetListOnce is GetList over GetOnce: the list is requested at most once.
+func GetListOnce[W, T any](ctx context.Context, c *Client, d *Detection, path string, m func(*W) T) ([]T, Result) {
+	var wire []*W
+	r := c.GetOnce(ctx, d, path, MaxListBytes, &wire)
+	return mapList(r, wire, m)
+}
+
+func mapList[W, T any](r Result, wire []*W, m func(*W) T) ([]T, Result) {
 	if !r.Accepted() {
 		return nil, r
 	}

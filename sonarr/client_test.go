@@ -469,6 +469,44 @@ func TestHeaderlessFiveXXGoesFresh(t *testing.T) {
 	}
 }
 
+func TestReadRetriesByTheStatusRule(t *testing.T) {
+	t.Run("408 then 200 is retried", func(t *testing.T) {
+		synctest.Test(t, func(t *testing.T) {
+			f := newFake().sonarr4(v4)
+			c := newClient(t, f)
+			cached(t, c, f)
+			f.on(v4Series, ans(408, v4, ""), ans(200, v4, v4SeriesList))
+			got, err := c.Series(t.Context())
+			if err != nil {
+				t.Fatalf("Series: %v", err)
+			}
+			wantTitle(t, got, "Sonarr Four Show")
+			wantRequests(t, f, v4Series, v4Series)
+		})
+	})
+	t.Run("501 is returned at once", func(t *testing.T) {
+		synctest.Test(t, func(t *testing.T) {
+			f := newFake().sonarr4(v4)
+			c := newClient(t, f)
+			cached(t, c, f)
+			f.on(v4Series, ans(501, v4, ""), ans(200, v4, v4SeriesList))
+			_, err := c.Series(t.Context())
+			wantStatus(t, err, 501)
+			wantRequests(t, f, v4Series)
+		})
+	})
+}
+
+func TestInfoSendsOneProbeOverA408(t *testing.T) {
+	synctest.Test(t, func(t *testing.T) {
+		f := newFake().sonarr4(v4)
+		f.on("GET /api", ans(408, "", ""), ans(200, v4, apiBody("v3")))
+		_, err := newClient(t, f).Info(t.Context())
+		wantStatus(t, err, 408)
+		wantRequests(t, f, "GET /api")
+	})
+}
+
 func TestFirstCallHeaderlessFiveXXRetriesOnItsDetection(t *testing.T) {
 	synctest.Test(t, func(t *testing.T) {
 		f := newFake().sonarr4(v4)

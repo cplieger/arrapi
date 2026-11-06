@@ -126,6 +126,14 @@ func ans(code int, v, body string) step {
 	}
 }
 
+// file is ans with the Content-Type header set to contentType.
+func file(code int, v, contentType, body string) step {
+	return func(w http.ResponseWriter, r *http.Request) error {
+		w.Header().Set("Content-Type", contentType)
+		return ans(code, v, body)(w, r)
+	}
+}
+
 // body stores the request body in *got, then runs s.
 func body(got *string, s step) step {
 	return func(w http.ResponseWriter, r *http.Request) error {
@@ -269,12 +277,13 @@ func wantURIs(t *testing.T, f *fake, want ...string) {
 
 func join(parts ...[]string) []string { return slices.Concat(parts...) }
 
-func wantStatus(t *testing.T, err error, code int) {
+func wantStatus(t *testing.T, err error, code int) *arrapi.StatusError {
 	t.Helper()
 	se, ok := errors.AsType[*arrapi.StatusError](err)
 	if !ok || se.Code != code {
 		t.Fatalf("err = %v, want a %d *arrapi.StatusError", err, code)
 	}
+	return se
 }
 
 func wantChanged(t *testing.T, err error) *arrapi.ServerChangedError {

@@ -20,7 +20,8 @@ var public = map[string]bool{
 	"title": true, "titleSlug": true, "originalTitle": true, "name": true, "type": true,
 	"seasonType": true, "airDate": true, "imdbId": true, "videoCodec": true,
 	"audioLanguages": true, "language": true, "eventType": true, "appName": true,
-	"version": true, "current": true, "deprecated": true,
+	"version": true, "current": true, "deprecated": true, "seriesType": true, "releaseSource": true,
+	"status": true, "trackedDownloadState": true,
 }
 
 const (

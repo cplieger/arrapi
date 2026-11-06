@@ -40,8 +40,8 @@ func WithBaseDelay(d time.Duration) Option { return func(o *options) { o.cfg.Bas
 // default 120s.
 func WithTimeout(d time.Duration) Option { return func(o *options) { o.cfg.Timeout = d } }
 
-// WithLogger sets the logger of the retry and detection records; nil is ignored, and
-// the default is slog.Default().
+// WithLogger sets the logger of the retry and detection records and of a search
+// answer the client could not read; nil is ignored, and the default is slog.Default().
 func WithLogger(l *slog.Logger) Option {
 	return func(o *options) {
 		if l != nil {

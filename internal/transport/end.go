@@ -28,6 +28,7 @@ type attempt struct {
 	path   string // with its query
 	shown  string // the path every error and the State carry, without the query
 	method string
+	media  string // a file read's media type; "" for a JSON body
 	body   []byte
 	limit  int64
 	call   Call
@@ -47,26 +48,77 @@ func (c *Client) GetJSON(ctx context.Context, d *Detection, path string, limit i
 	return r
 }
 
+// GetOnce is GetJSON for a request sent at most once (CallSearch): no outcome is
+// retried or moved, and out is decoded only when Decide accepts the answer.
+func (c *Client) GetOnce(ctx context.Context, d *Detection, path string, limit int64, out any) Result {
+	_, r := c.send(ctx, &attempt{call: CallSearch, det: d, path: path, shown: stripQuery(path), method: http.MethodGet, limit: limit, out: out})
+	return r
+}
+
 // GetByID is GetJSON for one resource by id (1 MiB); VerdictAbsent, with a nil Err and out untouched, means the item is gone.
 func (c *Client) GetByID(ctx context.Context, d *Detection, path string, out any) Result {
 	_, r := c.send(ctx, &attempt{call: CallReadByID, det: d, path: path, shown: stripQuery(path), method: http.MethodGet, limit: MaxObjectBytes, out: out})
 	return r
 }
 
+// GetFile is GetByID for a file: an accepted answer whose media type is mediaType is
+// read into *out, at most limit bytes. Another media type, an empty body, or a body
+// over limit leaves *out nil and returns, as r.Err, an *arrapi.DecodeError or an
+// *arrapi.ResponseTooLargeError; VerdictAbsent, with a nil Err, is an attributed 404.
+func (c *Client) GetFile(ctx context.Context, d *Detection, path string, limit int64, mediaType string, out *[]byte) Result {
+	_, r := c.send(ctx, &attempt{call: CallReadByID, det: d, path: path, shown: stripQuery(path), method: http.MethodGet, media: mediaType, limit: limit, out: out})
+	return r
+}
+
 // Post sends one command attempt with body as JSON, through the client that follows no
 // redirect; any 2xx Decide attributes is its success, and its body is not decoded.
 func (c *Client) Post(ctx context.Context, d *Detection, path string, body any) Result {
+	return c.post(ctx, d, path, body, nil)
+}
+
+// CommandAnswer is the one member PostCommand decodes from a command resource.
+type CommandAnswer struct {
+	ID int `json:"id"`
+}
+
+// PostCommand is Post for a command whose accepted answer is the server's command
+// resource, and returns that resource's id. The read is best-effort: an answer that
+// cannot be read or decoded within MaxObjectBytes, or whose id is below 1, gives id 0,
+// the accepted Result with a nil Err, and one Warn record naming the path and why.
+// Every other verdict gives id 0 and its Result, as Post does.
+func (c *Client) PostCommand(ctx context.Context, d *Detection, path string, body any) (int, Result) {
+	var answer CommandAnswer
+	r := c.post(ctx, d, path, body, &answer)
+	if r.Verdict != VerdictAccept {
+		return 0, r
+	}
+	return answer.ID, r
+}
+
+// post sends a command; answer nil discards the accepted answer unread.
+func (c *Client) post(ctx context.Context, d *Detection, path string, body any, answer *CommandAnswer) Result {
 	data, err := json.Marshal(body)
 	if err != nil {
 		return Result{Err: fmt.Errorf("arrapi: encode %s: %w", stripQuery(path), err), Verdict: VerdictTransport, Next: NextDone}
 	}
-	_, r := c.send(ctx, &attempt{call: CallMutation, det: d, path: path, shown: stripQuery(path), method: http.MethodPost, body: data})
+	a := &attempt{call: CallMutation, det: d, path: path, shown: stripQuery(path), method: http.MethodPost, body: data}
+	if answer != nil {
+		a.out, a.limit = answer, MaxObjectBytes
+	}
+	_, r := c.send(ctx, a)
 	return r
 }
 
 func stripQuery(path string) string {
 	p, _, _ := strings.Cut(path, "?")
 	return p
+}
+
+// attributed reports whether a *StatusError from verdict on call carries the
+// detection's header. An anchored probe's answer can carry the run's header and still
+// be VerdictStatus, so a probe's never counts: Attributed is a read's or a command's.
+func attributed(verdict Verdict, call Call) bool {
+	return verdict == VerdictStatus && call != CallProbe
 }
 
 func (c *Client) send(ctx context.Context, a *attempt) (Meta, Result) {
@@ -104,7 +156,7 @@ func (c *Client) send(ctx context.Context, a *attempt) (Meta, Result) {
 	switch verdict {
 	case VerdictAccept:
 		if a.call == CallMutation {
-			discardBody(resp)
+			c.acceptCommand(a, resp, t.path)
 			break
 		}
 		readErr, err := c.readInto(a, resp)
@@ -117,7 +169,7 @@ func (c *Client) send(ctx context.Context, a *attempt) (Meta, Result) {
 	case VerdictAbsent:
 		discardBody(resp)
 	case VerdictStatus, VerdictUnidentified:
-		r.Err = c.capture(end.Code, resp, t.path)
+		r.Err = c.capture(end.Code, resp, t.path, attributed(verdict, a.call))
 	case VerdictChanged:
 		r.Err = c.changed(sent, end, resp, t.path, isSuccess(a.call, end.Code))
 	case VerdictNoHeader:
@@ -148,7 +200,7 @@ func (c *Client) changed(sent Identity, end End, resp *http.Response, path strin
 	}
 	switch {
 	case !success:
-		e.Status = c.capture(end.Code, resp, path)
+		e.Status = c.capture(end.Code, resp, path, false)
 	case resp != nil:
 		discardBody(resp)
 	}

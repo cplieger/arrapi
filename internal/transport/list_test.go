@@ -2,6 +2,7 @@ package transport_test
 
 import (
 	"errors"
+	"net/http"
 	"reflect"
 	"slices"
 	"testing"
@@ -236,6 +237,125 @@ func TestNestedNullItemIsADecodeError(t *testing.T) {
 		}
 		if res.Accepted() || got != 0 {
 			t.Errorf("GetOne = (%d, accepted %v), want 0, not accepted", got, res.Accepted())
+		}
+	})
+}
+
+// cutAfterHeader answers a 200 with the version header and a declared length, sends
+// part of the body, then closes the connection.
+func cutAfterHeader(w http.ResponseWriter, _ *http.Request) {
+	conn, buf, err := w.(http.Hijacker).Hijack()
+	if err != nil {
+		return
+	}
+	_, _ = buf.WriteString("HTTP/1.1 200 OK\r\nX-Application-Version: " + v4 + "\r\nContent-Length: 1000\r\n\r\n[{\"id\":1},")
+	_ = buf.Flush()
+	_ = conn.Close()
+}
+
+func TestGetOnceDecodesAnAcceptedAnswer(t *testing.T) {
+	f := newFake(t, nil)
+	c := newClient(t, f.srv.URL, transport.Config{})
+	d := detect(t, c, f, v4)
+	f.set(reply(200, v4, `{"id":7}`))
+	var out wireItem
+	res := c.GetOnce(t.Context(), d, "/api/v3/release?movieId=7", transport.MaxListBytes, &out)
+	if !res.Accepted() || res.Next != transport.NextDone || out.ID != 7 {
+		t.Errorf("GetOnce = (%+v, verdict %v, next %v, err %v), want id 7, accepted, done", out, res.Verdict, res.Next, res.Err)
+	}
+	if got := f.requests(); !slices.Equal(got, []string{"GET /api/v3/release?movieId=7"}) {
+		t.Errorf("requests = %q, want the one GET with its query", got)
+	}
+}
+
+// Each answer a read would send again, or move after, ends a GetOnce with one request.
+func TestGetOnceEndsEveryOutcome(t *testing.T) {
+	for name, tc := range map[string]struct {
+		h       http.HandlerFunc
+		verdict transport.Verdict
+	}{
+		"an attributed 503":     {reply(503, v4, `{"message":"busy"}`), transport.VerdictStatus},
+		"an attributed 429":     {reply(429, v4, `{"message":"slow down"}`), transport.VerdictStatus},
+		"a header-less 503":     {reply(503, "", `busy`), transport.VerdictUnidentified},
+		"a 200 from Sonarr 5":   {reply(200, v5, `{"id":7}`), transport.VerdictChanged},
+		"a body cut mid-answer": {cutAfterHeader, transport.VerdictTransport},
+	} {
+		t.Run(name, func(t *testing.T) {
+			f := newFake(t, nil)
+			c := newClient(t, f.srv.URL, transport.Config{})
+			d := detect(t, c, f, v4)
+			f.set(tc.h)
+			out := wireItem{ID: -1}
+			res := c.GetOnce(t.Context(), d, "/api/v3/release?movieId=7", transport.MaxListBytes, &out)
+			if res.Verdict != tc.verdict || res.Next != transport.NextDone || res.Err == nil {
+				t.Errorf("GetOnce = (verdict %v, next %v, err %v), want (%v, done, an error)", res.Verdict, res.Next, res.Err, tc.verdict)
+			}
+			if n := len(f.requests()); n != 1 {
+				t.Errorf("server saw %d requests, want 1", n)
+			}
+			if out.ID != -1 {
+				t.Errorf("out = %+v, want it untouched", out)
+			}
+		})
+	}
+	t.Run("an attributed 503 is the server's status", func(t *testing.T) {
+		f := newFake(t, nil)
+		c := newClient(t, f.srv.URL, transport.Config{})
+		d := detect(t, c, f, v4)
+		f.set(reply(503, v4, `{"message":"busy"}`))
+		res := c.GetOnce(t.Context(), d, "/api/v3/release?movieId=7", transport.MaxListBytes, &wireItem{})
+		se, ok := errors.AsType[*arrapi.StatusError](res.Err)
+		if !ok || se.Code != 503 || !se.Attributed || se.Message != "busy" || se.Path != "/api/v3/release" {
+			t.Errorf("GetOnce err = %#v, want the attributed 503 with its message, on the path without its query", res.Err)
+		}
+	})
+	t.Run("a cut body is one a read sends again", func(t *testing.T) {
+		f := newFake(t, nil)
+		c := newClient(t, f.srv.URL, transport.Config{})
+		d := detect(t, c, f, v4)
+		f.set(cutAfterHeader)
+		res := c.GetJSON(t.Context(), d, "/api/v3/release?movieId=7", transport.MaxListBytes, &wireItem{})
+		if res.Verdict != transport.VerdictTransport || res.Next != transport.NextRetry {
+			t.Errorf("GetJSON = (verdict %v, next %v), want the read's transient (VerdictTransport, NextRetry)", res.Verdict, res.Next)
+		}
+	})
+}
+
+func TestGetListOnce(t *testing.T) {
+	t.Run("maps every item in order", func(t *testing.T) {
+		f := newFake(t, nil)
+		c := newClient(t, f.srv.URL, transport.Config{})
+		d := detect(t, c, f, v4)
+		f.set(reply(200, v4, `[{"id":3},{"id":1},{"id":2}]`))
+		got, res := transport.GetListOnce(t.Context(), c, d, "/api/v3/release?movieId=7", itemID)
+		if !res.Accepted() || !slices.Equal(got, []int{3, 1, 2}) {
+			t.Errorf("GetListOnce = (%v, verdict %v, err %v), want [3 1 2], accepted", got, res.Verdict, res.Err)
+		}
+	})
+	t.Run("a null item is a decode error", func(t *testing.T) {
+		f := newFake(t, nil)
+		c := newClient(t, f.srv.URL, transport.Config{})
+		d := detect(t, c, f, v4)
+		f.set(reply(200, v4, `[{"id":1},null]`))
+		got, res := transport.GetListOnce(t.Context(), c, d, "/api/v3/release?movieId=7", itemID)
+		if want := "arrapi: decode /api/v3/release: list item 1 is null"; res.Err == nil || res.Err.Error() != want {
+			t.Errorf("GetListOnce error = %v, want %q", res.Err, want)
+		}
+		if got != nil || res.Accepted() {
+			t.Errorf("GetListOnce = (%v, accepted %v), want no items, not accepted", got, res.Accepted())
+		}
+	})
+	t.Run("a 503 is one request and no items", func(t *testing.T) {
+		f := newFake(t, nil)
+		c := newClient(t, f.srv.URL, transport.Config{})
+		d := detect(t, c, f, v4)
+		f.set(reply(503, v4, `{"message":"busy"}`))
+		got, res := transport.GetListOnce(t.Context(), c, d, "/api/v3/release?movieId=7", itemID)
+		if got != nil || res.Verdict != transport.VerdictStatus || res.Next != transport.NextDone {
+			t.Errorf("GetListOnce = (%v, verdict %v, next %v), want no items, VerdictStatus, done", got, res.Verdict, res.Next)
+		}
+		if n := len(f.requests()); n != 1 {
+			t.Errorf("server saw %d requests, want 1", n)
 		}
 	})
 }

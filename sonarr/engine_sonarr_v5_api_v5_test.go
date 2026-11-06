@@ -93,13 +93,15 @@ func TestSonarrV5APIv5SeriesMapping(t *testing.T) {
 			{Title: "Beispielserie", Language: arrapi.Language{ID: 4, Name: "German"}},
 		},
 		AlternateTitles: []string{"Example Alt", "Second Alt"},
-		Seasons:         []Season{{Number: 0}, {Number: 1}, {Number: 2, Title: "Second Arc"}},
+		Seasons:         []Season{{Number: 0}, {Number: 1, Monitored: true}, {Number: 2, Title: "Second Arc", Monitored: true}},
 		Tags:            []int{3, 1},
 		Order:           Order{Type: "dvd", Name: "DVD Order"},
 		IDs:             ExternalIDs{IMDb: "tt0000004", AniList: []int{15, 3004, 97001}, TVDB: 900001, TMDB: 800003},
+		Type:            SeriesAnime,
 		ID:              41,
 		Year:            2011,
 		FileCount:       12,
+		Monitored:       true,
 	})
 }
 
@@ -345,16 +347,17 @@ const sonarrV5EpisodeBody = `{
 
 func TestSonarrV5APIv5EpisodeMapping(t *testing.T) {
 	want := Episode{
-		Title:    "The Second One",
-		AirDate:  "2011-04-10",
-		ID:       301,
-		SeriesID: 41,
-		Season:   1,
-		Number:   2,
-		Absolute: 14,
-		TVDBID:   700101,
-		FileID:   55,
-		HasFile:  true,
+		Title:     "The Second One",
+		AirDate:   "2011-04-10",
+		ID:        301,
+		SeriesID:  41,
+		Season:    1,
+		Number:    2,
+		Absolute:  14,
+		TVDBID:    700101,
+		FileID:    55,
+		HasFile:   true,
+		Monitored: true,
 	}
 	w := decodeWire[sonarrV5Episode](t, sonarrV5EpisodeBody)
 
@@ -401,7 +404,9 @@ func TestSonarrV5APIv5HistoryMapping(t *testing.T) {
 		t.Errorf("Date = %v, want %v", got.Date, want)
 	}
 	got.Date = time.Time{}
-	assertFields(t, got, HistoryRecord{EventType: EventDownloadImported, ID: 9, SeriesID: 41})
+	assertFields(t, got, HistoryRecord{
+		DownloadID: "abc", SourceTitle: "x", EventType: EventDownloadImported, ID: 9, SeriesID: 41, EpisodeID: 301,
+	})
 }
 
 func TestSonarrV5APIv5TagMapping(t *testing.T) {
@@ -461,12 +466,14 @@ func codeGeassSonarrV5APIv5() Series {
 		},
 		AlternateTitles: codeGeassAlternateTitles(),
 		Seasons:         []Season{{Number: 0}, {Number: 1}, {Title: "R2", Number: 2}},
+		Type:            SeriesAnime,
 		Tags:            []int{},
 		Order:           Order{Type: "official", Name: "Aired Order", Official: true},
 		IDs:             ExternalIDs{IMDb: "tt0994314", AniList: []int{1575, 2904, 12685, 97880}, TVDB: 79525, TMDB: 31724},
 		ID:              1,
 		Year:            2006,
 		FileCount:       51,
+		Monitored:       true,
 	}
 }
 
@@ -480,7 +487,7 @@ func TestSonarrV5APIv5Fixtures(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		assertFields(t, got, Info{Version: "5.0.0.2701", API: arrapi.APIv5, Features: sonarrV5APIv5Features})
+		assertFields(t, got, Info{Version: "5.0.0.2941", API: arrapi.APIv5, Features: sonarrV5APIv5Features})
 		if want := detectV5; !slices.Equal(p.Requests(), want) {
 			t.Errorf("requests = %q, want %q", p.Requests(), want)
 		}
@@ -505,7 +512,9 @@ func TestSonarrV5APIv5Fixtures(t *testing.T) {
 			t.Errorf("SeriesByID(absent) = %+v, %t, %v; want the zero Series, false, nil", got, ok, err)
 		}
 	})
-	recordedReads(t, c, sh, nil, HistoryRecord{Date: fixtureSince.Add(5 * time.Hour), EventType: EventFileRenamed, ID: 9, SeriesID: 6})
+	recordedReads(t, c, sh, nil, HistoryRecord{
+		Date: fixtureSince.Add(7 * time.Hour), EventType: EventFileRenamed, ID: 9, SeriesID: 7, EpisodeID: 123, SourceTitle: "release-1",
+	})
 }
 
 // TestSonarrV5APIv5FixtureDetectionBehindHiddenAPI hides /api, so detection reads
@@ -516,7 +525,7 @@ func TestSonarrV5APIv5FixtureDetectionBehindHiddenAPI(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	assertFields(t, got, Info{Version: "5.0.0.2701", API: arrapi.APIv5, Features: sonarrV5APIv5Features})
+	assertFields(t, got, Info{Version: "5.0.0.2941", API: arrapi.APIv5, Features: sonarrV5APIv5Features})
 	if want := []string{"GET /api/v5/system/status"}; !slices.Equal(p.Requests(), want) {
 		t.Errorf("replayed requests = %q, want %q", p.Requests(), want)
 	}
@@ -532,8 +541,12 @@ func TestSonarrV5APIv5FixtureMissingParentIsStatus(t *testing.T) {
 		t.Fatal(err)
 	}
 	_, err := c.EpisodeFiles(t.Context(), absentSeriesID)
-	if se := wantStatus(t, err, 404); se.Message != "error-2" {
+	se := wantStatus(t, err, 404)
+	if se.Message != "error-2" {
 		t.Errorf("Message = %q, want the recorded %q", se.Message, "error-2")
+	}
+	if !se.Attributed {
+		t.Error("Attributed = false, want true for an answer carrying the detected version")
 	}
 	if _, err := c.Tags(t.Context()); err != nil {
 		t.Fatal(err)
@@ -554,7 +567,9 @@ func TestSonarrV5APIv5HeaderlessMissingParentDetectsNext(t *testing.T) {
 	f.on("GET /api/v5/episodefile", missingParent404)
 	f.on("GET /api/v5/tag", ans(200, v5, `[]`))
 	_, err := c.EpisodeFiles(t.Context(), absentSeriesID)
-	wantStatus(t, err, 404)
+	if wantStatus(t, err, 404).Attributed {
+		t.Error("Attributed = true, want false for a header-less answer")
+	}
 	if _, err := c.Tags(t.Context()); err != nil {
 		t.Fatal(err)
 	}

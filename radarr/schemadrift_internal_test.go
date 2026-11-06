@@ -1,6 +1,7 @@
 package radarr
 
 import (
+	"log/slog"
 	"net/http"
 	"os"
 	"reflect"
@@ -11,6 +12,7 @@ import (
 
 	"github.com/cplieger/arrapi/v3/internal/detect"
 	"github.com/cplieger/arrapi/v3/internal/specdrift"
+	"github.com/cplieger/arrapi/v3/internal/transport"
 )
 
 var radarrAPIv3Contract = specdrift.Contract{
@@ -22,7 +24,12 @@ var radarrAPIv3Contract = specdrift.Contract{
 }
 
 // wireKinds names the JSON kind each custom decoder in the DTOs reads.
-var wireKinds = specdrift.Kinds{reflect.TypeFor[eventToken](): "string"}
+var wireKinds = specdrift.Kinds{
+	reflect.TypeFor[eventToken](): "string", reflect.TypeFor[commandStatusToken](): "string",
+	reflect.TypeFor[downloadStateToken](): "string",
+	reflect.TypeFor[radarrCommandBody]():  "object",
+	reflect.TypeFor[radarrIndexerFlags](): "any",
+}
 
 func TestUpstreamSchemaDrift(t *testing.T) {
 	doc := specdrift.Load(t, &radarrAPIv3Contract)
@@ -35,6 +42,11 @@ func TestUpstreamSchemaDrift(t *testing.T) {
 		{reflect.TypeFor[radarrTag](), "TagResource"},
 		{reflect.TypeFor[radarrRootFolder](), "RootFolderResource"},
 		{reflect.TypeFor[detect.StatusDoc](), "SystemResource"},
+		{reflect.TypeFor[transport.CommandAnswer](), "CommandResource"},
+		{reflect.TypeFor[radarrCommand](), "CommandResource"},
+		{reflect.TypeFor[radarrQueueItem](), "QueueResource"},
+		{reflect.TypeFor[radarrRelease](), "ReleaseResource"},
+		{reflect.TypeFor[releaseGrab](), "ReleaseResource"},
 		{reflect.TypeFor[detect.APIDoc](), "ApiInfoResource"},
 	} {
 		t.Run(r.dto.Name(), func(t *testing.T) {
@@ -52,18 +64,32 @@ func TestUpstreamRequestDrift(t *testing.T) {
 	doc := specdrift.Load(t, &radarrAPIv3Contract)
 	f := newFake().radarr(vRadarr)
 	f.on("GET "+radarrPrefix+"/movie/41", ans(200, vRadarr, `{"id":41}`))
+	f.on("GET "+radarrPrefix+"/mediacover/41/poster-250.jpg", file(200, vRadarr, "image/jpeg", "\xff\xd8\xff"))
 	c := newClient(t, f)
 	for name, call := range map[string]func() ([]string, error){
-		"Info":      func() ([]string, error) { _, err := c.Info(t.Context()); return nil, err },
+		"Info": func() ([]string, error) { _, err := c.Info(t.Context()); return nil, err },
+		"Check": func() ([]string, error) {
+			_, err := Check(t.Context(), fakeBase, testKey, WithHTTPClient(&http.Client{Transport: f}), WithLogger(slog.New(slog.DiscardHandler)))
+			return nil, err
+		},
 		"Movies":    func() ([]string, error) { _, err := c.Movies(t.Context()); return nil, err },
 		"MovieByID": func() ([]string, error) { _, _, err := c.MovieByID(t.Context(), 41); return nil, err },
 		"HistorySince": func() ([]string, error) {
 			_, err := c.HistorySince(t.Context(), time.Date(2001, 1, 1, 0, 0, 0, 0, time.UTC), EventGrabbed)
 			return nil, err
 		},
-		"Tags":        func() ([]string, error) { _, err := c.Tags(t.Context()); return nil, err },
-		"RootFolders": func() ([]string, error) { _, err := c.RootFolders(t.Context()); return nil, err },
-		"RescanMovie": func() ([]string, error) { return nil, c.RescanMovie(t.Context(), 41) },
+		"Tags":          func() ([]string, error) { _, err := c.Tags(t.Context()); return nil, err },
+		"RootFolders":   func() ([]string, error) { _, err := c.RootFolders(t.Context()); return nil, err },
+		"RescanMovie":   func() ([]string, error) { return nil, c.RescanMovie(t.Context(), 41) },
+		"Commands":      func() ([]string, error) { _, err := c.Commands(t.Context()); return nil, err },
+		"Queue":         func() ([]string, error) { _, err := c.Queue(t.Context()); return nil, err },
+		"MoviesSearch":  func() ([]string, error) { _, err := c.MoviesSearch(t.Context(), []int{41}); return nil, err },
+		"MovieReleases": func() ([]string, error) { _, err := c.MovieReleases(t.Context(), 41); return nil, err },
+		"Grab":          func() ([]string, error) { return nil, c.Grab(t.Context(), "g-1", 3) },
+		"MediaCover": func() ([]string, error) {
+			_, _, err := c.MediaCover(t.Context(), 41, "poster-250.jpg", 1<<20)
+			return nil, err
+		},
 		"MediaCoverURL": func() ([]string, error) {
 			u, err := c.MediaCoverURL(t.Context(), 41, "poster-250.jpg")
 			return []string{http.MethodGet + " " + u}, err

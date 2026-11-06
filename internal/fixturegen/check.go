@@ -23,6 +23,13 @@ var (
 // statusMembers are the only members a recorded system-status.json may hold.
 var statusMembers = map[string]bool{"appName": true, "version": true, UnknownField: true}
 
+// historyDataMembers are the only members a recorded history record's data may hold:
+// the grab fields the DTOs read. Another key, downloadUrl or torrentInfoHash, can carry
+// an indexer key or a hash.
+var historyDataMembers = map[string]bool{
+	"guid": true, "indexer": true, "nzbInfoUrl": true, "releaseSource": true, "message": true, UnknownField: true,
+}
+
 // CheckTree runs Check over every file under root.
 func CheckTree(root string) error {
 	files := map[string][]byte{}
@@ -46,9 +53,10 @@ func CheckTree(root string) error {
 
 // Check applies the checks that need no live run to fixture files keyed by slash
 // path: no URL, 40-hex hash or absolute path outside /tv/ and /movies/ in any string;
-// no history data member; no system-status.json member beyond appName, version and
-// UnknownField; no .headers line but X-Application-Version; every date in 2001 and
-// every size 0 or synthetic. Its error names each file and rule, never the value.
+// no history data beyond an object of the grab fields; no system-status.json member
+// beyond appName, version and UnknownField; no .headers line but
+// X-Application-Version; every date in 2001 and every size 0 or synthetic. Its error
+// names each file and rule, never the value.
 func Check(files map[string][]byte) error {
 	var findings []string
 	for _, name := range sortedNames(files) {
@@ -132,9 +140,23 @@ func (c *checker) walk(v any, member string) {
 func (c *checker) object(obj map[string]any) {
 	for k, v := range obj {
 		if c.history && k == "data" {
-			c.add("a history data member")
+			c.historyData(v)
 		}
 		c.walk(v, k)
+	}
+}
+
+func (c *checker) historyData(v any) {
+	switch data := v.(type) {
+	case map[string]any:
+		for dk := range data {
+			if !historyDataMembers[dk] {
+				c.add("a history data member beyond the grab fields")
+			}
+		}
+	case nil:
+	default:
+		c.add("a history data member beyond the grab fields")
 	}
 }
 

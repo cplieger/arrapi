@@ -51,9 +51,35 @@ var radarrFixtureRules = func() fixturegen.Rules {
 			"sceneName":    {Kind: fixturegen.Pseudo, Role: "scene"},
 			"releaseGroup": {Kind: fixturegen.Pseudo, Role: "group"},
 		},
-		reflect.TypeFor[radarrHistory]():    {"id": id("history"), "movieId": id("movie"), "date": {Kind: fixturegen.Date}},
+		reflect.TypeFor[radarrHistory](): {
+			"id": id("history"), "movieId": id("movie"), "date": {Kind: fixturegen.Date},
+			"downloadId":  {Kind: fixturegen.Pseudo, Role: "download"},
+			"sourceTitle": {Kind: fixturegen.Pseudo, Role: "release"},
+		},
+		reflect.TypeFor[radarrHistoryData](): {
+			"guid":       {Kind: fixturegen.Pseudo, Role: "guid"},
+			"indexer":    {Kind: fixturegen.Pseudo, Role: "indexer"},
+			"nzbInfoUrl": {Kind: fixturegen.Pseudo, Role: "infourl"},
+			"message":    {Kind: fixturegen.Pseudo, Role: "message"},
+		},
 		reflect.TypeFor[radarrTag]():        {"id": id("tag"), "label": {Kind: fixturegen.Pseudo, Role: "tag"}},
 		reflect.TypeFor[radarrRootFolder](): {"path": {Kind: fixturegen.RootPath, Root: "/movies"}},
+		reflect.TypeFor[radarrCommand](): {
+			"id": id("command"), "queued": {Kind: fixturegen.Date}, "started": {Kind: fixturegen.Date}, "ended": {Kind: fixturegen.Date},
+			"message": {Kind: fixturegen.Pseudo, Role: "message"},
+		},
+		reflect.TypeFor[radarrCommandBody](): {"movieIds": id("movie"), "movieId": id("movie")},
+		reflect.TypeFor[radarrQueueItem](): {
+			"movieId":        id("movie"),
+			"title":          {Kind: fixturegen.Pseudo, Role: "release"},
+			"downloadId":     {Kind: fixturegen.Pseudo, Role: "download"},
+			"downloadClient": {Kind: fixturegen.Pseudo, Role: "client"},
+			"size":           {Kind: fixturegen.Size}, "sizeleft": {Kind: fixturegen.Size},
+		},
+		reflect.TypeFor[radarrStatusMessage](): {
+			"title":    {Kind: fixturegen.Pseudo, Role: "release"},
+			"messages": {Kind: fixturegen.Pseudo, Role: "message"},
+		},
 	}
 }()
 
@@ -95,6 +121,8 @@ func recordRadarr(ctx context.Context, root string, tgt recordTarget, since time
 	r.Add("history-since.json", fixturegen.Sample(r.List(ctx, historySincePath(since)), "eventType", historySample), reflect.TypeFor[[]radarrHistory]())
 	r.Read(ctx, "tags.json", radarrPrefix+"/tag", transport.MaxListBytes, reflect.TypeFor[[]radarrTag]())
 	r.Read(ctx, "rootfolders.json", radarrPrefix+"/rootfolder", transport.MaxListBytes, reflect.TypeFor[[]radarrRootFolder]())
+	r.Read(ctx, "commands.json", radarrPrefix+"/command", transport.MaxListBytes, reflect.TypeFor[[]radarrCommand]())
+	r.Read(ctx, "queue.json", radarrPrefix+"/queue/details", transport.MaxListBytes, reflect.TypeFor[[]radarrQueueItem]())
 	if r.Err != nil {
 		return recorded{}, fmt.Errorf("Radarr (API v3): %w", r.Err)
 	}
@@ -192,6 +220,7 @@ const (
 	plantedDate = "2031-07-09T13:57:11Z"
 	plantedSize = "7777777777"
 	plantedID   = "987654"
+	plantedHash = "0123456789abcdef0123456789abcdef01234567"
 )
 
 func radarrLibrary() *uriFake {
@@ -203,8 +232,31 @@ func radarrLibrary() *uriFake {
 		"path":"/data/movies/Serenity (2005)","movieFile":` + file + `}`
 	list := `[{"id":9,"title":"Later","tmdbId":90000,"hasFile":true,"movieFile":` + file + `},` + serenity + `,
 		{"id":8,"title":"Wanted","tmdbId":20000,"hasFile":false},{"id":10,"title":"Earliest Missing","tmdbId":10,"hasFile":false}]`
-	history := `[{"id":2,"movieId":9,"date":"2031-07-09T10:00:00Z","eventType":"grabbed","data":{"downloadUrl":"https://indexer.invalid/api?apikey=CREDENTIAL-abc"}},
-		{"id":987654,"movieId":987654,"date":"` + plantedDate + `","eventType":"downloadFolderImported","data":{"droppedPath":"/downloads/x.mkv"}}]`
+	history := `[{"id":2,"movieId":9,"date":"2031-07-09T10:00:00Z","eventType":"grabbed","downloadId":"` + plantedHash + `",
+		"sourceTitle":"Private.Release.2005","data":{"downloadUrl":"https://indexer.invalid/api?apikey=CREDENTIAL-abc",
+		"guid":"https://indexer.invalid/view/1?passkey=CREDENTIAL-abc","indexer":"Private Indexer","nzbInfoUrl":"https://indexer.invalid/view/1",
+		"releaseSource":"InteractiveSearch","torrentInfoHash":"` + plantedHash + `"}},
+		{"id":987654,"movieId":987654,"date":"` + plantedDate + `","eventType":"downloadFolderImported","downloadId":"` + plantedHash + `",
+		"data":{"droppedPath":"/downloads/x.mkv"}},
+		{"id":3,"movieId":9,"date":"2031-07-09T11:00:00Z","eventType":"downloadFailed","downloadId":"` + plantedHash + `",
+		"data":{"message":"/downloads/x.mkv failed","indexer":"Private Indexer"}}]`
+	// A live list holds only what ran in the last minutes, so the fake plants the
+	// RefreshMovie a new movie queues.
+	commands := `[{"id":987654,"name":"RefreshMovie","message":"Copying /downloads/x to /data/movies/Serenity (2005)","status":"completed",
+		"body":{"movieIds":[987654],"isNewMovie":true,"sendUpdatesToClient":true,"trigger":"manual"},
+		"queued":"` + plantedDate + `","started":"2031-07-09T13:57:12Z","ended":"2031-07-09T13:57:20Z",
+		"clientUserAgent":"Private Agent","exception":"at /app/radarr","trigger":"manual","priority":"normal"},
+		{"id":2,"name":"RefreshMonitoredDownloads","status":"started","body":{},"queued":"2031-07-09T13:58:00Z"}]`
+	// A live queue is often empty, so the fake plants a download that shares the planted
+	// grab's download id and release, and an import-blocked one whose message names a
+	// client path, each with members the DTO does not declare.
+	queue := `[{"id":7,"title":"Private.Release.2005","downloadId":"` + plantedHash + `","downloadClient":"Private Client",
+		"trackedDownloadState":"downloading","statusMessages":[],"movieId":987654,"sizeleft":8888888888,"size":7777777777,
+		"outputPath":"/downloads/Private.Release.2005","indexer":"Private Indexer","errorMessage":"at /app/radarr",
+		"estimatedCompletionTime":"` + plantedDate + `"},
+		{"id":8,"title":"Private.Release.2005.Remux","downloadId":"SABnzbd_nzo_private","downloadClient":"Private Client",
+		"trackedDownloadState":"importBlocked","statusMessages":[{"title":"Private.Release.2005.Remux.mkv","messages":["/downloads/x.mkv is no video"]}],
+		"movieId":10,"sizeleft":0,"size":9999999999,"outputPath":"/downloads/x.mkv"}]`
 	status := `{"appName":"Radarr","version":"` + vRadarr + `","appData":"/config","startupPath":"/app/radarr/bin","instanceName":"Example Radarr"}`
 	s := func(body string) step { return ans(http.StatusOK, vRadarr, body) }
 	return &uriFake{routes: map[string]step{
@@ -216,6 +268,8 @@ func radarrLibrary() *uriFake {
 		"GET " + historySincePath(recordSince): s(history),
 		"GET /api/v3/tag":                      s(`[{"id":3,"label":"private-label"}]`),
 		"GET /api/v3/rootfolder":               s(`[{"id":1,"path":"/data/movies/","freeSpace":1}]`),
+		"GET /api/v3/command":                  s(commands),
+		"GET /api/v3/queue/details":            s(queue),
 	}}
 }
 
@@ -225,8 +279,8 @@ func target(f http.RoundTripper, key arrapi.APIKey) recordTarget {
 
 // radarrFixtureFiles is every file design section 11 names for testdata/radarr.
 var radarrFixtureFiles = []string{
-	"radarr/api-v3/api.json", "radarr/api-v3/history-since.json", "radarr/api-v3/movie-nofile.json",
-	"radarr/api-v3/movie-withfile.json", "radarr/api-v3/movies.json", "radarr/api-v3/rootfolders.json",
+	"radarr/api-v3/api.json", "radarr/api-v3/commands.json", "radarr/api-v3/history-since.json", "radarr/api-v3/movie-nofile.json",
+	"radarr/api-v3/movie-withfile.json", "radarr/api-v3/movies.json", "radarr/api-v3/queue.json", "radarr/api-v3/rootfolders.json",
 	"radarr/api-v3/system-status.json", "radarr/api-v3/tags.json",
 }
 
@@ -291,13 +345,62 @@ func TestRecordRadarrWritesEveryFixture(t *testing.T) {
 	}
 	var hist []radarrHistory
 	decodeInto(t, files[dirRadarrAPIv3+"/history-since.json"], &hist)
-	if len(hist) != 2 || hist[1].MovieID != withFile.ID || hist[0].Date.Year() != 2001 || !hist[0].Date.Before(hist[1].Date) {
+	if len(hist) != 3 || hist[1].MovieID != withFile.ID || hist[0].Date.Year() != 2001 || !hist[0].Date.Before(hist[1].Date) {
 		t.Fatalf("history = %+v", hist)
 	}
+	var data []struct {
+		Data       map[string]any `json:"data"`
+		DownloadID string         `json:"downloadId"`
+	}
+	decodeInto(t, files[dirRadarrAPIv3+"/history-since.json"], &data)
+	if data[0].DownloadID != "download-1" || data[1].DownloadID != data[0].DownloadID || data[2].DownloadID != data[0].DownloadID {
+		t.Errorf("downloadIds %q %q %q, want one synthetic id shared", data[0].DownloadID, data[1].DownloadID, data[2].DownloadID)
+	}
+	if grab := map[string]any{"arrapiUnknownField": 1.0, "guid": "guid-1", "indexer": "indexer-1", "nzbInfoUrl": "infourl-1", "releaseSource": "InteractiveSearch"}; !maps.Equal(data[0].Data, grab) {
+		t.Errorf("grabbed data = %v, want %v", data[0].Data, grab)
+	}
+	if !maps.Equal(data[1].Data, map[string]any{"arrapiUnknownField": 1.0}) {
+		t.Errorf("import data = %v, want only the unknown-field marker", data[1].Data)
+	}
+	if failed := map[string]any{"arrapiUnknownField": 1.0, "message": "message-1", "indexer": "indexer-1"}; !maps.Equal(data[2].Data, failed) {
+		t.Errorf("downloadFailed data = %v, want %v", data[2].Data, failed)
+	}
+	var cmds []map[string]any
+	decodeInto(t, files[dirRadarrAPIv3+"/commands.json"], &cmds)
+	if len(cmds) != 2 {
+		t.Fatalf("commands.json holds %d commands, want 2", len(cmds))
+	}
+	refresh := cmds[0]
+	b, _ := refresh["body"].(map[string]any)
+	if ids, _ := b["movieIds"].([]any); len(ids) != 1 || ids[0] != float64(withFile.ID) || b["isNewMovie"] != true {
+		t.Errorf("RefreshMovie body = %v, want the synthetic movie id %d and isNewMovie", b, withFile.ID)
+	}
+	if refresh["name"] != "RefreshMovie" || refresh["status"] != "completed" || !strings.HasPrefix(fmt.Sprint(refresh["message"]), "message-") {
+		t.Errorf("RefreshMovie = %v, want its name and status kept and its message replaced", refresh)
+	}
+	if q, _ := refresh["queued"].(string); !strings.HasPrefix(q, "2001-") {
+		t.Errorf("queued = %v, want a synthetic date", refresh["queued"])
+	}
+	for _, m := range []string{"clientUserAgent", "exception", "trigger", "priority"} {
+		if _, ok := refresh[m]; ok {
+			t.Errorf("the command keeps %s", m)
+		}
+	}
+	for _, m := range []string{"sendUpdatesToClient", "trigger"} {
+		if _, ok := b[m]; ok {
+			t.Errorf("the command body keeps %s", m)
+		}
+	}
+	var noFile radarrMovie
+	decodeInto(t, files[dirRadarrAPIv3+"/movie-nofile.json"], &noFile)
+	wantRecordedQueue(t, files[dirRadarrAPIv3+"/queue.json"], data[0].DownloadID, withFile.ID, noFile.ID)
 	for name, body := range files {
 		for _, p := range []string{
-			plantedDate, plantedSize, plantedID, "CREDENTIAL", "apikey", `"data"`, "/data", "/config", "/downloads",
+			"Private Agent", "/app/radarr",
+			plantedDate, plantedSize, plantedID, plantedHash, "CREDENTIAL", "apikey", "passkey", "downloadUrl", "torrentInfoHash",
+			"droppedPath", "indexer.invalid", "Private Indexer", "Private.Release", "/data", "/config", "/downloads",
 			"Example Radarr", "SHADOWGRP", "Bluray-1080p.mkv", "private-label", "radarr.test", "DTS",
+			"Private Client", "SABnzbd_nzo_private", "x.mkv", "outputPath", "errorMessage", "estimatedCompletionTime", "8888888888", "9999999999",
 		} {
 			if strings.Contains(body, p) {
 				t.Errorf("%s holds %q", name, p)
@@ -368,5 +471,50 @@ func TestRecordRadarrRefusesKeyAndDeploymentData(t *testing.T) {
 				t.Fatalf("the refusal renders the value: %v", err)
 			}
 		})
+	}
+}
+
+// wantRecordedQueue checks the planted queue: the download shares the planted grab's
+// synthetic download id, each movie id names its synthetic movie, the state is kept,
+// the client, titles, sizes and status text are replaced, and no undeclared member
+// survives.
+func wantRecordedQueue(t *testing.T, body, grabDownload string, withFile, noFile int) {
+	t.Helper()
+	var queue []map[string]any
+	decodeInto(t, body, &queue)
+	if len(queue) != 2 {
+		t.Fatalf("queue.json holds %d items, want 2", len(queue))
+	}
+	for i, want := range []struct {
+		state, download string
+		movie           int
+	}{{"downloading", grabDownload, withFile}, {"importBlocked", "download-2", noFile}} {
+		q := queue[i]
+		if q["trackedDownloadState"] != want.state || q["downloadId"] != want.download || q["downloadClient"] != "client-1" || q["movieId"] != float64(want.movie) {
+			t.Errorf("queue[%d] = %v, want state %s, download id %s, client-1 and movie %d", i, q, want.state, want.download, want.movie)
+		}
+		if size, _ := q["size"].(float64); size < 1e9 || !strings.HasPrefix(fmt.Sprint(q["title"]), "release-") {
+			t.Errorf("queue[%d] size %v and title %v, want synthetic ones", i, q["size"], q["title"])
+		}
+		for _, m := range []string{"id", "outputPath", "indexer", "errorMessage", "estimatedCompletionTime"} {
+			if _, ok := q[m]; ok {
+				t.Errorf("queue[%d] keeps %s", i, m)
+			}
+		}
+	}
+	if grabDownload != "download-1" {
+		t.Errorf("the grab's download id = %q, want download-1", grabDownload)
+	}
+	if left, _ := queue[0]["sizeleft"].(float64); left < 1e9 || queue[1]["sizeleft"] != 0.0 {
+		t.Errorf("sizeleft = %v %v, want a synthetic size and 0", queue[0]["sizeleft"], queue[1]["sizeleft"])
+	}
+	var group map[string]any
+	msgs, _ := queue[1]["statusMessages"].([]any)
+	if len(msgs) == 1 {
+		group, _ = msgs[0].(map[string]any)
+	}
+	lines, _ := group["messages"].([]any)
+	if !strings.HasPrefix(fmt.Sprint(group["title"]), "release-") || len(lines) != 1 || !strings.HasPrefix(fmt.Sprint(lines[0]), "message-") {
+		t.Errorf("status messages = %v, want a synthetic title and message", msgs)
 	}
 }

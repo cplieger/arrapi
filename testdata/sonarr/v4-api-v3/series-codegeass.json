@@ -37,6 +37,7 @@
     "arrapiUnknownField": 1,
     "id": 1,
     "imdbId": "tt0994314",
+    "monitored": true,
     "originalLanguage": {
       "arrapiUnknownField": 1,
       "id": 8,
@@ -45,17 +46,21 @@
     "seasons": [
       {
         "arrapiUnknownField": 1,
+        "monitored": false,
         "seasonNumber": 0
       },
       {
         "arrapiUnknownField": 1,
+        "monitored": false,
         "seasonNumber": 1
       },
       {
         "arrapiUnknownField": 1,
+        "monitored": false,
         "seasonNumber": 2
       }
     ],
+    "seriesType": "anime",
     "statistics": {
       "arrapiUnknownField": 1,
       "episodeFileCount": 51
