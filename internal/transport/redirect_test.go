@@ -94,7 +94,7 @@ func TestCallerPolicyRefusalToKeyBearingHostRedacted(t *testing.T) {
 	other := newFake(t, reply(200, v4, `[]`))
 	target := strings.Replace(other.srv.URL, "127.0.0.1", string(testKey)+".localhost", 1)
 	f := newFake(t, nil)
-	hc := &http.Client{CheckRedirect: httpclient.RedirectPolicyFunc(httpclient.WithSameOrigin(true))}
+	hc := &http.Client{CheckRedirect: httpclient.RedirectPolicy(httpclient.WithSameOrigin(true))}
 	c := newClient(t, f.srv.URL, transport.Config{HTTPClient: hc})
 	d := detect(t, c, f, v4)
 	f.set(redirectTo(302, target+"/x", v4))
@@ -474,7 +474,7 @@ func TestDefaultClientRefusalCarriesNoLocationPathOrQuery(t *testing.T) {
 }
 
 // TestHopCapNamedBeforeOrigin: the policy judges the count before the target
-// (httpclient's RedirectPolicyFunc), so a 6th redirect to another host, or one upgrading to
+// (httpclient's RedirectPolicy), so a 6th redirect to another host, or one upgrading to
 // https on the same host, is the cap.
 func TestHopCapNamedBeforeOrigin(t *testing.T) {
 	other, keys := counting(t)

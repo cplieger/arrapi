@@ -11,7 +11,7 @@ import (
 
 // defaultRedirectPolicy is every read client's follow-or-refuse decision: the exact
 // origin (RFC 6454) under httpclient's own hop cap; transport passes no hop count of its own.
-var defaultRedirectPolicy = httpclient.RedirectPolicyFunc(httpclient.WithSameOrigin(true))
+var defaultRedirectPolicy = httpclient.RedirectPolicy(httpclient.WithSameOrigin(true))
 
 // redirectRefusedError is checkDefaultRedirect's error: the policy's refusal
 // plus what safeDoError needs to name the cap or the fix. It never leaves transport,
