@@ -10,30 +10,23 @@ import (
 // The error classes a record's error attribute carries by default: arrapi's own words,
 // which no server text reaches.
 const (
-	classOutcomeUnknown = "outcome_unknown"
-	classServerChanged  = "server_changed"
-	classUnsupported    = "unsupported_api"
-	classStatus         = "status"
-	classTooLarge       = "too_large"
-	classDecode         = "decode"
-	classNoID           = "no_id"
-	classTransport      = "transport"
+	classServerChanged = "server_changed"
+	classStatus        = "status"
+	classTooLarge      = "too_large"
+	classDecode        = "decode"
+	classNoID          = "no_id"
+	classTransport     = "transport"
 )
 
-// ErrorClass is err's class, the first of these its chain holds: outcome_unknown
-// (arrapi.ErrCommandOutcomeUnknown), server_changed, unsupported_api, status, too_large,
-// decode, no_id (a command answer without an id of 1 or more); transport for any other
-// error, and "" for nil.
+// ErrorClass is err's class, the first of these its chain holds: server_changed, status,
+// too_large, decode, no_id (a command answer without an id of 1 or more); transport for
+// any other error, and "" for nil.
 func ErrorClass(err error) string {
 	switch {
 	case err == nil:
 		return ""
-	case errors.Is(err, arrapi.ErrCommandOutcomeUnknown):
-		return classOutcomeUnknown
 	case is[*arrapi.ServerChangedError](err):
 		return classServerChanged
-	case is[*arrapi.UnsupportedAPIError](err):
-		return classUnsupported
 	case is[*arrapi.StatusError](err):
 		return classStatus
 	case is[*arrapi.ResponseTooLargeError](err):

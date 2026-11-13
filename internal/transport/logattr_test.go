@@ -2,7 +2,6 @@ package transport_test
 
 import (
 	"errors"
-	"fmt"
 	"strings"
 	"testing"
 
@@ -18,9 +17,7 @@ func TestErrorClass(t *testing.T) {
 		want string
 	}{
 		"nil":                         {nil, ""},
-		"an unknown command outcome":  {fmt.Errorf("%w: %w", arrapi.ErrCommandOutcomeUnknown, changed), "outcome_unknown"},
 		"a server change over status": {changed, "server_changed"},
-		"an unsupported API":          {&arrapi.UnsupportedAPIError{Reason: arrapi.ReasonNoVersionHeader}, "unsupported_api"},
 		"a status":                    {status, "status"},
 		"a refused grab":              {&arrapi.GrabError{Err: status, Reason: arrapi.GrabNotCached}, "status"},
 		"an answer over its cap":      {&arrapi.ResponseTooLargeError{Path: "/api/v3/series", Limit: 1}, "too_large"},

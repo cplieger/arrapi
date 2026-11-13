@@ -101,13 +101,11 @@ arrapi writes these `slog` records, each labeled `arrapi`:
 
 Without `WithLogger`, the records go to `slog.Default()`. arrapi writes no other log lines and returns every failure as an error. No record carries the URL or the key. `path` is the request path without its query, and `status` is the HTTP status of an error answer, absent when the failure had none. `version` is the answer's `X-Application-Version`, and `from` and `to` are versions of digits and dots.
 
-By default no record carries text the server sent. The `error` attribute is a fixed class, the first that the error matches:
+By default no record carries free text the server sent: beyond the version header above, every attribute is arrapi's own. The `error` attribute is a fixed class, the first that the error matches:
 
 | Class | Error |
 | --- | --- |
-| `outcome_unknown` | `arrapi.ErrCommandOutcomeUnknown` |
 | `server_changed` | `*arrapi.ServerChangedError` |
-| `unsupported_api` | `*arrapi.UnsupportedAPIError` |
 | `status` | `*arrapi.StatusError` |
 | `too_large` | `*arrapi.ResponseTooLargeError` |
 | `decode` | `*arrapi.DecodeError` |
