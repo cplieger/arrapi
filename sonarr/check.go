@@ -11,8 +11,9 @@ import (
 // New does, runs the fresh detection Info runs (one attempt per request, at most 5 s
 // in all) and reports what it found. A failure is an *arrapi.CheckError naming what
 // to fix, unless ctx has ended when Check fails: then it returns ctx.Err(), even for
-// a baseURL or key New refuses. It keeps no client. WithHTTPClient and WithLogger
-// apply as in New; WithMaxAttempts, WithBaseDelay and WithTimeout have no effect.
+// a baseURL or key New refuses. It keeps no client. WithHTTPClient, WithLogger and
+// WithLoggedErrorText apply as in New; WithMaxAttempts, WithBaseDelay and WithTimeout
+// have no effect.
 func Check(ctx context.Context, baseURL string, key arrapi.APIKey, opts ...Option) (Info, error) {
 	var o options
 	for _, opt := range opts {

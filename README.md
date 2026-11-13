@@ -85,7 +85,7 @@ The `radarr` package has the same shape: `radarr.New`, `Info`, `Movies` and so o
 - `radarr.Client` reads `Movies`, `MovieByID`, `HistorySince`, `Commands`, `Queue`, `Tags` and `RootFolders`, runs the interactive search `MovieReleases`, and sends `RescanMovie`, `MoviesSearch` and `Grab`.
 - `MediaCoverURL` builds an image URL under your base URL, `MediaCover` reads that image's bytes with your key up to a limit you pass, and `Series.WebURL` and `Movie.WebURL` link to an item's web UI page.
 - `arrapi.TagIDs` and `arrapi.HasAnyTag` filter by tag label.
-- The options are `WithHTTPClient`, `WithMaxAttempts`, `WithBaseDelay`, `WithTimeout` and `WithLogger`, in each package.
+- The options are `WithHTTPClient`, `WithMaxAttempts`, `WithBaseDelay`, `WithTimeout`, `WithLogger` and `WithLoggedErrorText`, in each package.
 - Errors are `*arrapi.StatusError`, `*arrapi.ResponseTooLargeError`, `*arrapi.DecodeError`, `*arrapi.UnsupportedAPIError` with a reason and a fix, `*arrapi.ServerChangedError`, `*arrapi.CheckError`, `*arrapi.GrabError` and `arrapi.ErrCommandOutcomeUnknown`.
 
 The full reference is on [pkg.go.dev](https://pkg.go.dev/github.com/cplieger/arrapi/v3). [Data types](docs/data-model.md) covers the normalized types, episode orders, audio languages, history, the command list, the queue and release searches.
@@ -105,7 +105,7 @@ A read can follow the server across an upgrade, so values from separate calls ca
 - Backoff starts at `WithBaseDelay` (default 1s) and doubles with jitter.
 - A 4xx other than 408 and 429, and a 501, 505, 506, 508, 510 or 511, fail at once.
 - The rescans, searches and grabs detect first, then send their request once, never through a redirect ([Commands](docs/request-behavior.md#commands)). An interactive release search is sent once too ([Release searches](docs/request-behavior.md#release-searches)).
-- arrapi logs its retry and detection records, and a search answer it could not read, through `slog`, labeled `arrapi`, to `slog.Default()` unless you pass `WithLogger`. It logs nothing else.
+- arrapi logs its retry and detection records, and a search answer it could not read, through `slog`, labeled `arrapi`, to `slog.Default()` unless you pass `WithLogger`. It logs nothing else. By default no record carries text the server sent: a failure's `error` attribute is a fixed class, such as `status` or `transport`, beside the app, the path and the status code. `WithLoggedErrorText(true)` logs the error's text instead, which can quote the server's message or an error body ([Logging](docs/request-behavior.md#logging)).
 - One client is safe for concurrent use and starts no goroutines.
 
 [Request behavior](docs/request-behavior.md) has the full rules for retries, redirects, size limits and errors.
