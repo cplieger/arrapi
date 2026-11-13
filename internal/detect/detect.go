@@ -90,7 +90,7 @@ func walkArms(ctx context.Context, t *transport.Client, r *transport.ProbeRun, a
 		}
 		return nil, err
 	}
-	b.logger.Debug("arrapi: detected", "app", app, "version", d.Version, "api", string(d.API), "deprecated", d.Deprecated)
+	b.logger.Debug("arrapi: detected", "app", app, "version", d.Identity.AppVersion, "api", string(d.API), "deprecated", d.Deprecated)
 	return d, nil
 }
 

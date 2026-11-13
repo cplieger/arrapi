@@ -14,6 +14,7 @@ type Config struct {
 	MaxAttempts int           // < 1: the default 3
 	BaseDelay   time.Duration // <= 0: 1s
 	Timeout     time.Duration // <= 0: 120s
+	LogErrText  bool          // a record's error attribute is the error's text; false: its class
 }
 
 const (

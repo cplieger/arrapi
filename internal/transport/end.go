@@ -99,7 +99,7 @@ func (c *Client) PostCommand(ctx context.Context, d *Detection, path string, bod
 func (c *Client) post(ctx context.Context, d *Detection, path string, body any, answer *CommandAnswer) Result {
 	data, err := json.Marshal(body)
 	if err != nil {
-		return Result{Err: fmt.Errorf("arrapi: encode %s: %w", stripQuery(path), err), Verdict: VerdictTransport, Next: NextDone}
+		return Result{Err: fmt.Errorf("arrapi: encode %s: %w", stripQuery(path), err), Path: stripQuery(path), Verdict: VerdictTransport, Next: NextDone}
 	}
 	a := &attempt{call: CallMutation, det: d, path: path, shown: stripQuery(path), method: http.MethodPost, body: data}
 	if answer != nil {
@@ -134,7 +134,7 @@ func (c *Client) send(ctx context.Context, a *attempt) (Meta, Result) {
 	if err != nil {
 		// net/url's parse error quotes the whole URL, the base's user info included.
 		err = c.leaving(fmt.Errorf("arrapi: build request %s: %w", t.path, httpclient.LogSafeError(err)))
-		return Meta{}, Result{Err: err, Verdict: VerdictTransport, Next: NextDone}
+		return Meta{}, Result{Err: err, Path: t.path, Verdict: VerdictTransport, Next: NextDone}
 	}
 	req.Header.Set(headerAPIKey, string(c.key))
 	req.Header.Set("User-Agent", userAgent)
@@ -152,11 +152,11 @@ func (c *Client) send(ctx context.Context, a *attempt) (Meta, Result) {
 	}
 	sent := t.sent()
 	verdict, next := Decide(sent, a.call, end)
-	r := Result{Verdict: verdict, Next: next, Sent: t.left, SelfMark: t.heldSelfMark()}
+	r := Result{Path: t.path, Verdict: verdict, Next: next, Sent: t.left, SelfMark: t.heldSelfMark()}
 	switch verdict {
 	case VerdictAccept:
 		if a.call == CallMutation {
-			c.acceptCommand(a, resp, t.path)
+			c.acceptCommand(a, resp, sent, t.path)
 			break
 		}
 		readErr, err := c.readInto(a, resp)

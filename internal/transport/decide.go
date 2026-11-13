@@ -69,6 +69,7 @@ const (
 // except an accepted body over its cap or one that does not decode.
 type Result struct {
 	Err      error
+	Path     string // the attempt's path as its errors carry it
 	Verdict  Verdict
 	Next     Next
 	Sent     bool   // false when the send check refused the attempt's first request

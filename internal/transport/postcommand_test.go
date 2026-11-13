@@ -79,20 +79,23 @@ func TestPostCommandUnreadableAnswerIsAcceptedWithIDZero(t *testing.T) {
 		w.WriteHeader(http.StatusCreated)
 		_, _ = w.Write([]byte(`{"id":77`))
 	}
-	for name, h := range map[string]http.HandlerFunc{
-		"not JSON":          reply(201, v4, "not a command resource"),
-		"empty":             reply(201, v4, ""),
-		"null":              reply(201, v4, "null"),
-		"a string id":       reply(201, v4, `{"id":"77"}`),
-		"id 0":              reply(201, v4, `{"id":0}`),
-		"a negative id":     reply(201, v4, `{"id":-3}`),
-		"no id":             reply(201, v4, `{"name":"SeriesSearch"}`),
-		"partial JSON":      reply(201, v4, `{"id":77,`),
-		"over the cap":      reply(201, v4, `{"id":77,"x":"`+strings.Repeat("a", transport.MaxObjectBytes)+`"}`),
-		"cut by the server": cut,
+	for name, tc := range map[string]struct {
+		h     http.HandlerFunc
+		class string
+	}{
+		"not JSON":          {reply(201, v4, "not a command resource"), "decode"},
+		"empty":             {reply(201, v4, ""), "decode"},
+		"null":              {reply(201, v4, "null"), "decode"},
+		"a string id":       {reply(201, v4, `{"id":"77"}`), "decode"},
+		"id 0":              {reply(201, v4, `{"id":0}`), "no_id"},
+		"a negative id":     {reply(201, v4, `{"id":-3}`), "no_id"},
+		"no id":             {reply(201, v4, `{"name":"SeriesSearch"}`), "no_id"},
+		"partial JSON":      {reply(201, v4, `{"id":77,`), "decode"},
+		"over the cap":      {reply(201, v4, `{"id":77,"x":"`+strings.Repeat("a", transport.MaxObjectBytes)+`"}`), "too_large"},
+		"cut by the server": {cut, "transport"},
 	} {
 		t.Run(name, func(t *testing.T) {
-			id, res, rec := postCommand(t, h)
+			id, res, rec := postCommand(t, tc.h)
 			if id != 0 || res.Err != nil || res.Verdict != transport.VerdictAccept || res.Next != transport.NextDone {
 				t.Errorf("PostCommand = (%d, err %v, verdict %v, next %v), want (0, nil, accept, done)", id, res.Err, res.Verdict, res.Next)
 			}
@@ -100,8 +103,8 @@ func TestPostCommandUnreadableAnswerIsAcceptedWithIDZero(t *testing.T) {
 			if len(got) != 1 {
 				t.Fatalf("logged %d unread-answer records, want 1", len(got))
 			}
-			if got[0]["path"] != "/api/v3/command" || got[0]["level"] != "WARN" || got[0]["err"] == "" {
-				t.Errorf("record = %v, want a WARN naming /api/v3/command and its cause", got[0])
+			if got[0]["path"] != "/api/v3/command" || got[0]["level"] != "WARN" || got[0]["error"] != tc.class {
+				t.Errorf("record = %v, want a WARN naming /api/v3/command and the class %q", got[0], tc.class)
 			}
 		})
 	}

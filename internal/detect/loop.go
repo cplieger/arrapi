@@ -17,11 +17,12 @@ type budget struct {
 	app      string
 	base     time.Duration
 	attempts int
+	errText  bool // Config.LogErrText
 }
 
 func budgetOf(t *transport.Client, app string) budget {
 	cfg := t.Config()
-	return budget{logger: cfg.Logger, app: app, base: cfg.BaseDelay, attempts: cfg.MaxAttempts}
+	return budget{logger: cfg.Logger, app: app, base: cfg.BaseDelay, attempts: cfg.MaxAttempts, errText: cfg.LogErrText}
 }
 
 // mover is how a read reaches another detection; nil for probes and commands.
@@ -182,8 +183,19 @@ func (st *callState) wait(ctx context.Context, r transport.Result) (time.Duratio
 }
 
 func (st *callState) logRetry(b budget, r transport.Result, delay time.Duration, fresh bool) {
-	b.logger.Debug("arrapi failed, retrying", "attempt", st.passes, "max", b.attempts,
-		"delay", delay.String(), "fresh", fresh, "error", httpclient.LogSafeError(r.Err))
+	b.logger.Debug("arrapi failed, retrying", attemptAttrs(b, r,
+		"attempt", st.passes, "max", b.attempts, "delay", delay.String(), "fresh", fresh)...)
+}
+
+// attemptAttrs is lead followed by the failed attempt's app, path, status when there is
+// one, and error as transport.LogError renders it.
+func attemptAttrs(b budget, r transport.Result, lead ...any) []any {
+	attrs := append(make([]any, 0, len(lead)+8), lead...)
+	attrs = append(attrs, "app", b.app, "path", r.Path)
+	if code := transport.StatusCode(r.Err); code != 0 {
+		attrs = append(attrs, "status", code)
+	}
+	return append(attrs, "error", transport.LogError(r.Err, b.errText))
 }
 
 // exhausted ends a call whose Retry or Fresh the budget table turned into Done.
@@ -192,8 +204,7 @@ func (st *callState) exhausted(ctx context.Context, b budget, r transport.Result
 	if b.attempts > 1 {
 		level = slog.LevelWarn
 	}
-	b.logger.Log(ctx, level, "arrapi retries exhausted", "attempts", st.sends, "bound", bound,
-		"error", httpclient.LogSafeError(r.Err))
+	b.logger.Log(ctx, level, "arrapi retries exhausted", attemptAttrs(b, r, "attempts", st.sends, "bound", bound)...)
 	return r.Err
 }
 

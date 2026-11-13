@@ -49,3 +49,8 @@ func WithLogger(l *slog.Logger) Option {
 		}
 	}
 }
+
+// WithLoggedErrorText sets whether a record's error attribute is the error's text,
+// which can quote the server's message, an error answer's body or other text the
+// server sent, instead of its class; the default is false.
+func WithLoggedErrorText(on bool) Option { return func(o *options) { o.cfg.LogErrText = on } }

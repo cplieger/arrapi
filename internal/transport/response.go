@@ -175,8 +175,9 @@ var errNoCommandID = errors.New("arrapi: the command answer holds no id of 1 or 
 // acceptCommand reads an accepted command's answer when a.out is a *CommandAnswer and
 // discards it otherwise. The server already took the command, and a caller that sees
 // an error may send it again, so no failure here reaches the Result: it zeroes the id
-// and is logged once. Every logged cause renders no byte of the body.
-func (c *Client) acceptCommand(a *attempt, resp *http.Response, path string) {
+// and is logged once: its class, or with Config.LogErrText its text, which renders no
+// byte of the body but can quote other server bytes (an HTTP/2 GOAWAY's debug data).
+func (c *Client) acceptCommand(a *attempt, resp *http.Response, sent Identity, path string) {
 	answer, ok := a.out.(*CommandAnswer)
 	if !ok {
 		discardBody(resp)
@@ -193,7 +194,8 @@ func (c *Client) acceptCommand(a *attempt, resp *http.Response, path string) {
 		return
 	}
 	answer.ID = 0
-	c.cfg.Logger.Warn("arrapi: command accepted; its answer was not read", "path", path, "err", cause)
+	c.cfg.Logger.Warn("arrapi: command accepted; its answer was not read", "app", sent.App,
+		"path", path, "error", LogError(cause, c.cfg.LogErrText))
 }
 
 // nullListItem finds the first nil item of a top-level list of pointers, GetList's
