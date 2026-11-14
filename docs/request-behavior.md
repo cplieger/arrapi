@@ -86,17 +86,33 @@ One call sends at most `WithMaxAttempts` attempts (default 3) for its own reques
 - Any other 4xx, a 501, 505, 506, 508, 510 or 511, and a transport error that is not transient, fail at once.
 - The wait before a retry is the answer's `Retry-After`, capped at 60 seconds. Without one it starts at `WithBaseDelay` (default 1s), doubles after each retry and is drawn at random between half and all of the current delay. A move to another server version waits nothing.
 
+## Logging
+
 arrapi writes these `slog` records, each labeled `arrapi`:
 
 | Message | Level | When |
 | --- | --- | --- |
-| `arrapi failed, retrying` | Debug | before each retry, with `attempt`, `max`, `delay`, `fresh` and `error` |
-| `arrapi succeeded after retry` | Debug | when a retried call succeeds |
-| `arrapi retries exhausted` | Warn, or Debug under `WithMaxAttempts(1)` | when the budget ends a call, with `attempts`, `bound` and `error` |
+| `arrapi failed, retrying` | Debug | before each retry, with `attempt`, `max`, `delay`, `fresh`, `app`, `path`, `status` and `error` |
+| `arrapi succeeded after retry` | Debug | when a retried call succeeds, with `attempts` |
+| `arrapi retries exhausted` | Warn, or Debug under `WithMaxAttempts(1)` | when the budget ends a call, with `attempts`, `bound`, `app`, `path`, `status` and `error` |
+| `arrapi: command accepted; its answer was not read` | Warn | when a search command's answer could not be read, with `app`, `path` and `error` ([Commands](#commands)) |
 | `arrapi: detected` | Debug | after each detection, with `app`, `version`, `api` and `deprecated` |
 | `arrapi: server version changed` | Info | when an answer names another version, with `app`, `from` and `to` |
 
-Without `WithLogger`, the records go to `slog.Default()`. arrapi writes no other log lines and returns every failure as an error. No record carries the URL or the key. The `error` attribute is the error's text, so it can hold the server's message or the body of an error answer, made safe to log as described under [Errors](#errors).
+Without `WithLogger`, the records go to `slog.Default()`. arrapi writes no other log lines and returns every failure as an error. No record carries the URL or the key. `path` is the request path without its query, and `status` is the HTTP status of an error answer, absent when the failure had none. `version` is the answer's `X-Application-Version`, and `from` and `to` are versions of digits and dots.
+
+By default no record carries free text the server sent: beyond the version header above, every attribute is arrapi's own. The `error` attribute is a fixed class, the first that the error matches:
+
+| Class | Error |
+| --- | --- |
+| `server_changed` | `*arrapi.ServerChangedError` |
+| `status` | `*arrapi.StatusError` |
+| `too_large` | `*arrapi.ResponseTooLargeError` |
+| `decode` | `*arrapi.DecodeError` |
+| `no_id` | a command answer with no id of 1 or more |
+| `transport` | any other error, such as a refused connection or a timeout |
+
+`WithLoggedErrorText(true)` makes `error` the error's text instead. That text can hold the server's message, the body of an error answer or other bytes the server sent, made safe to log as described under [Errors](#errors). The errors arrapi returns are the same with or without it.
 
 ## Timeouts
 
@@ -115,7 +131,7 @@ The commands are `RescanSeries`, `SeriesSearch`, `SeasonSearch` and `EpisodeSear
 - When an answer after the detection showed another server version or carried no header, the command is not sent, and the call returns an `*arrapi.ServerChangedError`.
 - An argument a search refuses, such as a series id below 1 or an empty id list, returns an error before any request, the detection included.
 
-A search command returns the id of the command that runs it, read from the server's answer. When an equal command is already queued or running, the server answers with that command, so you get its id. The id is best-effort: once the server has accepted the command, an answer arrapi cannot read, one over 1 MiB, or one with no id of 1 or more returns id 0 with a nil error, and logs one `Warn` record, `arrapi: command accepted; its answer was not read`, with the path and the cause. An error there could make you send a search, and the grab it can make, twice.
+A search command returns the id of the command that runs it, read from the server's answer. When an equal command is already queued or running, the server answers with that command, so you get its id. The id is best-effort: once the server has accepted the command, an answer arrapi cannot read, one over 1 MiB, or one with no id of 1 or more returns id 0 with a nil error. arrapi then logs one `Warn` record, `arrapi: command accepted; its answer was not read`, with the app, the path and the cause, as [Logging](#logging) describes. An error there could make you send a search, and the grab it can make, twice.
 
 A 2xx says the server queued the command, not that the item exists. Sonarr accepts a series id it does not hold and fails that command when it runs; Radarr skips a movie id it does not hold. Sonarr records a grab a search makes with the release source `arrapi.SourceUserInvokedSearch`.
 

@@ -629,7 +629,8 @@ func TestAttemptLoopRecords(t *testing.T) {
 		r := rHeadered(503, transport.NextRetry)
 		rec := read(t, 3, false, nil, r, r, r)
 		got := rec.find("arrapi retries exhausted")
-		if len(got) != 1 || got[0]["level"] != "WARN" || got[0]["attempts"] != "3" || got[0]["bound"] != "attempts" {
+		if len(got) != 1 || got[0]["level"] != "WARN" || got[0]["attempts"] != "3" || got[0]["bound"] != "attempts" ||
+			got[0]["app"] != AppSonarr || got[0]["status"] != "503" || got[0]["error"] != "status" {
 			t.Errorf("exhaustion records = %v", got)
 		}
 	})
@@ -643,7 +644,8 @@ func TestAttemptLoopRecords(t *testing.T) {
 	t.Run("RanThenChangedNoneInstalled names the detection bound", func(t *testing.T) {
 		rec := read(t, 3, true, nil, rChanged())
 		got := rec.find("arrapi retries exhausted")
-		if len(got) != 1 || got[0]["attempts"] != "1" || got[0]["bound"] != "detection" {
+		if len(got) != 1 || got[0]["attempts"] != "1" || got[0]["bound"] != "detection" ||
+			got[0]["error"] != "server_changed" || got[0]["status"] != "" {
 			t.Errorf("exhaustion records = %v", got)
 		}
 	})
