@@ -186,7 +186,6 @@ func TestDecodeErrorFieldOnlyFromTheType(t *testing.T) {
 }
 
 type decodeKeyed struct {
-	//deadset:ignore DS1003 -- the decoder writes it; the test reads only the error the decode reports
 	ByName map[string]decodeInner `json:"byName"`
 }
 
