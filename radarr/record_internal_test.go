@@ -277,7 +277,7 @@ func target(f http.RoundTripper, key arrapi.APIKey) recordTarget {
 	return recordTarget{url: fakeBase, key: key, opts: []Option{WithHTTPClient(&http.Client{Transport: f}), WithLogger(slog.New(slog.DiscardHandler))}}
 }
 
-// radarrFixtureFiles is every file design section 11 names for testdata/radarr.
+// radarrFixtureFiles is every file under testdata/radarr: the recorder writes each, and nothing else.
 var radarrFixtureFiles = []string{
 	"radarr/api-v3/api.json", "radarr/api-v3/commands.json", "radarr/api-v3/history-since.json", "radarr/api-v3/movie-nofile.json",
 	"radarr/api-v3/movie-withfile.json", "radarr/api-v3/movies.json", "radarr/api-v3/queue.json", "radarr/api-v3/rootfolders.json",
