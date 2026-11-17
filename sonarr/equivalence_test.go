@@ -5,6 +5,7 @@ import (
 	"reflect"
 	"regexp"
 	"slices"
+	"strings"
 	"testing"
 )
 
@@ -22,19 +23,30 @@ var equivalenceExcluded = []string{
 	"Series.Seasons[].Title",
 }
 
+// liveExcluded are the fields each live server copies from its metadata source on its
+// own refresh, so two servers differ there whenever one refreshed after an upstream edit
+// (TheTVDB renamed a Code Geass episode between two live servers' refreshes).
+// The recordings are fixed, so the recorded oracle still compares them.
+var liveExcluded = []string{
+	"Series.Title",
+	"Series.TitleSlug",
+	"Series.AlternateTitles",
+	"Episode[].Title",
+}
+
 var indexPattern = regexp.MustCompile(`\[[^]]*\]`)
 
 // differences returns one "path: Sonarr v4 (API v3) <a>, Sonarr v5 (API v5) <b>" line
 // per leaf, or per slice whose length or nil-ness differs, where a and b differ,
 // skipping the excluded paths.
-func differences(path string, a, b any) []string {
+func differences(path string, a, b any, excluded []string) []string {
 	var out []string
-	walkDiff(path, reflect.ValueOf(a), reflect.ValueOf(b), &out)
+	walkDiff(path, reflect.ValueOf(a), reflect.ValueOf(b), excluded, &out)
 	return out
 }
 
-func walkDiff(path string, a, b reflect.Value, out *[]string) {
-	if slices.Contains(equivalenceExcluded, indexPattern.ReplaceAllString(path, "[]")) {
+func walkDiff(path string, a, b reflect.Value, excluded []string, out *[]string) {
+	if slices.Contains(excluded, indexPattern.ReplaceAllString(path, "[]")) {
 		return
 	}
 	differ := func() {
@@ -48,10 +60,10 @@ func walkDiff(path string, a, b reflect.Value, out *[]string) {
 			}
 			return
 		}
-		walkDiff(path, a.Elem(), b.Elem(), out)
+		walkDiff(path, a.Elem(), b.Elem(), excluded, out)
 	case reflect.Struct:
 		for i := range a.NumField() {
-			walkDiff(path+"."+a.Type().Field(i).Name, a.Field(i), b.Field(i), out)
+			walkDiff(path+"."+a.Type().Field(i).Name, a.Field(i), b.Field(i), excluded, out)
 		}
 	case reflect.Slice:
 		if a.IsNil() != b.IsNil() || a.Len() != b.Len() {
@@ -59,7 +71,7 @@ func walkDiff(path string, a, b reflect.Value, out *[]string) {
 			return
 		}
 		for i := range a.Len() {
-			walkDiff(fmt.Sprintf("%s[%d]", path, i), a.Index(i), b.Index(i), out)
+			walkDiff(fmt.Sprintf("%s[%d]", path, i), a.Index(i), b.Index(i), excluded, out)
 		}
 	default:
 		if !a.Equal(b) {
@@ -69,7 +81,7 @@ func walkDiff(path string, a, b reflect.Value, out *[]string) {
 }
 
 // episodeDifferences pairs the two engines' episodes, and files, by id.
-func episodeDifferences(v4, v5 []Episode) []string {
+func episodeDifferences(v4, v5 []Episode, excluded []string) []string {
 	if len(v4) != len(v5) {
 		return []string{fmt.Sprintf("Episodes: Sonarr v4 (API v3) %d, Sonarr v5 (API v5) %d", len(v4), len(v5))}
 	}
@@ -87,12 +99,12 @@ func episodeDifferences(v4, v5 []Episode) []string {
 		if b.TVDBID == 0 {
 			b.TVDBID = a.TVDBID
 		}
-		out = append(out, differences(fmt.Sprintf("Episode[id=%d]", a.ID), a, b)...)
+		out = append(out, differences(fmt.Sprintf("Episode[id=%d]", a.ID), a, b, excluded)...)
 	}
 	return out
 }
 
-func fileDifferences(v4, v5 []EpisodeFile) []string {
+func fileDifferences(v4, v5 []EpisodeFile, excluded []string) []string {
 	if len(v4) != len(v5) {
 		return []string{fmt.Sprintf("EpisodeFiles: Sonarr v4 (API v3) %d, Sonarr v5 (API v5) %d", len(v4), len(v5))}
 	}
@@ -107,7 +119,7 @@ func fileDifferences(v4, v5 []EpisodeFile) []string {
 			out = append(out, fmt.Sprintf("EpisodeFile[id=%d]: only on Sonarr v4 (API v3)", a.ID))
 			continue
 		}
-		out = append(out, differences(fmt.Sprintf("EpisodeFile[id=%d]", a.ID), a, b)...)
+		out = append(out, differences(fmt.Sprintf("EpisodeFile[id=%d]", a.ID), a, b, excluded)...)
 	}
 	return out
 }
@@ -144,11 +156,11 @@ func readCodeGeass(t *testing.T, sh sonarrShape) codeGeass {
 	return cg
 }
 
-func (cg codeGeass) differences(v5 codeGeass) []string {
+func (cg codeGeass) differences(v5 codeGeass, excluded []string) []string {
 	return slices.Concat(
-		differences("Series", cg.series, v5.series),
-		episodeDifferences(cg.episodes, v5.episodes),
-		fileDifferences(cg.files, v5.files),
+		differences("Series", cg.series, v5.series, excluded),
+		episodeDifferences(cg.episodes, v5.episodes, excluded),
+		fileDifferences(cg.files, v5.files, excluded),
 	)
 }
 
@@ -160,7 +172,7 @@ func TestEngineEquivalenceCodeGeass(t *testing.T) {
 	if len(v4.episodes) == 0 || len(v4.files) == 0 {
 		t.Fatalf("the recordings hold %d episodes and %d files; %s", len(v4.episodes), len(v4.files), reRecord)
 	}
-	for _, d := range v4.differences(v5) {
+	for _, d := range v4.differences(v5, equivalenceExcluded) {
 		t.Error(d)
 	}
 }
@@ -194,7 +206,33 @@ func TestEquivalenceOracleNamesEveryDifference(t *testing.T) {
 		`EpisodeFile[id=1].MediaInfo.AudioLanguages: Sonarr v4 (API v3) []string{"jpn", "jpn", "eng"}, Sonarr v5 (API v5) []string{"jpn", "eng"}`,
 		"EpisodeFile[id=2].Revision: Sonarr v4 (API v3) &{Version:1 IsRepack:false}, Sonarr v5 (API v5) nil",
 	}
-	if got := v4.differences(v5); !slices.Equal(got, want) {
+	if got := v4.differences(v5, equivalenceExcluded); !slices.Equal(got, want) {
 		t.Errorf("differences =\n  %q\nwant\n  %q", got, want)
+	}
+}
+
+// TestLiveOracleLeavesMetadataTextOut plants a metadata edit one server refreshed and
+// the other did not: the live comparison stays silent on it and still names a mapped
+// difference, while the recorded oracle names both.
+func TestLiveOracleLeavesMetadataTextOut(t *testing.T) {
+	v4 := readCodeGeass(t, sonarrV4APIv3Shape())
+	v5 := readCodeGeass(t, sonarrV5APIv5Shape())
+	v5.series.Title = v4.series.Title + " (renamed)"
+	v5.series.TitleSlug = v4.series.TitleSlug + "-renamed"
+	v5.series.AlternateTitles = append(slices.Clone(v4.series.AlternateTitles), "planted")
+	v5.episodes = slices.Clone(v5.episodes)
+	v5.episodes[0].Title = "A Bride in the Vermilion Forbidden City"
+	v5.episodes[1].Monitored = !v5.episodes[1].Monitored
+
+	mapped := fmt.Sprintf("Episode[id=%d].Monitored", v5.episodes[1].ID)
+	live := v4.differences(v5, slices.Concat(equivalenceExcluded, liveExcluded))
+	if len(live) != 1 || !strings.HasPrefix(live[0], mapped+":") {
+		t.Errorf("live differences = %q, want only %s", live, mapped)
+	}
+	recorded := v4.differences(v5, equivalenceExcluded)
+	for _, path := range []string{"Series.Title", "Series.TitleSlug", "Series.AlternateTitles", fmt.Sprintf("Episode[id=%d].Title", v5.episodes[0].ID), mapped} {
+		if !slices.ContainsFunc(recorded, func(d string) bool { return strings.HasPrefix(d, path+":") }) {
+			t.Errorf("recorded differences lack %s: %q", path, recorded)
+		}
 	}
 }

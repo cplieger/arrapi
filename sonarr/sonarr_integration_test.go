@@ -347,7 +347,7 @@ func TestIntegrationEngineEquivalenceCodeGeass(t *testing.T) {
 	v4.wantShape(t, "ARRAPI_SONARR_V4_URL", arrapi.APIv3, 4, "Sonarr v4 (API v3)")
 	v5.wantShape(t, "ARRAPI_SONARR_V5_URL", arrapi.APIv5, 5, "Sonarr v5 (API v5)")
 	a, b := liveCodeGeass(t, v4), liveCodeGeass(t, v5)
-	for _, d := range a.differences(b) {
+	for _, d := range a.differences(b, slices.Concat(equivalenceExcluded, liveExcluded)) {
 		t.Error(d)
 	}
 	t.Logf("compared %d episodes and %d files", len(a.episodes), len(a.files))
