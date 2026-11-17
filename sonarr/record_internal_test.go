@@ -521,7 +521,7 @@ func target(f http.RoundTripper, key arrapi.APIKey) recordTarget {
 	return recordTarget{url: fakeBase, key: key, opts: []Option{WithHTTPClient(&http.Client{Transport: f}), WithLogger(slog.New(slog.DiscardHandler))}}
 }
 
-// sonarrFixtureFiles is every file design section 11 names for testdata/sonarr.
+// sonarrFixtureFiles is every file under testdata/sonarr: the recorder writes each, and nothing else.
 var sonarrFixtureFiles = []string{
 	"sonarr/v4-api-v3/api.json", "sonarr/v4-api-v3/commands.json", "sonarr/v4-api-v3/episodefiles-codegeass.json",
 	"sonarr/v4-api-v3/episodes-codegeass-files.json", "sonarr/v4-api-v3/episodes-codegeass.json",
