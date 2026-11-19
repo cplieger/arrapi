@@ -45,8 +45,12 @@ annotate warning "$hostile" 'plain'
 expect "the title escapes %, CR, LF, : and ," \
   $'::warning title=50%25 a%3Ab%2Cc%0D%0Ad%3A%3Aerror%3A%3Ainjected::plain\n'
 
-annotate notice '%0A' '%0D'
+annotate notice $'%\r' $'%\n'
 expect "% is escaped before the escapes it introduces" \
+  $'::notice title=%25%0D::%25%0A\n'
+
+annotate notice '%0A' '%0D'
+expect "a literal %0A or %0D in the input is escaped, not passed through" \
   $'::notice title=%250A::%250D\n'
 
 annotate error '' 'no title'
