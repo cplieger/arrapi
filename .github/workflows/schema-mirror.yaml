@@ -37,14 +37,22 @@ jobs:
     permissions:
       contents: write # push refreshed documents to the schema-mirror branch
     steps:
-      # No checkout: the job needs nothing from the working tree. Each branch
-      # is resolved to a commit first (git ls-remote) and its document is
-      # fetched BY COMMIT, tool-catalog's content-addressing convention, so
-      # the fetch can't race a moving branch and each mirror commit records
-      # the exact upstream commits it mirrors. The fetch mirrors the drift
-      # tests' bounds (16 MB cap, bounded attempts) and their emptiness
-      # validation, plus a JSON-shape check so an HTML error page or a stub
-      # document can never poison the mirror.
+      # Only the annotation helper is checked out: the repo's own docs/ would
+      # otherwise share the directory the documents are staged in.
+      - name: Checkout the annotation helper
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          sparse-checkout: .github/scripts/annotate.sh
+          sparse-checkout-cone-mode: false
+
+      # Each branch is resolved to a commit first (git ls-remote) and its
+      # document is fetched BY COMMIT, tool-catalog's content-addressing
+      # convention, so the fetch can't race a moving branch and each mirror
+      # commit records the exact upstream commits it mirrors. The fetch mirrors
+      # the drift tests' bounds (16 MB cap, bounded attempts) and their
+      # emptiness validation, plus a JSON-shape check so an HTML error page or
+      # a stub document can never poison the mirror.
       - name: Fetch and validate upstream documents
         run: |
           set -euo pipefail
@@ -53,7 +61,8 @@ jobs:
           mirror() { # $1 = mirror file, $2 = owner/repo, $3 = branch, $4 = path in repo
             sha=$(git ls-remote "https://github.com/$2.git" "refs/heads/$3" | cut -f1)
             if ! printf '%s' "$sha" | grep -Eq '^[0-9a-f]{40}$'; then
-              echo "::error::could not resolve $2 $3 to a commit (got: ${sha})" >&2
+              .github/scripts/annotate.sh error 'Unresolved upstream branch' \
+                "could not resolve $2 $3 to a commit (got: ${sha})" >&2
               exit 1
             fi
             curl --fail --silent --show-error --location \
@@ -62,7 +71,11 @@ jobs:
               --output "docs/$1" "https://raw.githubusercontent.com/$2/${sha}/$4"
             jq -e '(.paths | length > 0) and (.components.schemas | length > 0)' \
               "docs/$1" >/dev/null \
-              || { echo "::error::$1 has no paths/schemas; upstream moved or emptied it"; exit 1; }
+              || {
+                .github/scripts/annotate.sh error 'Empty upstream document' \
+                  "$1 has no paths/schemas; upstream moved or emptied it"
+                exit 1
+              }
             printf '%s %s@%s\n' "$1" "$3" "${sha:0:12}" >>docs/commits
           }
           mirror sonarr-v4-api-v3-openapi.json Sonarr/Sonarr v4-develop src/Sonarr.Api.V3/openapi.json
